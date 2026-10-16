@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "prisma-generate": "prisma contract emit",
+    "prisma-seed": "npx tsx src/prisma/seed.ts",
     "postinstall": "prisma skills sync || exit 0"
   },
   "dependencies": {
