@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Sidebar() {
   return (
@@ -10,6 +11,11 @@ export default function Sidebar() {
       <CardContent>
         <nav className="mt-6 flex flex-col gap-1">
           Sidebar Navigation
+
+          <Button>Button</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="outline">Outline</Button>
+          <Button variant="ghost">Ghost</Button>
         </nav>
       </CardContent>
       </Card>
