@@ -6,6 +6,7 @@ model User {
   username  String?
   name      String?
   phone     String?
+  test      String?
   posts     Post[]
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
