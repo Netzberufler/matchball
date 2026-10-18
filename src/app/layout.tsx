@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from 'next/font/google'
+import { Figtree } from 'next/font/google'
 import "./globals.css";
 import Sidebar from "@/components/layout/sidebar";
 
-const nunitoSans = Nunito_Sans({
+const figtree = Figtree({
   subsets: ['latin'],
 })
 
@@ -16,7 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`h-full light antialiased ${nunitoSans.className}`}
+      className={`h-full light antialiased ${figtree.className}`}
       data-theme="light"
     >
       <body className="min-h-ful bg-background text-foreground">

@@ -44,8 +44,8 @@
   --field-radius: 1rem;
 
   /* Font Family */
-  /* Make sure to load Nunito Sans font in your app */
-  --font-sans: "Nunito Sans", sans-serif;
+  /* Make sure to load Figtree font in your app */
+  --font-sans: Figtree, sans-serif;
 }
 
 .dark,
