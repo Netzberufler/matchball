@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import { Nunito_Sans } from 'next/font/google'
 import "./globals.css";
 import Sidebar from "@/components/layout/sidebar";
+
+const nunitoSans = Nunito_Sans({
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -11,7 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className="h-full light antialiased"
+      className={`h-full light antialiased ${nunitoSans.className}`}
       data-theme="light"
     >
       <body className="min-h-ful bg-background text-foreground">
