@@ -13,9 +13,10 @@ datasource db {
 model User {
   id            String    @id @default(uuid(7)) @db.Uuid
   email         String    @unique
-  // Handle used in profile URLs: only a-z, 0-9 and _ (validated in src/lib/auth.ts)
-  name          String    @unique @db.VarChar(30)
-  fullName      String?   @db.VarChar(50)
+  // Used for sign-in and in profile URLs: only a-z, 0-9 and _ (validated in src/lib/auth.ts)
+  username      String    @unique @db.VarChar(30)
+  // Display name
+  name          String    @db.VarChar(50)
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now()) @db.Timestamptz(6)

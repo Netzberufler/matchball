@@ -1,40 +1,16 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import {
-    APIError,
-    createAuthMiddleware,
-    getSessionFromCtx,
-} from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
+import { username } from "better-auth/plugins/username";
 import { prisma } from "@/prisma/db";
 
-// name is the user's handle and is used in profile URLs
-export const NAME_PATTERN = /^[a-z0-9_]+$/;
-export const NAME_MIN_LENGTH = 3;
-export const NAME_MAX_LENGTH = 30;
-export const FULL_NAME_MAX_LENGTH = 50;
-
-function nameError(name: string) {
-    if (name.length < NAME_MIN_LENGTH) {
-        return {
-            code: "NAME_TOO_SHORT",
-            message: `Name must be at least ${NAME_MIN_LENGTH} characters`,
-        };
-    }
-    if (name.length > NAME_MAX_LENGTH) {
-        return {
-            code: "NAME_TOO_LONG",
-            message: `Name must be at most ${NAME_MAX_LENGTH} characters`,
-        };
-    }
-    if (!NAME_PATTERN.test(name)) {
-        return {
-            code: "INVALID_NAME",
-            message: "Name may only contain a-z, 0-9 and _",
-        };
-    }
-    return null;
-}
+// Usernames are used for sign-in and in profile URLs
+export const USERNAME_PATTERN = /^[a-z0-9_]+$/;
+export const USERNAME_MIN_LENGTH = 3;
+export const USERNAME_MAX_LENGTH = 30;
+// name is the display name
+export const NAME_MAX_LENGTH = 50;
 
 // BETTER_AUTH_SECRET and BETTER_AUTH_URL are read from the environment
 export const auth = betterAuth({
@@ -48,54 +24,37 @@ export const auth = betterAuth({
             generateId: false,
         },
     },
-    user: {
-        additionalFields: {
-            fullName: {
-                type: "string",
-                required: false,
-            },
-        },
-    },
     emailAndPassword: {
         enabled: true,
     },
     hooks: {
-        // Normalize and validate name and fullName on sign-up and profile updates
+        // The username plugin treats username as optional, and Better Auth
+        // accepts any name string, so check both on sign-up and profile updates
         before: createAuthMiddleware(async (ctx) => {
             if (ctx.path !== "/sign-up/email" && ctx.path !== "/update-user") {
                 return;
             }
             const body = { ...ctx.body };
 
-            if (typeof body.name === "string") {
-                body.name = body.name.trim().toLowerCase();
-                const error = nameError(body.name);
-                if (error) {
-                    throw new APIError("BAD_REQUEST", error);
-                }
-
-                const existing = await prisma.user.findUnique({
-                    where: { name: body.name },
-                    select: { id: true },
+            if (ctx.path === "/sign-up/email" && !body.username) {
+                throw new APIError("BAD_REQUEST", {
+                    code: "USERNAME_REQUIRED",
+                    message: "Username is required",
                 });
-                const currentUserId =
-                    ctx.path === "/update-user"
-                        ? (await getSessionFromCtx(ctx))?.user.id
-                        : undefined;
-                if (existing && existing.id !== currentUserId) {
-                    throw new APIError("BAD_REQUEST", {
-                        code: "NAME_IS_ALREADY_TAKEN",
-                        message: "Name is already taken",
-                    });
-                }
             }
 
-            if (typeof body.fullName === "string") {
-                body.fullName = body.fullName.trim();
-                if (body.fullName.length > FULL_NAME_MAX_LENGTH) {
+            if (typeof body.name === "string") {
+                body.name = body.name.trim();
+                if (!body.name) {
                     throw new APIError("BAD_REQUEST", {
-                        code: "FULL_NAME_TOO_LONG",
-                        message: `Full name must be at most ${FULL_NAME_MAX_LENGTH} characters`,
+                        code: "NAME_REQUIRED",
+                        message: "Name is required",
+                    });
+                }
+                if (body.name.length > NAME_MAX_LENGTH) {
+                    throw new APIError("BAD_REQUEST", {
+                        code: "NAME_TOO_LONG",
+                        message: `Name must be at most ${NAME_MAX_LENGTH} characters`,
                     });
                 }
             }
@@ -103,26 +62,22 @@ export const auth = betterAuth({
             return { context: { body } };
         }),
     },
-    // Store an empty fullName as null. This can't happen in the hook above,
-    // because Better Auth drops null values when merging a changed body.
-    databaseHooks: {
-        user: {
-            create: {
-                before: async (user) => ({
-                    data: { ...user, fullName: user.fullName || null },
-                }),
-            },
-            update: {
-                before: async (user) => {
-                    if (user.fullName === "") {
-                        return { data: { fullName: null } };
-                    }
-                },
-            },
-        },
-    },
-    // Must be last: lets server actions set auth cookies
-    plugins: [nextCookies()],
+    plugins: [
+        // Adds username to sign-up and profile updates, sign-in by username,
+        // and checks that usernames are valid and unique
+        username({
+            minUsernameLength: USERNAME_MIN_LENGTH,
+            maxUsernameLength: USERNAME_MAX_LENGTH,
+            // Lowercase first, then allow only a-z, 0-9 and _. Sign-in by
+            // username validates the raw input, so lowercase it here too.
+            validationOrder: { username: "post-normalization" },
+            usernameValidator: (value) =>
+                USERNAME_PATTERN.test(value.toLowerCase()),
+            displayUsername: false,
+        }),
+        // Must be last: lets server actions set auth cookies
+        nextCookies(),
+    ],
 });
 
 export type Session = typeof auth.$Infer.Session;
