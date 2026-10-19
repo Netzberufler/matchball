@@ -1,0 +1,33 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Card } from "@heroui/react";
+import { SignUpForm } from "@/features/auth/components/sign-up-form";
+
+export const metadata: Metadata = {
+    title: "Sign Up",
+};
+
+export default function SignUpPage() {
+    return (
+        <Card className="mx-auto w-full max-w-md">
+            <Card.Header>
+                <Card.Title>Create your account</Card.Title>
+                <Card.Description>
+                    Join myMatchball to find matches, tournaments and courts.
+                </Card.Description>
+            </Card.Header>
+            <Card.Content>
+                <SignUpForm />
+            </Card.Content>
+            <Card.Footer className="justify-center text-sm text-muted">
+                Already have an account?&nbsp;
+                <Link
+                    href="/sign-in"
+                    className="font-medium text-accent hover:underline"
+                >
+                    Sign in
+                </Link>
+            </Card.Footer>
+        </Card>
+    );
+}

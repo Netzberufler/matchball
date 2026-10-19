@@ -3,14 +3,13 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins/username";
+import {
+    NAME_MAX_LENGTH,
+    USERNAME_MAX_LENGTH,
+    USERNAME_MIN_LENGTH,
+    USERNAME_PATTERN,
+} from "@/features/auth/utils/auth-rules";
 import { prisma } from "@/prisma/db";
-
-// Usernames are used for sign-in and in profile URLs
-export const USERNAME_PATTERN = /^[a-z0-9_]+$/;
-export const USERNAME_MIN_LENGTH = 3;
-export const USERNAME_MAX_LENGTH = 30;
-// name is the display name
-export const NAME_MAX_LENGTH = 50;
 
 // BETTER_AUTH_SECRET and BETTER_AUTH_URL are read from the environment
 export const auth = betterAuth({
