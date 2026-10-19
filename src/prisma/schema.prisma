@@ -7,29 +7,65 @@ datasource db {
   provider = "postgresql"
 }
 
-// Timestamps, referential actions and the authorId index name match the
-// tables created by the earlier Prisma 8 setup, so the schema has no drift.
+// User, Session, Account and Verification are used by Better Auth
+// (src/lib/auth.ts), which leaves id generation to Prisma.
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  phone     String?
-  test      String?
-  posts     Post[]
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  id            String    @id @default(uuid(7)) @db.Uuid
+  email         String    @unique
+  // Handle used in profile URLs: only a-z, 0-9 and _ (validated in src/lib/auth.ts)
+  name          String    @unique @db.VarChar(30)
+  fullName      String?   @db.VarChar(50)
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+  sessions      Session[]
+  accounts      Account[]
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  authorId  Int
+model Session {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @db.Timestamptz(6)
+  ipAddress String?
+  userAgent String?
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
-  @@index([authorId], map: "Post_authorId_idx_e47547ed")
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  // "credential" for email/password, or an OAuth provider like "google"
+  providerId            String
+  accountId             String
+  userId                String    @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Password hash, only set on "credential" accounts
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
+  scope                 String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([identifier])
 }

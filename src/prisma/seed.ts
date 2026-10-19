@@ -2,19 +2,7 @@ import "dotenv/config";
 import { prisma } from "./db";
 
 async function main() {
-    // upsert keeps the seed re-runnable (email is unique)
-    const alice = await prisma.user.upsert({
-        where: { email: "alice@example.com" },
-        update: {},
-        create: {
-            email: "alice@example.com",
-            name: "Alice",
-        },
-    });
-    console.log("Seeded:", alice);
-
-    const users = await prisma.user.findMany();
-    console.log("All users:", users);
+    // Seed data goes here once the new models exist
 }
 
 main()
