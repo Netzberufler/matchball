@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             className={`h-full antialiased ${figtree.className}`}
             suppressHydrationWarning
         >
-            <body className="min-h-ful bg-background text-foreground">
+            <body className="min-h-full bg-background text-foreground">
                 <ThemeProvider>
                     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 md:px-0 max-sm:py-4 max-md:py-6 grid grid-cols-1 md:grid-cols-[96px_1fr] lg:grid-cols-[320px_1fr]">
                         <Sidebar />

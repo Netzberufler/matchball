@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-// Tennis ball mark, filled with the theme's accent color
+// Tennis ball mark, filled with the theme's accent color. The seams use the
+// page background color, so they read as cut-outs in light and dark mode.
 function BallMark({ className }: { className?: string }) {
     return (
         <svg
@@ -15,7 +16,7 @@ function BallMark({ className }: { className?: string }) {
                 strokeWidth="2.25"
                 strokeLinecap="round"
                 transform="rotate(-45 16 16)"
-                className="stroke-accent-foreground"
+                className="stroke-background"
             >
                 <path d="M6.2 4.6a15 15 0 0 1 0 22.8" />
                 <path d="M25.8 4.6a15 15 0 0 0 0 22.8" />

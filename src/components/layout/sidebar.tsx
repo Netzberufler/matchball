@@ -5,7 +5,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 export default function Sidebar() {
     return (
-        <aside className="hidden md:block sticky top-0 h-dvh py-4 px-2 sm:py-8 sm:px-4 md:px-2 lg:px-4 overflow-y-auto border-r border-default">
+        <aside className="hidden md:flex md:flex-col sticky top-0 h-dvh py-4 px-2 sm:py-8 sm:px-4 md:px-2 lg:px-4 overflow-y-auto border-r border-default">
             <div className="mb-8">
                 <Logo />
             </div>
@@ -14,7 +14,7 @@ export default function Sidebar() {
                     <NavLinks />
                 </Suspense>
             </nav>
-            <div className="mt-1">
+            <div className="mt-auto pt-4">
                 <ThemeToggle />
             </div>
         </aside>

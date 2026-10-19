@@ -14,15 +14,15 @@ export function ThemeToggle() {
             onClick={() =>
                 setTheme(resolvedTheme === "dark" ? "light" : "dark")
             }
-            className="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-xs font-medium tracking-tight text-foreground transition-colors lg:flex-row lg:gap-3 lg:px-4 lg:text-lg lg:tracking-normal w-full cursor-pointer hover:bg-default"
+            className="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-xs font-medium tracking-tight text-foreground transition-colors lg:flex-row lg:gap-3 lg:px-4 lg:text-sm lg:tracking-normal w-full cursor-pointer hover:bg-default"
         >
             <span className="contents dark:hidden">
-                <Moon className="size-5 shrink-0" aria-hidden />
-                Dark Mode
+                <Moon className="size-4 shrink-0" aria-hidden />
+                Dark mode
             </span>
             <span className="hidden dark:contents">
-                <Sun className="size-5 shrink-0" aria-hidden />
-                Light Mode
+                <Sun className="size-4 shrink-0" aria-hidden />
+                Light mode
             </span>
         </button>
     );
