@@ -29,9 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             data-theme="light"
         >
             <body className="min-h-ful bg-background text-foreground">
-                <div className="mx-auto w-full max-w-6xl px-2 sm:px-4 grid grid-cols-1 md:grid-cols-[320px_1fr]">
+                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 md:px-0 max-sm:py-4 max-md:py-6 grid grid-cols-1 md:grid-cols-[320px_1fr]">
                     <Sidebar />
-                    <main className="min-h-dvh px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-8 md:pb-8">
+                    <main className="min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8">
                         {children}
                     </main>
                 </div>
