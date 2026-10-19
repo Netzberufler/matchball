@@ -13,7 +13,7 @@ const links = [
 ] as const;
 
 const linkClassName =
-    "flex items-center gap-3 rounded-2xl px-4 py-2 text-md font-medium text-foreground transition-colors";
+    "flex items-center gap-3 rounded-2xl px-4 py-2 text-lg font-medium text-foreground transition-colors";
 
 export function NavLinks() {
     const pathname = usePathname();
