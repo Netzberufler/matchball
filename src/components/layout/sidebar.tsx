@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Logo } from "./logo";
 import { NavLinks, NavLinksFallback } from "./nav-links";
+import { ThemeToggle } from "./theme-toggle";
 
 export default function Sidebar() {
     return (
@@ -13,6 +14,9 @@ export default function Sidebar() {
                     <NavLinks />
                 </Suspense>
             </nav>
+            <div className="mt-1">
+                <ThemeToggle />
+            </div>
         </aside>
     );
 }

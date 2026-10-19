@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+/* Use the theme class set by next-themes for dark: utilities */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root,
 .light,
 .default,
