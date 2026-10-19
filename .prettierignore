@@ -1,0 +1,13 @@
+# Agent skill files
+.agents
+.claude
+.cursor
+.devin
+
+# Generated Prisma contract
+src/prisma/contract.json
+src/prisma/contract.d.ts
+
+# Lockfiles
+package-lock.json
+pnpm-lock.yaml
