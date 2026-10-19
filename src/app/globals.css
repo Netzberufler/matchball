@@ -84,3 +84,9 @@
     --warning: oklch(82.03% 0.1423 77.59);
     --warning-foreground: oklch(21.03% 0.0059 77.59);
 }
+
+/* Mobile nav bar size, shared by the nav bar and the main content padding */
+:root {
+    --mobile-nav-height: 4.25rem;
+    --mobile-nav-offset: max(0.75rem, env(safe-area-inset-bottom));
+}

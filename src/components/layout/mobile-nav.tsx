@@ -6,7 +6,7 @@ import { isActivePath, navItems } from "./nav-items";
 
 function MobileNavList({ pathname }: { pathname: string | null }) {
     return (
-        <ul className="grid grid-cols-5 py-1">
+        <ul className="grid h-full grid-cols-5 items-center">
             {navItems.map(({ href, shortLabel, icon: Icon }) => {
                 const isActive = isActivePath(href, pathname);
                 return (

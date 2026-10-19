@@ -3,7 +3,7 @@ export default function Home() {
     return (
         <>
             <h1 className="text-xl mb-4 font-semibold">Home</h1>
-            <Card className="h-full">
+            <Card>
                 <Card.Header>
                     <Card.Title>Hello, John.</Card.Title>
                 </Card.Header>

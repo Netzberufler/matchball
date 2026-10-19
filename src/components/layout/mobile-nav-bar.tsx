@@ -7,7 +7,7 @@ export default function MobileNavBar() {
     return (
         <nav
             aria-label="Main"
-            className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 rounded-full border border-default bg-surface px-1 md:hidden"
+            className="fixed inset-x-4 sm:inset-x-6 bottom-(--mobile-nav-offset) h-(--mobile-nav-height) z-50 rounded-full border border-default bg-surface px-1 md:hidden"
         >
             <Suspense fallback={<MobileNavLinksFallback />}>
                 <MobileNavLinks />

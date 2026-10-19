@@ -31,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <body className="min-h-ful bg-background text-foreground">
                 <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 md:px-0 max-sm:py-4 max-md:py-6 grid grid-cols-1 md:grid-cols-[320px_1fr]">
                     <Sidebar />
-                    <main className="min-h-dvh pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:py-8">
+                    <main className="min-h-dvh max-md:pb-[calc(var(--mobile-nav-height)+var(--mobile-nav-offset))] md:px-8 md:py-8">
                         {children}
                     </main>
                 </div>
