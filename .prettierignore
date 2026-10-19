@@ -4,10 +4,10 @@
 .cursor
 .devin
 
-# Generated Prisma contract
-src/prisma/contract.json
-src/prisma/contract.d.ts
+# Generated Prisma Client
+src/prisma/generated
 
 # Lockfiles
 package-lock.json
 pnpm-lock.yaml
+skills-lock.json

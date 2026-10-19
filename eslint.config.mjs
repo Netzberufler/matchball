@@ -20,7 +20,7 @@ const eslintConfig = defineConfig([
         ".claude/**",
         ".cursor/**",
         ".devin/**",
-        // Prisma contract and generated files
+        // Prisma schema, client and generated files
         "src/prisma/**",
     ]),
 ]);
