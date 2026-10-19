@@ -29,10 +29,10 @@ export function Logo() {
         <Link
             href="/"
             aria-label="Matchball home"
-            className="flex items-center gap-3 rounded-2xl px-2"
+            className="flex items-center justify-center gap-3 rounded-2xl lg:justify-start lg:px-2"
         >
             <BallMark className="size-8 shrink-0" />
-            <span className="text-2xl font-semibold tracking-tight text-foreground">
+            <span className="hidden text-2xl font-semibold tracking-tight text-foreground lg:inline">
                 myMatchball
             </span>
         </Link>

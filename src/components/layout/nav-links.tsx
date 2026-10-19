@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { isActivePath, navItems } from "./nav-items";
 
 const linkClassName =
-    "flex items-center gap-3 rounded-2xl px-4 py-2 text-lg font-medium text-foreground transition-colors";
+    "flex items-center justify-center gap-3 rounded-2xl py-3 text-lg font-medium text-foreground transition-colors lg:justify-start lg:px-4 lg:py-2";
 
 function NavLinkList({ pathname }: { pathname: string | null }) {
     return (
@@ -22,7 +22,9 @@ function NavLinkList({ pathname }: { pathname: string | null }) {
                             }`}
                         >
                             <Icon className="size-5 shrink-0" aria-hidden />
-                            {label}
+                            <span className="sr-only lg:not-sr-only">
+                                {label}
+                            </span>
                         </Link>
                     </li>
                 );
