@@ -2,7 +2,7 @@ import { Card } from "@heroui/react";
 export default function Home() {
     return (
         <>
-            <h1 className="text-xl mb-4 font-semibold">Matchball</h1>
+            <h1 className="text-xl mb-4 font-semibold">Home</h1>
             <Card className="h-full">
                 <Card.Header>
                     <Card.Title>Hello, John.</Card.Title>
