@@ -10,8 +10,10 @@ export const metadata: Metadata = {
 export default function SignInPage() {
     return (
         <Card className="mx-auto w-full max-w-md">
-            <Card.Header>
-                <Card.Title>Welcome back</Card.Title>
+            <Card.Header className="mb-2">
+                <Card.Title className="text-base font-semibold">
+                    Welcome back
+                </Card.Title>
                 <Card.Description>
                     Sign in with your email or username.
                 </Card.Description>
@@ -23,7 +25,7 @@ export default function SignInPage() {
                 New to myMatchball?&nbsp;
                 <Link
                     href="/sign-up"
-                    className="font-medium text-accent hover:underline"
+                    className="font-medium text-accent-soft-foreground underline hover:no-underline"
                 >
                     Create an account
                 </Link>
