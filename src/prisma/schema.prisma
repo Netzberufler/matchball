@@ -23,6 +23,7 @@ model User {
   updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
   sessions      Session[]
   accounts      Account[]
+  posts         Post[]
 }
 
 model Session {
@@ -69,4 +70,20 @@ model Verification {
   updatedAt  DateTime @updatedAt @db.Timestamptz(6)
 
   @@index([identifier])
+}
+
+model Post {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  // Plain text only; the limit is POST_MAX_LENGTH in src/features/posts/utils/post-rules.ts
+  content   String   @db.VarChar(160)
+  authorId  String   @db.Uuid
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  // Feeds are sorted newest first, with id as a tiebreaker so a
+  // (createdAt, id) cursor can page through them later
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  // Profile feeds, and later the home feed of followed authors
+  @@index([authorId, createdAt(sort: Desc), id(sort: Desc)])
 }

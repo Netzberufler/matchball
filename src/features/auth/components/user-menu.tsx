@@ -1,8 +1,6 @@
 import { requireSession } from "@/features/auth/lib/session";
-import {
-    UserAvatar,
-    UserMenuDropdown,
-} from "@/features/auth/components/user-menu-dropdown";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { UserMenuDropdown } from "@/features/auth/components/user-menu-dropdown";
 
 // Reads the session, so it must be rendered inside <Suspense>
 export async function UserMenu() {

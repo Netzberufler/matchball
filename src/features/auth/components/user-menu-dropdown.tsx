@@ -1,10 +1,10 @@
 "use client";
 
 import { useTransition } from "react";
-import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Ellipsis, LogOut, Moon, Settings, Sun } from "lucide-react";
-import { Avatar, Dropdown, Label } from "@heroui/react";
+import { Dropdown, Label } from "@heroui/react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { signOut } from "@/features/auth/actions/sign-out";
 
 export function UserMenuDropdown({
@@ -81,25 +81,5 @@ export function UserMenuDropdown({
                 </Dropdown.Menu>
             </Dropdown.Popover>
         </Dropdown>
-    );
-}
-
-// The user's picture (e.g. from Google), or the default avatar when there is
-// none, while it loads, or if it fails. alt is empty because the menu button
-// already names the user.
-export function UserAvatar({ image }: { image?: string | null }) {
-    return (
-        <Avatar className="shrink-0">
-            {image && <Avatar.Image alt="" src={image} />}
-            <Avatar.Fallback>
-                <Image
-                    alt=""
-                    src="/default-avatar.jpg"
-                    width={40}
-                    height={40}
-                    className="size-full object-cover"
-                />
-            </Avatar.Fallback>
-        </Avatar>
     );
 }
