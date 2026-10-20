@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonVariants, Card } from "@heroui/react";
 import { LabeledSeparator } from "@/components/ui/labeled-separator";
+import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { SignUpForm } from "@/features/auth/components/sign-up-form";
 
 export const metadata: Metadata = {
@@ -23,12 +24,13 @@ export default function SignUpPage() {
                 <SignUpForm />
             </Card.Content>
             <LabeledSeparator />
-            <Card.Footer>
+            <Card.Footer className="flex-col gap-3">
+                <GoogleSignInButton label="Sign up with Google" />
                 {/* A link styled as a HeroUI button */}
                 <Link
                     href="/sign-in"
                     className={buttonVariants({
-                        variant: "secondary",
+                        variant: "outline",
                         fullWidth: true,
                     })}
                 >

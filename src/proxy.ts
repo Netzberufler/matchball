@@ -11,6 +11,11 @@ export function proxy(request: NextRequest) {
     const isAuthPage = AUTH_PAGES.includes(pathname);
     const hasSessionCookie = Boolean(getSessionCookie(request));
 
+    // Better Auth's route, e.g. Google redirecting back after sign-in
+    if (pathname.startsWith("/api/auth/")) {
+        return NextResponse.next();
+    }
+
     // Signed-out users can only see the sign-in and sign-up pages
     if (!hasSessionCookie && !isAuthPage) {
         const signInUrl = new URL("/sign-in", request.url);

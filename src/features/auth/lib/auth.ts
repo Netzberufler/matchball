@@ -9,7 +9,14 @@ import {
     USERNAME_MIN_LENGTH,
     USERNAME_PATTERN,
 } from "@/features/auth/utils/auth-rules";
+import { generateUsername } from "@/features/auth/lib/username";
 import { prisma } from "@/prisma/db";
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+export const isGoogleSignInEnabled = Boolean(
+    googleClientId && googleClientSecret,
+);
 
 // BETTER_AUTH_SECRET and BETTER_AUTH_URL are read from the environment
 export const auth = betterAuth({
@@ -25,6 +32,36 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
+    },
+    // Google redirects back to /api/auth/callback/google
+    socialProviders:
+        googleClientId && googleClientSecret
+            ? {
+                  google: {
+                      clientId: googleClientId,
+                      clientSecret: googleClientSecret,
+                      // Always let users pick which Google account to use
+                      prompt: "select_account",
+                  },
+              }
+            : {},
+    databaseHooks: {
+        user: {
+            create: {
+                // Google provides no username and a name of any length
+                before: async (user) => {
+                    const username =
+                        typeof user.username === "string" && user.username
+                            ? user.username
+                            : await generateUsername(user.email ?? "");
+                    const name = (user.name?.trim() || username).slice(
+                        0,
+                        NAME_MAX_LENGTH,
+                    );
+                    return { data: { ...user, username, name } };
+                },
+            },
+        },
     },
     hooks: {
         // The username plugin treats username as optional, and Better Auth
