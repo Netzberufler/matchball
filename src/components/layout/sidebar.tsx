@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { Logo } from "./logo";
 import { NavLinks, NavLinksFallback } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
@@ -16,6 +17,7 @@ export default function Sidebar() {
             </nav>
             <div className="mt-auto pt-4">
                 <ThemeToggle />
+                <SignOutButton />
             </div>
         </aside>
     );

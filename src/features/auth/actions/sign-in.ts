@@ -33,8 +33,6 @@ export async function signIn(
         }
     } catch (error) {
         if (isAPIError(error)) {
-            // Same message for every credential error, so the form doesn't
-            // reveal whether an account exists
             return { error: { message: "Wrong email, username or password" } };
         }
         throw error;

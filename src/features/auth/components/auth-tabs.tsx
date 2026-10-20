@@ -13,9 +13,6 @@ const tabs = [
 // Switches between the sign-in and sign-up pages
 export function AuthTabs() {
     const pathname = usePathname();
-    // Highlight a clicked tab right away instead of after the new page has
-    // loaded. Only while still on the page it was clicked on, so the browser's
-    // back and forward buttons always highlight the current page.
     const [clicked, setClicked] = useState({ from: pathname, to: pathname });
     const selectedKey = clicked.from === pathname ? clicked.to : pathname;
 
@@ -35,14 +32,11 @@ export function AuthTabs() {
                             id={href}
                             href={href}
                             className="whitespace-nowrap"
-                            // Client-side navigation with the Next.js router
                             render={(domProps) => (
                                 <Link {...(domProps as LinkProps)} />
                             )}
                         >
                             {label}
-                            {/* No slide: the centered layout moves the tabs
-                                vertically when the card height changes */}
                             <Tabs.Indicator className="transition-none" />
                         </Tabs.Tab>
                     ))}
