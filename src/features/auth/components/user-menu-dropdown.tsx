@@ -2,7 +2,8 @@
 
 import { useTransition } from "react";
 import Image from "next/image";
-import { Ellipsis, LogOut } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Ellipsis, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Avatar, Dropdown, Label } from "@heroui/react";
 import { signOut } from "@/features/auth/actions/sign-out";
 
@@ -16,6 +17,10 @@ export function UserMenuDropdown({
     image?: string | null;
 }) {
     const [, startTransition] = useTransition();
+    const { resolvedTheme, setTheme } = useTheme();
+    const isDark = resolvedTheme === "dark";
+    const ThemeIcon = isDark ? Sun : Moon;
+    const themeLabel = isDark ? "Use light mode" : "Use dark mode";
 
     return (
         <Dropdown>
@@ -41,15 +46,36 @@ export function UserMenuDropdown({
             <Dropdown.Popover placement="top start">
                 <Dropdown.Menu
                     onAction={(key) => {
-                        if (key === "sign-out") {
+                        if (key === "theme") {
+                            setTheme(isDark ? "light" : "dark");
+                        } else if (key === "sign-out") {
                             startTransition(() => signOut());
                         }
                     }}
                 >
+                    <Dropdown.Item id="theme" textValue={themeLabel}>
+                        <div className="flex w-full items-center gap-2">
+                            <ThemeIcon
+                                className="size-4 text-muted"
+                                aria-hidden
+                            />
+                            <Label>{themeLabel}</Label>
+                        </div>
+                    </Dropdown.Item>
+                    {/* TODO: link to the settings page once it exists */}
+                    <Dropdown.Item id="settings" textValue="Settings">
+                        <div className="flex w-full items-center gap-2">
+                            <Settings
+                                className="size-4 text-muted"
+                                aria-hidden
+                            />
+                            <Label>Settings</Label>
+                        </div>
+                    </Dropdown.Item>
                     <Dropdown.Item id="sign-out" textValue="Sign out">
-                        <div className="flex w-full items-center justify-between gap-2">
-                            <Label>Sign out</Label>
+                        <div className="flex w-full items-center gap-2">
                             <LogOut className="size-4 text-muted" aria-hidden />
+                            <Label>Sign out</Label>
                         </div>
                     </Dropdown.Item>
                 </Dropdown.Menu>
