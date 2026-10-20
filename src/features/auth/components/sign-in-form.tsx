@@ -11,6 +11,7 @@ import {
     TextField,
 } from "@heroui/react";
 import { signIn } from "@/features/auth/actions/sign-in";
+import { REDIRECT_PARAM } from "@/features/auth/utils/redirect";
 
 export function SignInForm() {
     const [isPending, startTransition] = useTransition();
@@ -19,6 +20,13 @@ export function SignInForm() {
     function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
+        // Set by src/proxy.ts; read here so the page itself stays static
+        const redirectTo = new URLSearchParams(window.location.search).get(
+            REDIRECT_PARAM,
+        );
+        if (redirectTo) {
+            formData.set(REDIRECT_PARAM, redirectTo);
+        }
 
         setFormError(null);
 
