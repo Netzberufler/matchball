@@ -68,7 +68,7 @@ export function SignUpForm() {
                 validate={validateEmail}
             >
                 <Label>Email</Label>
-                <Input placeholder="you@example.com" />
+                <Input placeholder="Your email address" />
                 <FieldError />
             </TextField>
 
@@ -83,7 +83,7 @@ export function SignUpForm() {
                 validate={validateUsername}
             >
                 <Label>Username</Label>
-                <Input placeholder="rafa_fan" />
+                <Input placeholder="Your username used in URLs and tagging" />
                 <Description>
                     Up to {USERNAME_MAX_LENGTH} characters: a-z, 0-9 and _
                 </Description>
@@ -98,7 +98,7 @@ export function SignUpForm() {
                 validate={validateName}
             >
                 <Label>Name</Label>
-                <Input placeholder="Rafael Nadal" />
+                <Input placeholder="Your full name" />
                 <Description>Shown on your profile</Description>
                 <FieldError />
             </TextField>

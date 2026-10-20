@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonVariants, Card } from "@heroui/react";
+import { LabeledSeparator } from "@/components/ui/labeled-separator";
 import { SignUpForm } from "@/features/auth/components/sign-up-form";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function SignUpPage() {
             <Card.Content>
                 <SignUpForm />
             </Card.Content>
+            <LabeledSeparator />
             <Card.Footer>
                 {/* A link styled as a HeroUI button */}
                 <Link
