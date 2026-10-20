@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonVariants, Card } from "@heroui/react";
 import { LabeledSeparator } from "@/components/ui/labeled-separator";
+import { ResetWhenHidden } from "@/components/ui/reset-when-hidden";
 import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { OAuthError } from "@/features/auth/components/oauth-error";
 import { SignInForm } from "@/features/auth/components/sign-in-form";
@@ -27,7 +28,9 @@ export default function SignInPage() {
                 <Suspense>
                     <OAuthError />
                 </Suspense>
-                <SignInForm />
+                <ResetWhenHidden>
+                    <SignInForm />
+                </ResetWhenHidden>
             </Card.Content>
             <LabeledSeparator />
             <Card.Footer className="flex-col gap-3">
