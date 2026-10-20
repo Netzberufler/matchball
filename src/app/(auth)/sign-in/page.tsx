@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card } from "@heroui/react";
+import { buttonVariants, Card } from "@heroui/react";
 import { SignInForm } from "@/features/auth/components/sign-in-form";
 
 export const metadata: Metadata = {
@@ -21,13 +21,16 @@ export default function SignInPage() {
             <Card.Content>
                 <SignInForm />
             </Card.Content>
-            <Card.Footer className="justify-center text-sm text-muted">
-                New to myMatchball?&nbsp;
+            <Card.Footer>
+                {/* A link styled as a HeroUI button */}
                 <Link
                     href="/sign-up"
-                    className="font-medium text-accent-soft-foreground underline hover:no-underline"
+                    className={buttonVariants({
+                        variant: "secondary",
+                        fullWidth: true,
+                    })}
                 >
-                    Create an account
+                    Create new account
                 </Link>
             </Card.Footer>
         </Card>
