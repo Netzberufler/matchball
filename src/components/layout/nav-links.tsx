@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { isActivePath, navItems } from "./nav-items";
 
 const linkClassName =
-    "flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-xs font-medium tracking-tight text-foreground transition-colors lg:flex-row lg:gap-3 lg:px-4 lg:text-lg lg:tracking-normal";
+    "flex flex-col items-center gap-1 rounded-full px-1 py-2 text-xs font-medium tracking-tight text-foreground transition-colors lg:flex-row lg:gap-3 lg:px-4 lg:text-lg lg:tracking-normal";
 
 function NavLinkList({ pathname }: { pathname: string | null }) {
     return (

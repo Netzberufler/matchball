@@ -1,29 +1,61 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
+import { ToggleButton, ToggleButtonGroup } from "@heroui/react";
 
-// Both states are rendered and switched with the dark: variant, so the
-// server-rendered button already matches the theme and doesn't flash.
+const themes = [
+    { id: "light", label: "Light mode", icon: Sun },
+    { id: "dark", label: "Dark mode", icon: Moon },
+    { id: "system", label: "System preference", icon: Monitor },
+] as const;
+
+// The chosen theme is stored in the browser, so it's only known after
+// hydration; until then no button is selected
+const subscribe = () => () => {};
+const useIsClient = () =>
+    useSyncExternalStore(
+        subscribe,
+        () => true,
+        () => false,
+    );
+
 export function ThemeToggle() {
-    const { resolvedTheme, setTheme } = useTheme();
+    const { theme, setTheme } = useTheme();
+    const isClient = useIsClient();
 
     return (
-        <button
-            type="button"
-            onClick={() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
-            className="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-xs font-medium tracking-tight text-foreground transition-colors lg:flex-row lg:gap-3 lg:px-4 lg:text-sm lg:tracking-normal w-full cursor-pointer hover:bg-default"
+        <ToggleButtonGroup
+            aria-label="Theme"
+            selectionMode="single"
+            disallowEmptySelection
+            selectedKeys={isClient && theme ? [theme] : []}
+            onSelectionChange={(keys) => {
+                const [selected] = keys;
+                if (selected) {
+                    setTheme(String(selected));
+                }
+            }}
+            isDetached
+            size="sm"
+            // Stacked in the narrow tablet sidebar, in a row from lg up
+            className="mx-auto flex flex-col lg:mx-0 lg:flex-row lg:px-2"
         >
-            <span className="contents dark:hidden">
-                <Moon className="size-4 shrink-0" aria-hidden />
-                Dark mode
-            </span>
-            <span className="hidden dark:contents">
-                <Sun className="size-4 shrink-0" aria-hidden />
-                Light mode
-            </span>
-        </button>
+            {themes.map(({ id, label, icon: Icon }) => (
+                <ToggleButton
+                    key={id}
+                    id={id}
+                    aria-label={label}
+                    variant="ghost"
+                    isIconOnly
+                    // Selected: the default background, like the active nav
+                    // link, and unchanged on hover and press
+                    className="[--toggle-button-bg-selected:var(--default)] [--toggle-button-bg-selected-hover:var(--default)] [--toggle-button-bg-selected-pressed:var(--default)] [--toggle-button-fg-selected:var(--foreground)] [--toggle-button-fg:var(--muted)] data-[selected=true]:transform-none data-[selected=true]:cursor-default"
+                >
+                    <Icon className="size-4" aria-hidden />
+                </ToggleButton>
+            ))}
+        </ToggleButtonGroup>
     );
 }
