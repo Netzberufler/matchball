@@ -21,7 +21,8 @@ const useIsClient = () =>
         () => false,
     );
 
-export function ThemeToggle() {
+// A row of three icon buttons; className adjusts the layout, e.g. stacking
+export function ThemeToggle({ className = "" }: { className?: string }) {
     const { theme, setTheme } = useTheme();
     const isClient = useIsClient();
 
@@ -39,8 +40,7 @@ export function ThemeToggle() {
             }}
             isDetached
             size="sm"
-            // Stacked in the narrow tablet sidebar, in a row from lg up
-            className="mx-auto flex flex-col lg:mx-0 lg:flex-row lg:px-2"
+            className={`flex ${className}`}
         >
             {themes.map(({ id, label, icon: Icon }) => (
                 <ToggleButton

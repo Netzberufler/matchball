@@ -16,7 +16,8 @@ export default function Sidebar() {
                 </Suspense>
             </nav>
             <div className="mt-auto pt-4">
-                <ThemeToggle />
+                {/* Stacked in the narrow tablet sidebar, in a row from lg up */}
+                <ThemeToggle className="mx-auto flex-col lg:mx-0 lg:flex-row lg:px-2" />
                 <SignOutButton />
             </div>
         </aside>

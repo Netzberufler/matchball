@@ -1,4 +1,5 @@
 import { Logo } from "@/components/layout/logo";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 // Layout for /sign-in and /sign-up: no sidebar, the form centered on the page
 export default function AuthLayout({ children }: LayoutProps<"/">) {
@@ -12,6 +13,9 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
                     </p>
                 </header>
                 {children}
+                <footer className="mt-2 flex justify-center">
+                    <ThemeToggle />
+                </footer>
             </div>
         </main>
     );
