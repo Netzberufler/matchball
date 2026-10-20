@@ -29,7 +29,7 @@ export function AuthTabs() {
                             )}
                         >
                             {label}
-                            <Tabs.Indicator />
+                            <Tabs.Indicator className="transition-none" />
                         </Tabs.Tab>
                     ))}
                 </Tabs.List>
