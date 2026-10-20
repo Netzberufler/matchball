@@ -20,11 +20,11 @@ export async function UserMenu() {
 // Shown while the session loads; same size as the menu, so nothing jumps
 export function UserMenuFallback() {
     return (
-        <div className="flex items-center justify-center gap-3 rounded-2xl bg-default p-1 lg:justify-start lg:px-2 lg:py-2">
+        <div className="mx-auto flex w-fit items-center gap-3 lg:mx-0 lg:w-full lg:px-2 lg:py-2">
             <UserAvatar />
             <div className="hidden flex-col gap-1.5 lg:flex">
-                <div className="h-3.5 w-28 rounded-full bg-default-hover" />
-                <div className="h-3 w-20 rounded-full bg-default-hover" />
+                <div className="h-3.5 w-28 rounded-full bg-default" />
+                <div className="h-3 w-20 rounded-full bg-default" />
             </div>
         </div>
     );

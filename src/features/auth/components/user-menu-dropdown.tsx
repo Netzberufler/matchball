@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Image from "next/image";
-import { LogOut } from "lucide-react";
+import { Ellipsis, LogOut } from "lucide-react";
 import { Avatar, Dropdown, Label } from "@heroui/react";
 import { signOut } from "@/features/auth/actions/sign-out";
 
@@ -21,7 +21,7 @@ export function UserMenuDropdown({
         <Dropdown>
             <Dropdown.Trigger
                 aria-label={`Account menu for ${name}`}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-default p-1 text-left transition-colors hover:bg-default-hover lg:justify-start lg:px-2 lg:py-2"
+                className="mx-auto flex w-fit items-center gap-3 rounded-full text-left transition-colors transform-none hover:bg-default aria-expanded:bg-default lg:mx-0 lg:w-full lg:px-2 lg:py-2"
             >
                 <UserAvatar image={image} />
                 {/* Only the avatar in the narrow tablet sidebar */}
@@ -33,6 +33,10 @@ export function UserMenuDropdown({
                         @{username}
                     </span>
                 </span>
+                <Ellipsis
+                    className="ml-auto hidden size-5 shrink-0 text-muted lg:block"
+                    aria-hidden
+                />
             </Dropdown.Trigger>
             <Dropdown.Popover placement="top start">
                 <Dropdown.Menu
