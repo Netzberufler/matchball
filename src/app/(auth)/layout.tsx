@@ -1,5 +1,4 @@
 import { Logo } from "@/components/layout/logo";
-import { AuthTabs } from "@/features/auth/components/auth-tabs";
 
 // Layout for /sign-in and /sign-up: no sidebar, the form centered on the page
 export default function AuthLayout({ children }: LayoutProps<"/">) {
@@ -12,7 +11,6 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
                         The social app for tennis players and tennis clubs
                     </p>
                 </header>
-                <AuthTabs />
                 {children}
             </div>
         </main>
