@@ -25,15 +25,33 @@ function BallMark({ className }: { className?: string }) {
     );
 }
 
-export function Logo() {
+const sizes = {
+    default: { ball: "size-8", name: "text-2xl" },
+    large: { ball: "size-11", name: "text-4xl" },
+};
+
+// compact: only the ball below lg, for the narrow tablet sidebar
+export function Logo({
+    compact = false,
+    size = "default",
+}: {
+    compact?: boolean;
+    size?: keyof typeof sizes;
+}) {
     return (
         <Link
             href="/"
             aria-label="Matchball home"
-            className="flex items-center justify-center gap-3 rounded-2xl lg:justify-start lg:px-2"
+            className={`flex items-center gap-3 rounded-2xl ${
+                compact ? "justify-center lg:justify-start lg:px-2" : ""
+            }`}
         >
-            <BallMark className="size-8 shrink-0" />
-            <span className="hidden text-2xl font-semibold tracking-tight text-foreground lg:inline">
+            <BallMark className={`${sizes[size].ball} shrink-0`} />
+            <span
+                className={`${sizes[size].name} font-semibold tracking-tight text-foreground ${
+                    compact ? "hidden lg:inline" : ""
+                }`}
+            >
                 myMatchball
             </span>
         </Link>
