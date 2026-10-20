@@ -1,5 +1,8 @@
 import { Suspense } from "react";
-import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import {
+    UserMenu,
+    UserMenuFallback,
+} from "@/features/auth/components/user-menu";
 import { Logo } from "./logo";
 import { NavLinks, NavLinksFallback } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
@@ -15,10 +18,13 @@ export default function Sidebar() {
                     <NavLinks />
                 </Suspense>
             </nav>
-            <div className="mt-auto pt-4">
+            <div className="mt-auto flex flex-col gap-3 pt-4">
                 {/* Stacked in the narrow tablet sidebar, in a row from lg up */}
                 <ThemeToggle className="mx-auto flex-col lg:mx-0 lg:flex-row lg:px-2" />
-                <SignOutButton />
+                {/* Reads the session at request time */}
+                <Suspense fallback={<UserMenuFallback />}>
+                    <UserMenu />
+                </Suspense>
             </div>
         </aside>
     );
