@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
 import { prisma } from "@/prisma/db";
 
@@ -33,5 +34,7 @@ export async function setFollowing(
     } else {
         await prisma.follow.deleteMany({ where: key });
     }
+    // Reload the page's server data, e.g. the follower count on the profile
+    refresh();
     return { isFollowing: follow };
 }

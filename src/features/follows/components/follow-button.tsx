@@ -40,8 +40,10 @@ export function FollowButton({
     }
 
     return (
-        <div className="flex flex-col items-start gap-2">
+        <div className="flex flex-col gap-2">
             <Button
+                // As wide as its container, the same for both labels
+                fullWidth
                 variant={optimisticIsFollowing ? "tertiary" : "primary"}
                 aria-label={
                     optimisticIsFollowing
