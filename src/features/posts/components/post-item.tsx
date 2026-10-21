@@ -23,7 +23,7 @@ export function PostItem({ post }: { post: FeedPost }) {
                 aria-hidden
                 className="shrink-0 self-start rounded-full transition-opacity hover:opacity-80"
             >
-                <UserAvatar image={author.image} />
+                <UserAvatar name={author.name} image={author.image} />
             </Link>
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1 text-sm">

@@ -28,7 +28,7 @@ export function UserMenuDropdown({
                 aria-label={`Account menu for ${name}`}
                 className="mx-auto flex w-fit items-center gap-3 rounded-full text-left transition-colors transform-none hover:bg-default aria-expanded:bg-default lg:mx-0 lg:w-full lg:px-2 lg:py-2"
             >
-                <UserAvatar image={image} />
+                <UserAvatar name={name} image={image} />
                 {/* Only the avatar in the narrow tablet sidebar */}
                 <span className="hidden min-w-0 flex-col lg:flex">
                     <span className="truncate font-medium text-foreground">
