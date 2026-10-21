@@ -57,13 +57,20 @@ export function PostForm() {
                     maxLength={POST_MAX_LENGTH}
                 >
                     <TextArea
-                        className="min-h-24 resize-none"
+                        className="min-h-24 resize-none text-lg"
                         placeholder="What's happening?"
                     />
                     <FieldError />
                 </TextField>
 
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex items-center justify-between gap-3">
+                    <Button
+                        type="submit"
+                        isDisabled={isEmpty}
+                        isPending={isPending}
+                    >
+                        Post
+                    </Button>
                     <span
                         className={`text-sm tabular-nums ${
                             charactersLeft <= LOW_CHARACTERS_LEFT
@@ -72,16 +79,9 @@ export function PostForm() {
                         }`}
                         aria-live="polite"
                     >
-                        {charactersLeft}
-                        <span className="sr-only"> characters left</span>
+                        {content.length} / {POST_MAX_LENGTH}
+                        <span className="sr-only"> characters used</span>
                     </span>
-                    <Button
-                        type="submit"
-                        isDisabled={isEmpty}
-                        isPending={isPending}
-                    >
-                        Post
-                    </Button>
                 </div>
             </Form>
         </Card>
