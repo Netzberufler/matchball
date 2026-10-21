@@ -18,7 +18,16 @@ export function UserAvatar({
     const sizeClasses = AVATAR_SIZE_CLASSES[size];
     return (
         <Avatar className={`shrink-0 ${sizeClasses.avatar}`}>
-            {image && <Avatar.Image alt="" src={image} />}
+            {image && (
+                <Avatar.Image
+                    alt=""
+                    src={image}
+                    // Google's profile picture server rate-limits requests
+                    // that come with a referrer (429 with an HTML page, which
+                    // Firefox then blocks), so don't send one
+                    referrerPolicy="no-referrer"
+                />
+            )}
             <Avatar.Fallback
                 color="default"
                 aria-hidden
