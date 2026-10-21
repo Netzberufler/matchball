@@ -5,22 +5,38 @@ import { Avatar } from "@heroui/react";
 // session loads) the fallback is an empty circle. alt is empty and the
 // initials are hidden from screen readers because the name is always shown
 // or announced next to it.
+// size "md" is HeroUI's 40px; "xl" is for profile headers.
 export function UserAvatar({
     name,
     image,
+    size = "md",
 }: {
     name?: string;
     image?: string | null;
+    size?: "md" | "xl";
 }) {
+    const sizeClasses = AVATAR_SIZE_CLASSES[size];
     return (
-        <Avatar className="shrink-0">
+        <Avatar className={`shrink-0 ${sizeClasses.avatar}`}>
             {image && <Avatar.Image alt="" src={image} />}
-            <Avatar.Fallback color="default" aria-hidden>
+            <Avatar.Fallback
+                color="default"
+                aria-hidden
+                className={sizeClasses.fallback}
+            >
                 {name && getInitials(name)}
             </Avatar.Fallback>
         </Avatar>
     );
 }
+
+const AVATAR_SIZE_CLASSES = {
+    md: { avatar: "", fallback: "" },
+    xl: {
+        avatar: "size-16 rounded-full sm:size-20",
+        fallback: "text-xl sm:text-2xl",
+    },
+};
 
 // The first letters of the first two words: "Anna Becker" becomes "AB",
 // "Anna Maria Becker" becomes "AM" and "Anna" becomes "A"
