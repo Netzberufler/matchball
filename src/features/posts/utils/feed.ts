@@ -3,9 +3,9 @@
 
 export const FEED_PAGE_SIZE = 10;
 
-// "home": the posts the viewer follows; "profile": the viewer's own posts
-export const FEED_TYPES = ["home", "profile"] as const;
-export type FeedType = (typeof FEED_TYPES)[number];
+// "home": the posts the viewer follows; "user": one author's posts, for
+// their profile page
+export type Feed = { type: "home" } | { type: "user"; authorId: string };
 
 // Points at the last post of a page; the next page starts after it
 export type FeedCursor = { createdAt: Date; id: string };

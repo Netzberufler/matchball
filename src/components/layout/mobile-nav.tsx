@@ -2,39 +2,64 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isActivePath, navItems } from "./nav-items";
+import { getNavItems, isActivePath } from "./nav-items";
 
-function MobileNavList({ pathname }: { pathname: string | null }) {
+const linkClassName =
+    "flex flex-col items-center gap-1 rounded-full py-2 text-xs text-foreground font-medium tracking-tight transition-colors";
+
+function MobileNavList({
+    pathname,
+    username,
+}: {
+    pathname: string | null;
+    username: string | null;
+}) {
     return (
         <ul className="grid h-full grid-cols-5 items-center">
-            {navItems.map(({ href, shortLabel, icon: Icon }) => {
-                const isActive = isActivePath(href, pathname);
-                return (
-                    <li key={href}>
-                        <Link
-                            href={href}
-                            aria-current={isActive ? "page" : undefined}
-                            className={`flex flex-col items-center gap-1 rounded-full py-2 text-xs text-foreground font-medium tracking-tight transition-colors ${
-                                isActive ? "bg-default" : "hover:bg-default"
-                            }`}
-                        >
+            {getNavItems(username).map(
+                ({ href, label, shortLabel, icon: Icon }) => {
+                    const isActive = isActivePath(href, pathname);
+                    const content = (
+                        <>
                             <Icon className="size-5 shrink-0" aria-hidden />
                             <span className="max-w-full truncate">
                                 {shortLabel}
                             </span>
-                        </Link>
-                    </li>
-                );
-            })}
+                        </>
+                    );
+                    return (
+                        <li key={label}>
+                            {href === null ? (
+                                // Not a link until the href is known
+                                <span className={linkClassName}>{content}</span>
+                            ) : (
+                                <Link
+                                    href={href}
+                                    aria-current={isActive ? "page" : undefined}
+                                    className={`${linkClassName} ${
+                                        isActive
+                                            ? "bg-default"
+                                            : "hover:bg-default"
+                                    }`}
+                                >
+                                    {content}
+                                </Link>
+                            )}
+                        </li>
+                    );
+                },
+            )}
         </ul>
     );
 }
 
-export function MobileNavLinks() {
-    return <MobileNavList pathname={usePathname()} />;
+// username is the signed-in user's, for the Profile link
+export function MobileNavLinks({ username }: { username: string }) {
+    return <MobileNavList pathname={usePathname()} username={username} />;
 }
 
-// Rendered while the pathname is unknown during prerendering, without active state
+// Rendered while the pathname and session are unknown during prerendering,
+// without active state or Profile link
 export function MobileNavLinksFallback() {
-    return <MobileNavList pathname={null} />;
+    return <MobileNavList pathname={null} username={null} />;
 }

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { requireSession } from "@/features/auth/lib/session";
 import {
     UserMenu,
     UserMenuFallback,
@@ -13,8 +14,9 @@ export default function Sidebar() {
                 <Logo compact />
             </div>
             <nav aria-label="Main">
+                {/* Reads the session at request time, for the Profile link */}
                 <Suspense fallback={<NavLinksFallback />}>
-                    <NavLinks />
+                    <SessionNavLinks />
                 </Suspense>
             </nav>
             <div className="mt-auto pt-4">
@@ -25,4 +27,10 @@ export default function Sidebar() {
             </div>
         </aside>
     );
+}
+
+async function SessionNavLinks() {
+    const { user } = await requireSession();
+    // username is required in the database; Better Auth types it as optional
+    return <NavLinks username={user.username ?? ""} />;
 }

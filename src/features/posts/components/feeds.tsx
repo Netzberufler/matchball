@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
 import { requireSession } from "@/features/auth/lib/session";
 import { getFeedPage } from "@/features/posts/lib/queries";
+import { getProfileUser } from "@/features/profile/lib/queries";
 import { PostFeed } from "./post-feed";
 
 // These read the session and the database at request time, so render them
@@ -7,26 +9,41 @@ import { PostFeed } from "./post-feed";
 // PostFeed loads the rest.
 
 export async function HomeFeed() {
-    const { user } = await requireSession();
-    const firstPage = await getFeedPage("home", user.id);
+    await requireSession();
+    const feed = { type: "home" } as const;
+    const firstPage = await getFeedPage(feed);
     return (
         <PostFeed
-            feed="home"
+            feed={feed}
             firstPage={firstPage}
             emptyMessage="No posts yet. Be the first!"
         />
     );
 }
 
-// The signed-in user's own posts, for the profile page
-export async function ProfileFeed() {
-    const { user } = await requireSession();
-    const firstPage = await getFeedPage("profile", user.id);
+// One user's posts, for their profile page; a 404 if there's no such user
+export async function ProfileFeed({ username }: { username: string }) {
+    const [{ user: viewer }, profileUser] = await Promise.all([
+        requireSession(),
+        getProfileUser(username),
+    ]);
+    if (!profileUser) {
+        notFound();
+    }
+
+    const feed = { type: "user", authorId: profileUser.id } as const;
+    const firstPage = await getFeedPage(feed);
     return (
         <PostFeed
-            feed="profile"
+            // Start over when going from one profile to another
+            key={profileUser.id}
+            feed={feed}
             firstPage={firstPage}
-            emptyMessage="You haven't posted anything yet."
+            emptyMessage={
+                profileUser.id === viewer.id
+                    ? "You haven't posted anything yet."
+                    : `@${profileUser.username} hasn't posted anything yet.`
+            }
         />
     );
 }

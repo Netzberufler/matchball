@@ -6,7 +6,7 @@ import {
     FEED_PAGE_SIZE,
     type FeedCursor,
     type FeedPage,
-    type FeedType,
+    type Feed,
 } from "@/features/posts/utils/feed";
 
 // Only what a post in a feed shows. Like and reply counts go here once
@@ -22,16 +22,16 @@ const postSelect = {
 
 export type FeedPost = Prisma.PostGetPayload<{ select: typeof postSelect }>;
 
-// Which posts belong in a feed, as seen by the signed-in viewer
-function feedWhere(feed: FeedType, viewerId: string): Prisma.PostWhereInput {
-    switch (feed) {
-        // For now every post; once following exists, only posts by authors
-        // the viewer follows (and the viewer's own)
+// Which posts belong in a feed
+function feedWhere(feed: Feed): Prisma.PostWhereInput {
+    switch (feed.type) {
+        // For now every post. Once following exists, only posts by authors
+        // the signed-in viewer follows (and the viewer's own), so this and
+        // getFeedPage will take the viewer's id.
         case "home":
             return {};
-        // The viewer's own posts
-        case "profile":
-            return { authorId: viewerId };
+        case "user":
+            return { authorId: feed.authorId };
     }
 }
 
@@ -49,11 +49,10 @@ function olderThan(cursor: FeedCursor): Prisma.PostWhereInput {
 // One page of a feed, newest first with id breaking ties. Without a cursor
 // it's the first page; with one, the page after the post it points to.
 export async function getFeedPage(
-    feed: FeedType,
-    viewerId: string,
+    feed: Feed,
     cursor?: FeedCursor,
 ): Promise<FeedPage<FeedPost>> {
-    const where = feedWhere(feed, viewerId);
+    const where = feedWhere(feed);
     // One extra post tells whether there is another page
     const posts = await prisma.post.findMany({
         where: cursor ? { AND: [where, olderThan(cursor)] } : where,

@@ -6,8 +6,8 @@ import { loadMorePosts } from "@/features/posts/actions/load-more-posts";
 import type { FeedPost } from "@/features/posts/lib/queries";
 import {
     appendPage,
+    type Feed,
     type FeedPage,
-    type FeedType,
     mergeLatestPage,
 } from "@/features/posts/utils/feed";
 import { PostList } from "./post-list";
@@ -20,7 +20,7 @@ export function PostFeed({
     firstPage,
     emptyMessage,
 }: {
-    feed: FeedType;
+    feed: Feed;
     firstPage: FeedPage<FeedPost>;
     emptyMessage: string;
 }) {
