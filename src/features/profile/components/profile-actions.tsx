@@ -5,17 +5,28 @@ import { isFollowing } from "@/features/follows/lib/queries";
 import { getProfileUser } from "@/features/profile/lib/queries";
 
 // The buttons below a profile header, in one line that shares the full width
-// equally, however many buttons there are. Not shown on the viewer's own
-// profile. Reads the session and the database at request time, so render it
-// inside <Suspense> with <ProfileActionsFallback />.
+// equally, however many buttons there are. The viewer's own profile gets
+// its own buttons. Reads the session and the database at request time, so
+// render it inside <Suspense> with <ProfileActionsFallback />.
 export async function ProfileActions({ username }: { username: string }) {
     const [{ user: viewer }, profileUser] = await Promise.all([
         requireSession(),
         getProfileUser(username),
     ]);
     // ProfileHeader shows the not-found page for unknown users
-    if (!profileUser || profileUser.id === viewer.id) {
+    if (!profileUser) {
         return null;
+    }
+
+    if (profileUser.id === viewer.id) {
+        return (
+            <ButtonLine>
+                {/* TODO: edit the profile */}
+                <Button variant="tertiary" fullWidth>
+                    Edit profile
+                </Button>
+            </ButtonLine>
+        );
     }
 
     return (
