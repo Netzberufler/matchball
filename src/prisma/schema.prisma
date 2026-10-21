@@ -24,6 +24,10 @@ model User {
   sessions      Session[]
   accounts      Account[]
   posts         Post[]
+  // Follows where this user is the follower, i.e. whom they follow
+  following     Follow[]  @relation("FollowFollower")
+  // Follows where this user is followed, i.e. their followers
+  followers     Follow[]  @relation("FollowFollowing")
 }
 
 model Session {
@@ -88,4 +92,20 @@ model Post {
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   // Profile feeds, and later the home feed of followed authors
   @@index([authorId, createdAt(sort: Desc), id(sort: Desc)])
+}
+
+// followerId follows followingId. A user can't follow themselves (checked in
+// src/features/follows/actions/set-following.ts).
+model Follow {
+  followerId  String   @db.Uuid
+  follower    User     @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String   @db.Uuid
+  following   User     @relation("FollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  // One follow per pair. Also the index for "whom does X follow", which
+  // the home feed needs, and for "does X follow Y".
+  @@id([followerId, followingId])
+  // "Who follows X", e.g. for follower lists and counts
+  @@index([followingId, followerId])
 }

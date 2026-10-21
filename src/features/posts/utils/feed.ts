@@ -3,8 +3,8 @@
 
 export const FEED_PAGE_SIZE = 10;
 
-// "home": the posts the viewer follows; "user": one author's posts, for
-// their profile page
+// "home": posts by the authors the viewer follows, and the viewer's own;
+// "user": one author's posts, for their profile page
 export type Feed = { type: "home" } | { type: "user"; authorId: string };
 
 // Points at the last post of a page; the next page starts after it

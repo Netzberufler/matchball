@@ -9,14 +9,14 @@ import { PostFeed } from "./post-feed";
 // PostFeed loads the rest.
 
 export async function HomeFeed() {
-    await requireSession();
+    const { user } = await requireSession();
     const feed = { type: "home" } as const;
-    const firstPage = await getFeedPage(feed);
+    const firstPage = await getFeedPage(feed, user.id);
     return (
         <PostFeed
             feed={feed}
             firstPage={firstPage}
-            emptyMessage="No posts yet. Be the first!"
+            emptyMessage="No posts yet. Follow people to see their posts here."
         />
     );
 }
@@ -32,7 +32,7 @@ export async function ProfileFeed({ username }: { username: string }) {
     }
 
     const feed = { type: "user", authorId: profileUser.id } as const;
-    const firstPage = await getFeedPage(feed);
+    const firstPage = await getFeedPage(feed, viewer.id);
     return (
         <PostFeed
             // Start over when going from one profile to another

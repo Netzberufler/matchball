@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
+import { getFollowingIds } from "@/features/follows/lib/queries";
 import {
     FEED_PAGE_SIZE,
     type FeedCursor,
@@ -22,14 +23,22 @@ const postSelect = {
 
 export type FeedPost = Prisma.PostGetPayload<{ select: typeof postSelect }>;
 
-// Which posts belong in a feed
-function feedWhere(feed: Feed): Prisma.PostWhereInput {
+// Which posts belong in a feed, as seen by the signed-in viewer
+async function feedWhere(
+    feed: Feed,
+    viewerId: string,
+): Promise<Prisma.PostWhereInput> {
     switch (feed.type) {
-        // For now every post. Once following exists, only posts by authors
-        // the signed-in viewer follows (and the viewer's own), so this and
-        // getFeedPage will take the viewer's id.
+        // Posts by the authors the viewer follows, and the viewer's own (so
+        // a new post shows up under the post form). Looking up the followed
+        // ids first lets Postgres use the (authorId, createdAt, id) index for
+        // each author, instead of joining Follow for every post.
         case "home":
-            return {};
+            return {
+                authorId: {
+                    in: [viewerId, ...(await getFollowingIds(viewerId))],
+                },
+            };
         case "user":
             return { authorId: feed.authorId };
     }
@@ -50,9 +59,10 @@ function olderThan(cursor: FeedCursor): Prisma.PostWhereInput {
 // it's the first page; with one, the page after the post it points to.
 export async function getFeedPage(
     feed: Feed,
+    viewerId: string,
     cursor?: FeedCursor,
 ): Promise<FeedPage<FeedPost>> {
-    const where = feedWhere(feed);
+    const where = await feedWhere(feed, viewerId);
     // One extra post tells whether there is another page
     const posts = await prisma.post.findMany({
         where: cursor ? { AND: [where, olderThan(cursor)] } : where,

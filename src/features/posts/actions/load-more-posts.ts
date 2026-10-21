@@ -9,12 +9,12 @@ const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 // The page after `cursor`. Checks its arguments: actions can be called
 // with anything, not just what the feed component sends.
 export async function loadMorePosts(feed: unknown, cursor: unknown) {
-    await requireSession();
+    const { user } = await requireSession();
 
     if (!isFeed(feed) || !isFeedCursor(cursor)) {
         throw new Error("Invalid feed or cursor");
     }
-    return getFeedPage(feed, cursor);
+    return getFeedPage(feed, user.id, cursor);
 }
 
 function isFeed(value: unknown): value is Feed {

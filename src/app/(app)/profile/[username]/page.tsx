@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 import { ProfileFeed } from "@/features/posts/components/feeds";
 import { PostListFallback } from "@/features/posts/components/post-list";
 import {
+    ProfileFollowButton,
+    ProfileFollowButtonFallback,
+} from "@/features/follows/components/profile-follow-button";
+import {
     ProfileHeader,
     ProfileHeaderFallback,
 } from "@/features/profile/components/profile-header";
@@ -29,6 +33,7 @@ export default function ProfilePage({
                 fallback={
                     <>
                         <ProfileHeaderFallback />
+                        <ProfileFollowButtonFallback />
                         <LatestPosts>
                             <PostListFallback />
                         </LatestPosts>
@@ -38,6 +43,7 @@ export default function ProfilePage({
                 {params.then(({ username }) => (
                     <>
                         <ProfileHeader username={username} />
+                        <ProfileFollowButton username={username} />
                         <LatestPosts>
                             <ProfileFeed username={username} />
                         </LatestPosts>

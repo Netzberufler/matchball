@@ -21,6 +21,9 @@ const MIN_TOTAL_POSTS = 50;
 const MAX_TOTAL_POSTS = 60;
 // Posts are spread over this many days before now
 const POST_PERIOD_DAYS = 60;
+// Each seed user follows this many of the other seed users
+const MIN_FOLLOWING_PER_USER = 2;
+const MAX_FOLLOWING_PER_USER = 4;
 
 const POST_TEXTS = [
     "Great hitting session this morning. The backhand finally feels right!",
@@ -82,6 +85,16 @@ function randomPostCounts() {
     }
 }
 
+// A shuffled copy (Fisher-Yates)
+function shuffle<T>(items: T[]) {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = randomInt(0, i);
+        [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+    }
+    return copy;
+}
+
 function randomPastDate() {
     return new Date(
         Date.now() - Math.random() * POST_PERIOD_DAYS * 24 * 60 * 60 * 1000,
@@ -89,13 +102,14 @@ function randomPastDate() {
 }
 
 async function main() {
-    // Remove earlier seed data; posts, sessions and accounts cascade
+    // Remove earlier seed data; posts, follows, sessions and accounts cascade
     await prisma.user.deleteMany({
         where: { email: { endsWith: `@${SEED_EMAIL_DOMAIN}` } },
     });
 
     const passwordHash = await hashPassword(SEED_PASSWORD);
     const postCounts = randomPostCounts();
+    const userIds: string[] = [];
 
     for (const [index, seedUser] of SEED_USERS.entries()) {
         const user = await prisma.user.create({
@@ -115,6 +129,7 @@ async function main() {
                 password: passwordHash,
             },
         });
+        userIds.push(user.id);
 
         const posts = Array.from(
             { length: postCounts[index] ?? MIN_POSTS_PER_USER },
@@ -127,8 +142,16 @@ async function main() {
         await prisma.post.createMany({ data: posts });
     }
 
+    // Each user follows a random few of the others
+    const follows = userIds.flatMap((followerId) =>
+        shuffle(userIds.filter((id) => id !== followerId))
+            .slice(0, randomInt(MIN_FOLLOWING_PER_USER, MAX_FOLLOWING_PER_USER))
+            .map((followingId) => ({ followerId, followingId })),
+    );
+    await prisma.follow.createMany({ data: follows });
+
     console.log(
-        `Seeded ${SEED_USERS.length} users and ${postCounts.reduce((sum, count) => sum + count, 0)} posts (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts and ${follows.length} follows (password: ${SEED_PASSWORD})`,
     );
 }
 
