@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Heart, MessageCircle } from "lucide-react";
 import { Button } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -6,21 +7,39 @@ import {
     formatFullPostDate,
     formatPostDate,
 } from "@/features/posts/utils/format-post-date";
+import { profilePath } from "@/features/profile/utils/profile-path";
 
 export function PostItem({ post }: { post: FeedPost }) {
     const { author } = post;
+    const profileHref = profilePath(author.username);
 
     return (
         <article className="flex gap-3 p-4">
-            <UserAvatar image={author.image} />
+            {/* Same target as the name link, so only that one is focusable
+                and announced */}
+            <Link
+                href={profileHref}
+                tabIndex={-1}
+                aria-hidden
+                className="shrink-0 self-start rounded-full transition-opacity hover:opacity-80"
+            >
+                <UserAvatar image={author.image} />
+            </Link>
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1 text-sm">
-                    <span className="truncate font-semibold text-foreground">
-                        {author.name}
-                    </span>
-                    <span className="truncate text-muted">
-                        @{author.username}
-                    </span>
+                    <Link
+                        href={profileHref}
+                        className="group flex min-w-0 items-baseline gap-1"
+                    >
+                        <span className="truncate font-semibold text-foreground group-hover:underline">
+                            {author.name}
+                        </span>
+                        {/* Spaces the link text for screen readers; flex
+                            gap does the visual spacing */}{" "}
+                        <span className="truncate text-muted">
+                            @{author.username}
+                        </span>
+                    </Link>
                     <span className="text-muted" aria-hidden>
                         ·
                     </span>
