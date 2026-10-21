@@ -18,32 +18,34 @@ export function PostList({
     }
 
     return (
-        <ul className="flex flex-col gap-3">
-            {posts.map((post) => (
-                <li key={post.id}>
-                    <PostItem post={post} />
-                </li>
-            ))}
-        </ul>
+        <Card className="gap-0 p-0">
+            <ul className="divide-y divide-separator">
+                {posts.map((post) => (
+                    <li key={post.id}>
+                        <PostItem post={post} />
+                    </li>
+                ))}
+            </ul>
+        </Card>
     );
 }
 
 // Shown while a feed loads; roughly the size of a few posts
 export function PostListFallback() {
     return (
-        <ul className="flex flex-col gap-3" aria-hidden>
-            {[0, 1, 2].map((index) => (
-                <li key={index}>
-                    <Card className="flex-row gap-3">
+        <Card className="gap-0 p-0" aria-hidden>
+            <ul className="divide-y divide-separator">
+                {[0, 1, 2].map((index) => (
+                    <li key={index} className="flex gap-3 p-4">
                         <Skeleton className="size-10 shrink-0 rounded-full" />
                         <div className="flex flex-1 flex-col gap-2 pt-1">
                             <Skeleton className="h-3.5 w-40 rounded-full" />
                             <Skeleton className="h-3.5 w-full rounded-full" />
                             <Skeleton className="h-3.5 w-2/3 rounded-full" />
                         </div>
-                    </Card>
-                </li>
-            ))}
-        </ul>
+                    </li>
+                ))}
+            </ul>
+        </Card>
     );
 }

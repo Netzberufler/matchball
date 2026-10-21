@@ -78,7 +78,9 @@ model Post {
   content   String   @db.VarChar(160)
   authorId  String   @db.Uuid
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  // Milliseconds, like JavaScript dates, so a (createdAt, id) feed cursor
+  // that went through the browser still matches the stored value exactly
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   // Feeds are sorted newest first, with id as a tiebreaker so a

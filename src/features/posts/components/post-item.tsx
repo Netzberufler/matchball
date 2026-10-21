@@ -1,5 +1,5 @@
 import { Heart, MessageCircle } from "lucide-react";
-import { Button, Card } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { FeedPost } from "@/features/posts/lib/queries";
 import {
@@ -11,7 +11,7 @@ export function PostItem({ post }: { post: FeedPost }) {
     const { author } = post;
 
     return (
-        <Card className="flex-row gap-3">
+        <article className="flex gap-3 p-4">
             <UserAvatar image={author.image} />
             <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1 text-sm">
@@ -24,7 +24,10 @@ export function PostItem({ post }: { post: FeedPost }) {
                     <span className="text-muted" aria-hidden>
                         ·
                     </span>
+                    {/* The relative time can differ between the server and
+                        the browser, e.g. "4m" and "5m" */}
                     <time
+                        suppressHydrationWarning
                         className="shrink-0 text-muted"
                         dateTime={post.createdAt.toISOString()}
                         title={formatFullPostDate(post.createdAt)}
@@ -57,6 +60,6 @@ export function PostItem({ post }: { post: FeedPost }) {
                     </Button>
                 </div>
             </div>
-        </Card>
+        </article>
     );
 }
