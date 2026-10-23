@@ -34,7 +34,8 @@ export function formatPostDate(date: Date, now = new Date()) {
     return dayWithYearFormat.format(date);
 }
 
-// For the tooltip on the short time
+// E.g. "October 18, 2026 at 3:42 PM": on a post's own page, and in the
+// tooltip on the short time in feeds
 export function formatFullPostDate(date: Date) {
     return fullFormat.format(date);
 }
