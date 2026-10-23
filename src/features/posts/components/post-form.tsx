@@ -12,7 +12,7 @@ export function PostForm({ avatar }: { avatar: React.ReactNode }) {
         <Card>
             <ComposeForm
                 avatar={avatar}
-                placeholder="What's happening?"
+                placeholder="Share your thoughts"
                 submitLabel="Post"
                 maxLength={POST_MAX_LENGTH}
                 action={createPost}
