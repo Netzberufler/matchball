@@ -41,7 +41,9 @@ export function ReplyPopupButton({
                 aria-label={`Reply to @${username} (${formattedCount} replies)`}
                 className="gap-1.5 px-2 text-muted tabular-nums"
             >
-                <MessageCircle className="size-4" aria-hidden />
+                {/* No negative left margin (HeroUI gives button icons one),
+                    so the icon lines up with the text above it */}
+                <MessageCircle className="ml-0 size-4" aria-hidden />
                 <span>{formattedCount}</span>
             </Button>
             <Modal.Backdrop>
