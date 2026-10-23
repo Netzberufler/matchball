@@ -4,8 +4,10 @@ import { requireSession } from "@/features/auth/lib/session";
 import {
     commentSelect,
     type PostComment,
+    toPostComment,
 } from "@/features/comments/lib/queries";
 import { validateCommentContent } from "@/features/comments/utils/comment-rules";
+import { findMentionedUsers } from "@/features/mentions/lib/queries";
 import { prisma } from "@/prisma/db";
 
 const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
@@ -31,11 +33,19 @@ export async function createComment(
         return { error };
     }
 
-    // The comment and Post.commentCount change together. Creating the
-    // comment fails if the post doesn't exist, through the foreign key.
+    const mentions = await findMentionedUsers(content);
+
+    // The comment, its mentions and Post.commentCount change together.
+    // Creating the comment fails if the post doesn't exist, through the
+    // foreign key.
     return prisma.$transaction(async (tx) => {
         const comment = await tx.comment.create({
-            data: { content, postId, authorId: user.id },
+            data: {
+                content,
+                postId,
+                authorId: user.id,
+                mentions: { createMany: { data: mentions } },
+            },
             select: commentSelect,
         });
         const { commentCount } = await tx.post.update({
@@ -43,6 +53,10 @@ export async function createComment(
             data: { commentCount: { increment: 1 } },
             select: { commentCount: true },
         });
-        return { error: null, comment, commentCount };
+        return {
+            error: null,
+            comment: toPostComment(comment),
+            commentCount,
+        };
     });
 }

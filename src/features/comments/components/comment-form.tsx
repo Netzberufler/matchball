@@ -1,6 +1,6 @@
 "use client";
 
-import { ComposeForm } from "@/components/ui/compose-form";
+import { ComposeForm } from "@/features/posts/components/compose-form";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useViewer } from "@/features/auth/components/viewer-provider";
 import { createComment } from "@/features/comments/actions/create-comment";

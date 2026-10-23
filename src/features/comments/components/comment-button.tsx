@@ -31,7 +31,12 @@ export function CommentButton({ post }: { post: FeedPost }) {
                 <span>{formattedCount}</span>
             </Button>
             <Modal.Backdrop>
-                <Modal.Container size="lg">
+                <Modal.Container
+                    size="lg"
+                    // The whole popup scrolls, so the mention suggestions
+                    // below the text area aren't cut off
+                    scroll="outside"
+                >
                     <Modal.Dialog>
                         <Modal.CloseTrigger />
                         {/* The post being replied to; pr-8 keeps it clear

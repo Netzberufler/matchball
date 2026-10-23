@@ -7,6 +7,7 @@ import {
 } from "@/features/posts/utils/format-post-date";
 import { postPath } from "@/features/posts/utils/post-path";
 import { profilePath } from "@/features/profile/utils/profile-path";
+import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 import { ClickablePost } from "./clickable-post";
 import { PostActions } from "./post-actions";
 
@@ -71,7 +72,10 @@ export function PostItem({ post }: { post: FeedPost }) {
                     </Link>
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words">
-                    {post.content}
+                    <TextWithMentions
+                        text={post.content}
+                        mentions={post.mentions}
+                    />
                 </p>
                 <PostActions post={post} className="mt-2" />
             </div>

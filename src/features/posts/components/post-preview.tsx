@@ -4,6 +4,7 @@ import {
     formatFullPostDate,
     formatPostDate,
 } from "@/features/posts/utils/format-post-date";
+import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 
 // A read-only post, e.g. in the reply popup to show what's being replied
 // to: author, time and text, without links or buttons
@@ -36,7 +37,12 @@ export function PostPreview({ post }: { post: FeedPost }) {
                     </time>
                 </p>
                 <p className="mt-1 whitespace-pre-wrap break-words">
-                    {post.content}
+                    {/* Read-only: mentions are highlighted, not links */}
+                    <TextWithMentions
+                        text={post.content}
+                        mentions={post.mentions}
+                        linkMentions={false}
+                    />
                 </p>
             </div>
         </div>

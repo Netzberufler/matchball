@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
+import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
 import {
     FEED_PAGE_SIZE,
     type FeedCursor,
@@ -18,11 +19,19 @@ export const commentSelect = {
     author: {
         select: { id: true, username: true, name: true, image: true },
     },
+    mentions: mentionsSelect,
 } satisfies Prisma.CommentSelect;
 
-export type PostComment = Prisma.CommentGetPayload<{
-    select: typeof commentSelect;
-}>;
+type CommentRow = Prisma.CommentGetPayload<{ select: typeof commentSelect }>;
+
+export type PostComment = Omit<CommentRow, "mentions"> & {
+    // The usernames mentioned in the text that belong to real users
+    mentions: string[];
+};
+
+export function toPostComment(comment: CommentRow): PostComment {
+    return { ...comment, mentions: toUsernames(comment.mentions) };
+}
 
 const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 
@@ -44,5 +53,5 @@ export async function getCommentPage(
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,
     });
-    return toPage(comments);
+    return toPage(comments.map(toPostComment));
 }

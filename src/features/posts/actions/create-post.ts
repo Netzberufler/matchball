@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
+import { findMentionedUsers } from "@/features/mentions/lib/queries";
 import { validatePostContent } from "@/features/posts/utils/post-rules";
 import { prisma } from "@/prisma/db";
 
@@ -17,8 +18,14 @@ export async function createPost(
         return { error };
     }
 
+    // Only real users are saved as mentions, so only they become links
+    const mentions = await findMentionedUsers(content);
     await prisma.post.create({
-        data: { content, authorId: user.id },
+        data: {
+            content,
+            authorId: user.id,
+            mentions: { createMany: { data: mentions } },
+        },
     });
 
     // Reload the feeds on the current page so the new post shows up

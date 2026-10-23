@@ -6,6 +6,7 @@ import {
     formatPostDate,
 } from "@/features/posts/utils/format-post-date";
 import { profilePath } from "@/features/profile/utils/profile-path";
+import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 
 // One comment under a post, laid out like a post in a feed
 export function CommentItem({ comment }: { comment: PostComment }) {
@@ -54,7 +55,10 @@ export function CommentItem({ comment }: { comment: PostComment }) {
                     </time>
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words">
-                    {comment.content}
+                    <TextWithMentions
+                        text={comment.content}
+                        mentions={comment.mentions}
+                    />
                 </p>
             </div>
         </article>

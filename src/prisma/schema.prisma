@@ -1,35 +1,46 @@
 generator client {
-  provider = "prisma-client"
-  output   = "./generated"
+  provider        = "prisma-client"
+  // For pg_trgm, which indexes User.name for the mention search
+  previewFeatures = ["postgresqlExtensions"]
+  output          = "./generated"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [pg_trgm]
 }
 
 // User, Session, Account and Verification are used by Better Auth
 // (src/lib/auth.ts), which leaves id generation to Prisma.
 
 model User {
-  id            String    @id @default(uuid(7)) @db.Uuid
-  email         String    @unique
+  id              String           @id @default(uuid(7)) @db.Uuid
+  email           String           @unique
   // Used for sign-in and in profile URLs: only a-z, 0-9 and _ (validated in src/lib/auth.ts)
-  username      String    @unique @db.VarChar(30)
+  username        String           @unique @db.VarChar(30)
   // Display name
-  name          String    @db.VarChar(50)
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
-  sessions      Session[]
-  accounts      Account[]
-  posts         Post[]
+  name            String           @db.VarChar(50)
+  emailVerified   Boolean          @default(false)
+  image           String?
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+  sessions        Session[]
+  accounts        Account[]
+  posts           Post[]
   // Follows where this user is the follower, i.e. whom they follow
-  following     Follow[]  @relation("FollowFollower")
+  following       Follow[]         @relation("FollowFollower")
   // Follows where this user is followed, i.e. their followers
-  followers     Follow[]  @relation("FollowFollowing")
-  likes         Like[]
-  comments      Comment[]
+  followers       Follow[]         @relation("FollowFollowing")
+  likes           Like[]
+  comments        Comment[]
+  // Where this user is @mentioned
+  postMentions    PostMention[]
+  commentMentions CommentMention[]
+
+  // The mention search: case-insensitive matches anywhere in the name
+  // (ILIKE). Usernames are searched by prefix through their unique index,
+  // which works for LIKE 'abc%' because the database collation is C.
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Session {
@@ -79,23 +90,24 @@ model Verification {
 }
 
 model Post {
-  id           String    @id @default(uuid(7)) @db.Uuid
+  id           String        @id @default(uuid(7)) @db.Uuid
   // Plain text only; the limit is POST_MAX_LENGTH in src/features/posts/utils/post-rules.ts
-  content      String    @db.VarChar(160)
-  authorId     String    @db.Uuid
-  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content      String        @db.VarChar(160)
+  authorId     String        @db.Uuid
+  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   // The number of Like rows for this post, kept in step with them by
   // src/features/likes/actions/set-liked.ts, so feeds don't count likes
-  likeCount    Int       @default(0)
+  likeCount    Int           @default(0)
   likes        Like[]
   // The number of comments, kept in step by
   // src/features/comments/actions/create-comment.ts
-  commentCount Int       @default(0)
+  commentCount Int           @default(0)
   comments     Comment[]
+  mentions     PostMention[]
   // Milliseconds, like JavaScript dates, so a (createdAt, id) feed cursor
   // that went through the browser still matches the stored value exactly
-  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime  @updatedAt @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
 
   // Feeds are sorted newest first, with id as a tiebreaker so a
   // (createdAt, id) cursor can page through them later
@@ -141,20 +153,47 @@ model Like {
 
 // A reply to a post. Users see "reply"; the code calls it a comment.
 model Comment {
-  id        String   @id @default(uuid(7)) @db.Uuid
+  id        String           @id @default(uuid(7)) @db.Uuid
   // Plain text only; the limit is COMMENT_MAX_LENGTH in
   // src/features/comments/utils/comment-rules.ts
-  content   String   @db.VarChar(160)
-  postId    String   @db.Uuid
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String   @db.Uuid
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String           @db.VarChar(160)
+  postId    String           @db.Uuid
+  post      Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String           @db.Uuid
+  author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  mentions  CommentMention[]
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @db.Timestamptz(6)
 
   // A post's comments in order, for listing and paging them
   @@index([postId, createdAt, id])
   // A user's comments, and deleting them with the user
   @@index([authorId])
+}
+
+// A user @mentioned in a post, saved with the post. Only real users are
+// saved, so only their @usernames become links.
+model PostMention {
+  postId String @db.Uuid
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One per user and post. Also the index for "who is mentioned in these
+  // posts", which every page of posts asks.
+  @@id([postId, userId])
+  // "Where is this user mentioned", e.g. for notifications
+  @@index([userId])
+}
+
+// A user @mentioned in a comment, like PostMention
+model CommentMention {
+  commentId String  @db.Uuid
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String  @db.Uuid
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@index([userId])
 }

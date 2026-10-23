@@ -4,6 +4,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import type { FeedPost } from "@/features/posts/lib/queries";
 import { formatFullPostDate } from "@/features/posts/utils/format-post-date";
 import { profilePath } from "@/features/profile/utils/profile-path";
+import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 import { PostActions } from "./post-actions";
 
 // A post on its own page: the author on top, laid out like a profile header
@@ -41,7 +42,10 @@ export function PostDetail({ post }: { post: FeedPost }) {
                 </Link>
             </div>
             <p className="whitespace-pre-wrap break-words text-lg">
-                {post.content}
+                <TextWithMentions
+                    text={post.content}
+                    mentions={post.mentions}
+                />
             </p>
             <time
                 className="text-sm text-muted"

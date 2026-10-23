@@ -4,6 +4,7 @@ import { cache } from "react";
 import type { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 import { getFollowingIds } from "@/features/follows/lib/queries";
+import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
 import {
     FEED_PAGE_SIZE,
     type Feed,
@@ -31,6 +32,8 @@ function postSelect(viewerId: string) {
             select: { userId: true },
             take: 1,
         },
+        // Also one query per page, on the PostMention primary key
+        mentions: mentionsSelect,
     } satisfies Prisma.PostSelect;
 }
 
@@ -38,13 +41,19 @@ type PostRow = Prisma.PostGetPayload<{
     select: ReturnType<typeof postSelect>;
 }>;
 
-export type FeedPost = Omit<PostRow, "likes"> & {
+export type FeedPost = Omit<PostRow, "likes" | "mentions"> & {
     // Whether the viewer likes the post
     isLiked: boolean;
+    // The usernames mentioned in the text that belong to real users
+    mentions: string[];
 };
 
-function toFeedPost({ likes, ...post }: PostRow): FeedPost {
-    return { ...post, isLiked: likes.length > 0 };
+function toFeedPost({ likes, mentions, ...post }: PostRow): FeedPost {
+    return {
+        ...post,
+        isLiked: likes.length > 0,
+        mentions: toUsernames(mentions),
+    };
 }
 
 const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
