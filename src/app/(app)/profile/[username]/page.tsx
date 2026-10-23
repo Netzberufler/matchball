@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { BackButton } from "@/components/ui/back-button";
 import { ProfileFeed } from "@/features/posts/components/feeds";
 import { PostListFallback } from "@/features/posts/components/post-list";
 import {
@@ -29,6 +30,14 @@ export default function ProfilePage({
 }: PageProps<"/profile/[username]">) {
     return (
         <div className="flex flex-col gap-6">
+            {/* Outside <Suspense>, so it shows right away; -mb-2 keeps it
+                close to the header */}
+            <div className="-mb-2 flex items-center gap-2">
+                <BackButton />
+                {/* A label, not a heading: the user's name is the page's
+                    h1 */}
+                <p className="text-xl font-semibold">Profile</p>
+            </div>
             <Suspense
                 fallback={
                     <>
