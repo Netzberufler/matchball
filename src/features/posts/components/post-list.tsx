@@ -17,8 +17,9 @@ export function PostList({
         );
     }
 
+    // overflow-hidden keeps the posts' hover background inside the corners
     return (
-        <Card className="gap-0 p-0">
+        <Card className="gap-0 overflow-hidden p-0">
             <ul className="divide-y divide-separator">
                 {posts.map((post) => (
                     <li key={post.id}>
@@ -30,12 +31,12 @@ export function PostList({
     );
 }
 
-// Shown while a feed loads; roughly the size of a few posts
-export function PostListFallback() {
+// Shown while posts load; roughly the size of `count` posts
+export function PostListFallback({ count = 3 }: { count?: number }) {
     return (
         <Card className="gap-0 p-0" aria-hidden>
             <ul className="divide-y divide-separator">
-                {[0, 1, 2].map((index) => (
+                {Array.from({ length: count }, (_, index) => (
                     <li key={index} className="flex gap-3 p-4">
                         <Skeleton className="size-10 shrink-0 rounded-full" />
                         <div className="flex flex-1 flex-col gap-2 pt-1">

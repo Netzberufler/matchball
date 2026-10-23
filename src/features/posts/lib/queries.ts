@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 import { getFollowingIds } from "@/features/follows/lib/queries";
@@ -22,6 +23,18 @@ const postSelect = {
 } satisfies Prisma.PostSelect;
 
 export type FeedPost = Prisma.PostGetPayload<{ select: typeof postSelect }>;
+
+const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
+
+// One post, for its own page, or null if there's no such post. The id comes
+// from the URL, so it's checked first: Postgres rejects malformed UUIDs with
+// an error. cache() shares the lookup between generateMetadata and the page.
+export const getPost = cache(async (id: string) => {
+    if (!UUID_PATTERN.test(id)) {
+        return null;
+    }
+    return prisma.post.findUnique({ where: { id }, select: postSelect });
+});
 
 // Which posts belong in a feed, as seen by the signed-in viewer
 async function feedWhere(
