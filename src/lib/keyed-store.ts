@@ -24,6 +24,11 @@ export function createKeyedStore<T>() {
         return changed ?? fromServer;
     }
 
+    // The changed value, outside of rendering, e.g. to add to it
+    function get(key: string): T | undefined {
+        return values.get(key);
+    }
+
     function set(key: string, value: T) {
         values.set(key, value);
         for (const listener of listeners) {
@@ -31,5 +36,5 @@ export function createKeyedStore<T>() {
         }
     }
 
-    return { useValue, set };
+    return { useValue, get, set };
 }

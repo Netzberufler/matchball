@@ -50,18 +50,6 @@ export function appendPage<Item extends FeedItem>(
     };
 }
 
-// Adds one new item on top, e.g. the viewer's own new comment. The cursor
-// stays: it points at the bottom of the list.
-export function prependItem<Item extends FeedItem>(
-    current: FeedPage<Item>,
-    item: Item,
-): FeedPage<Item> {
-    return {
-        ...current,
-        items: [item, ...current.items.filter(({ id }) => id !== item.id)],
-    };
-}
-
 // Whether an action argument is a cursor; actions can be called with
 // anything
 export function isFeedCursor(value: unknown): value is FeedCursor {
