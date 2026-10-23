@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { BackButton } from "@/components/ui/back-button";
 import { PostListFallback } from "@/features/posts/components/post-list";
 import { PostView } from "@/features/posts/components/post-view";
 import { getPost } from "@/features/posts/lib/queries";
@@ -21,7 +22,10 @@ export async function generateMetadata({
 export default function PostPage({ params }: PageProps<"/post/[id]">) {
     return (
         <>
-            <h1 className="text-xl mb-4 font-semibold">Post</h1>
+            <div className="mb-4 flex items-center gap-2">
+                <BackButton />
+                <h1 className="text-xl font-semibold">Post</h1>
+            </div>
             <Suspense fallback={<PostListFallback count={1} />}>
                 {params.then(({ id }) => (
                     <PostView id={id} />

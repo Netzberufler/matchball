@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import MobileNavBar from "@/components/layout/mobile-nav-bar";
+import { NavigationTracker } from "@/components/layout/navigation-history";
 
 // Layout for signed-in users; src/proxy.ts sends everyone else to /sign-in
 export default function AppLayout({ children }: LayoutProps<"/">) {
@@ -12,6 +14,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
                 </main>
             </div>
             <MobileNavBar />
+            {/* Lets back buttons know if the previous page is ours */}
+            <Suspense fallback={null}>
+                <NavigationTracker />
+            </Suspense>
         </>
     );
 }
