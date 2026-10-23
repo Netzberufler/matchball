@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { ViewerAvatar } from "@/features/auth/components/viewer-avatar";
 import { HomeFeed } from "@/features/posts/components/feeds";
 import { PostForm } from "@/features/posts/components/post-form";
 import { PostListFallback } from "@/features/posts/components/post-list";
@@ -9,7 +11,14 @@ export default function Home() {
         <>
             <h1 className="sr-only">Home</h1>
             <div className="flex flex-col gap-6">
-                <PostForm />
+                <PostForm
+                    // Reads the session; the form itself shows right away
+                    avatar={
+                        <Suspense fallback={<UserAvatar />}>
+                            <ViewerAvatar />
+                        </Suspense>
+                    }
+                />
                 <section aria-labelledby="following-heading">
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <h2

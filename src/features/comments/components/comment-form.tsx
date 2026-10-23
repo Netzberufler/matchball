@@ -1,6 +1,8 @@
 "use client";
 
 import { ComposeForm } from "@/components/ui/compose-form";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { useViewer } from "@/features/auth/components/viewer-provider";
 import { createComment } from "@/features/comments/actions/create-comment";
 import { commentCounts } from "@/features/comments/lib/comment-count-store";
 import { addCreatedComment } from "@/features/comments/lib/created-comments-store";
@@ -18,6 +20,9 @@ export function CommentForm({
     onSuccess?: () => void;
     autoFocus?: boolean;
 }) {
+    // From the ViewerProvider around the feed or post page
+    const viewer = useViewer();
+
     async function action(formData: FormData) {
         const result = await createComment(postId, formData);
         if (result.error === null) {
@@ -29,6 +34,7 @@ export function CommentForm({
 
     return (
         <ComposeForm
+            avatar={<UserAvatar name={viewer?.name} image={viewer?.image} />}
             placeholder="Post your reply"
             submitLabel="Reply"
             maxLength={COMMENT_MAX_LENGTH}

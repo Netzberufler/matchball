@@ -37,7 +37,7 @@ export function CommentButton({
                 <span>{formattedCount}</span>
             </Button>
             <Modal.Backdrop>
-                <Modal.Container>
+                <Modal.Container size="lg">
                     <Modal.Dialog>
                         <Modal.CloseTrigger />
                         <Modal.Header>

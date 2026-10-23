@@ -6,10 +6,12 @@ import { Button, FieldError, Form, TextArea, TextField } from "@heroui/react";
 // Show the character count in warning colours from this many left on
 const LOW_CHARACTERS_LEFT = 20;
 
-// A plain-text form with a character limit and count: a text area, the
-// submit button on the left and the count on the right. Used for posts and
-// comments. `action` saves the text; on success the form is cleared.
+// A plain-text form with a character limit and count: the user's avatar on
+// the left; beside it the text area, and below that the submit button
+// (lined up with the text area) and the count. Used for posts and comments.
+// `action` saves the text; on success the form is cleared.
 export function ComposeForm({
+    avatar,
     placeholder,
     submitLabel,
     maxLength,
@@ -17,6 +19,8 @@ export function ComposeForm({
     onSuccess,
     autoFocus,
 }: {
+    // The signed-in user's avatar
+    avatar: React.ReactNode;
     // Also the text area's accessible name
     placeholder: string;
     submitLabel: string;
@@ -50,48 +54,51 @@ export function ComposeForm({
 
     return (
         <Form
-            className="flex flex-col gap-3"
+            className="flex flex-row gap-3"
             validationErrors={error ? { content: error } : {}}
             onSubmit={onSubmit}
         >
-            <TextField
-                aria-label={placeholder}
-                variant="secondary"
-                name="content"
-                value={content}
-                onChange={(value) => {
-                    setContent(value);
-                    setError(null);
-                }}
-                maxLength={maxLength}
-                autoFocus={autoFocus}
-            >
-                <TextArea
-                    className="min-h-24 resize-none text-lg"
-                    placeholder={placeholder}
-                />
-                <FieldError />
-            </TextField>
+            <div className="shrink-0">{avatar}</div>
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+                <TextField
+                    aria-label={placeholder}
+                    variant="secondary"
+                    name="content"
+                    value={content}
+                    onChange={(value) => {
+                        setContent(value);
+                        setError(null);
+                    }}
+                    maxLength={maxLength}
+                    autoFocus={autoFocus}
+                >
+                    <TextArea
+                        className="min-h-18 resize-none text-lg"
+                        placeholder={placeholder}
+                    />
+                    <FieldError />
+                </TextField>
 
-            <div className="flex items-center justify-between gap-3">
-                <Button
-                    type="submit"
-                    isDisabled={isEmpty}
-                    isPending={isPending}
-                >
-                    {submitLabel}
-                </Button>
-                <span
-                    className={`text-sm tabular-nums ${
-                        charactersLeft <= LOW_CHARACTERS_LEFT
-                            ? "text-warning"
-                            : "text-muted"
-                    }`}
-                    aria-live="polite"
-                >
-                    {content.length} / {maxLength}
-                    <span className="sr-only"> characters used</span>
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                    <Button
+                        type="submit"
+                        isDisabled={isEmpty}
+                        isPending={isPending}
+                    >
+                        {submitLabel}
+                    </Button>
+                    <span
+                        className={`text-sm tabular-nums ${
+                            charactersLeft <= LOW_CHARACTERS_LEFT
+                                ? "text-warning"
+                                : "text-muted"
+                        }`}
+                        aria-live="polite"
+                    >
+                        {content.length} / {maxLength}
+                        <span className="sr-only"> characters used</span>
+                    </span>
+                </div>
             </div>
         </Form>
     );
