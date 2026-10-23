@@ -111,13 +111,16 @@ model Follow {
   follower    User     @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
   followingId String   @db.Uuid
   following   User     @relation("FollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  // Milliseconds, like Post.createdAt, for (createdAt, user id) cursors
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
 
   // One follow per pair. Also the index for "whom does X follow", which
   // the home feed needs, and for "does X follow Y".
   @@id([followerId, followingId])
-  // "Who follows X", e.g. for follower lists and counts
-  @@index([followingId, followerId])
+  // X's followers, newest first, for the followers list and count
+  @@index([followingId, createdAt(sort: Desc), followerId])
+  // Whom X follows, newest first, for the following list
+  @@index([followerId, createdAt(sort: Desc), followingId])
 }
 
 // userId likes postId

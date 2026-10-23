@@ -1,7 +1,12 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Skeleton } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { getProfileUser } from "@/features/profile/lib/queries";
+import {
+    followersPath,
+    followingPath,
+} from "@/features/profile/utils/profile-path";
 
 // Thousands separated by dots, e.g. "1.231"
 const countFormat = new Intl.NumberFormat("de-DE");
@@ -35,22 +40,43 @@ export async function ProfileHeader({ username }: { username: string }) {
                     <Count
                         value={followers}
                         label={followers === 1 ? "Follower" : "Followers"}
+                        href={followersPath(user.username)}
                     />{" "}
-                    <Count value={following} label="Following" />
+                    <Count
+                        value={following}
+                        label="Following"
+                        href={followingPath(user.username)}
+                    />
                 </p>
             </div>
         </div>
     );
 }
 
-function Count({ value, label }: { value: number; label: string }) {
-    return (
-        <span>
+// A count with its label; with `href`, a link to the list behind it
+function Count({
+    value,
+    label,
+    href,
+}: {
+    value: number;
+    label: string;
+    href?: string;
+}) {
+    const content = (
+        <>
             <span className="font-semibold text-foreground">
                 {countFormat.format(value)}
             </span>{" "}
             {label}
-        </span>
+        </>
+    );
+    return href ? (
+        <Link href={href} className="hover:underline">
+            {content}
+        </Link>
+    ) : (
+        <span>{content}</span>
     );
 }
 
