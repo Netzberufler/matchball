@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { PostComment } from "@/features/comments/lib/queries";
-import { LikeButton } from "@/features/likes/components/like-button";
 import {
     formatFullPostDate,
     formatPostDate,
@@ -9,13 +8,22 @@ import {
 import { profilePath } from "@/features/profile/utils/profile-path";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 
-// One comment under a post, laid out like a post in a feed
-export function CommentItem({ comment }: { comment: PostComment }) {
+// One comment under a post, laid out like a post in a feed, with its
+// buttons (`actions`) below the text
+export function CommentItem({
+    comment,
+    actions,
+    className,
+}: {
+    comment: PostComment;
+    actions: React.ReactNode;
+    className?: string;
+}) {
     const { author } = comment;
     const profileHref = profilePath(author.username);
 
     return (
-        <article className="flex gap-3 p-4">
+        <article className={`flex gap-3 ${className ?? "p-4"}`}>
             {/* Same target as the name link, so only that one is focusable
                 and announced */}
             <Link
@@ -61,13 +69,8 @@ export function CommentItem({ comment }: { comment: PostComment }) {
                         mentions={comment.mentions}
                     />
                 </p>
-                <div className="-ml-2 mt-2 flex">
-                    <LikeButton
-                        kind="comment"
-                        id={comment.id}
-                        isLiked={comment.isLiked}
-                        likeCount={comment.likeCount}
-                    />
+                <div className="-ml-2 mt-2 flex items-center gap-6">
+                    {actions}
                 </div>
             </div>
         </article>

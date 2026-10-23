@@ -1,5 +1,6 @@
-// Paging, newest first by (createdAt, id) cursor. Shared by the post feeds
-// and a post's comments, their queries, load-more actions and components.
+// Paging by (createdAt, id) cursor: newest first for the post feeds, oldest
+// first for a post's comments. Shared by their queries, load-more actions
+// and components.
 
 export const FEED_PAGE_SIZE = 10;
 
@@ -72,6 +73,17 @@ export function olderThan(cursor: FeedCursor) {
         OR: [
             { createdAt: { lt: cursor.createdAt } },
             { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+        ],
+    };
+}
+
+// Items before the cursor in list order, for lists that go oldest first:
+// newer, or just as old with a larger id
+export function newerThan(cursor: FeedCursor) {
+    return {
+        OR: [
+            { createdAt: { gt: cursor.createdAt } },
+            { createdAt: cursor.createdAt, id: { gt: cursor.id } },
         ],
     };
 }

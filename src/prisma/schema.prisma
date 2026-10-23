@@ -154,25 +154,46 @@ model Like {
 
 // A reply to a post. Users see "reply"; the code calls it a comment.
 model Comment {
-  id        String           @id @default(uuid(7)) @db.Uuid
+  id            String           @id @default(uuid(7)) @db.Uuid
   // Plain text only; the limit is COMMENT_MAX_LENGTH in
   // src/features/comments/utils/comment-rules.ts
-  content   String           @db.VarChar(160)
-  postId    String           @db.Uuid
-  post      Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String           @db.Uuid
-  author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  mentions  CommentMention[]
+  content       String           @db.VarChar(160)
+  postId        String           @db.Uuid
+  post          Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId      String           @db.Uuid
+  author        User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  mentions      CommentMention[]
   // The number of CommentLike rows, kept in step with them by
   // src/features/likes/actions/set-comment-liked.ts, so lists don't count
-  likeCount Int              @default(0)
-  likes     CommentLike[]
+  likeCount     Int              @default(0)
+  likes         CommentLike[]
+  // Set on replies: the comment they answer, the top-level comment or a
+  // level 1 reply (see src/features/comments/actions/create-comment.ts)
+  parentId      String?          @db.Uuid
+  parent        Comment?         @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]        @relation("CommentReplies")
+  // Set on replies: the top-level comment of their thread, so a whole
+  // thread loads in one query
+  rootId        String?          @db.Uuid
+  root          Comment?         @relation("CommentThread", fields: [rootId], references: [id], onDelete: Cascade)
+  threadReplies Comment[]        @relation("CommentThread")
+  // The number of replies below it, on top-level comments and level 1
+  // replies (deeper ones can't be answered, so they keep 0), kept in step
+  // by
+  // src/features/comments/actions/create-comment.ts
+  replyCount    Int              @default(0)
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
-  createdAt DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime         @updatedAt @db.Timestamptz(6)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(6)
 
-  // A post's comments in order, for listing and paging them
-  @@index([postId, createdAt, id])
+  // A post's top-level comments (parentId null) in order, for listing and
+  // paging them
+  @@index([postId, parentId, createdAt, id])
+  // A comment's direct replies, e.g. for counting them and deleting them
+  // with it
+  @@index([parentId, createdAt, id])
+  // A whole thread's replies in order, loaded at once when it opens
+  @@index([rootId, createdAt, id])
   // A user's comments, and deleting them with the user
   @@index([authorId])
 }

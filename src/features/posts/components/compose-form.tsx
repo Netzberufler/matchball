@@ -42,6 +42,7 @@ export function ComposeForm({
     action,
     onSuccess,
     autoFocus,
+    initialContent = "",
 }: {
     // The signed-in user's avatar
     avatar: React.ReactNode;
@@ -52,13 +53,19 @@ export function ComposeForm({
     action: (formData: FormData) => Promise<{ error: string | null }>;
     onSuccess?: () => void;
     autoFocus?: boolean;
+    // E.g. "@username " for a reply to a reply; also what the form goes
+    // back to after sending
+    initialContent?: string;
 }) {
-    const [content, setContent] = useState("");
+    const [content, setContent] = useState(initialContent);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     // Where to put the caret once a chosen mention is in the text
-    const caretAfterInsert = useRef<number | null>(null);
+    // Starts after the initial content, so typing continues after it
+    const caretAfterInsert = useRef<number | null>(
+        initialContent ? initialContent.length : null,
+    );
 
     const mentions = useMentionAutocomplete({
         textAreaRef,
@@ -117,7 +124,8 @@ export function ComposeForm({
             if (result.error) {
                 setError(result.error);
             } else {
-                setContent("");
+                caretAfterInsert.current = initialContent.length;
+                setContent(initialContent);
                 onSuccess?.();
             }
         });

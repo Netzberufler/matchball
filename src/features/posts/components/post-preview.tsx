@@ -1,14 +1,22 @@
 import { UserAvatar } from "@/components/ui/user-avatar";
-import type { FeedPost } from "@/features/posts/lib/queries";
 import {
     formatFullPostDate,
     formatPostDate,
 } from "@/features/posts/utils/format-post-date";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 
-// A read-only post, e.g. in the reply popup to show what's being replied
-// to: author, time and text, without links or buttons
-export function PostPreview({ post }: { post: FeedPost }) {
+// What a preview shows; posts and comments both have it
+export type PreviewItem = {
+    content: string;
+    createdAt: Date;
+    // The usernames mentioned in the text that belong to real users
+    mentions: string[];
+    author: { name: string; username: string; image: string | null };
+};
+
+// A read-only post or comment, e.g. in the reply popup to show what's being
+// replied to: author, time and text, without links or buttons
+export function PostPreview({ post }: { post: PreviewItem }) {
     const { author } = post;
 
     return (

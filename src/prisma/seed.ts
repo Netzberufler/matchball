@@ -30,6 +30,21 @@ const LIKE_CHANCE = 0.4;
 const COMMENT_CHANCE = 0.15;
 // The chance that a seed user likes a reply by another seed user
 const COMMENT_LIKE_CHANCE = 0.3;
+// The chance that a reply gets replies of its own (one or two), on every
+// level down to SEED_REPLY_DEPTH (the deepest level that can be written,
+// see createComment)
+const NESTED_REPLY_CHANCE = 0.4;
+const SEED_REPLY_DEPTH = 2;
+
+// What a reply needs to get replies of its own in the seed
+const replyParentSelect = {
+    id: true,
+    postId: true,
+    rootId: true,
+    authorId: true,
+    createdAt: true,
+    author: { select: { username: true } },
+} as const;
 
 const COMMENT_TEXTS = [
     "Love this!",
@@ -209,6 +224,54 @@ async function main() {
     );
     await prisma.comment.createMany({ data: comments });
 
+    // Some replies get replies of their own from other users, and some of
+    // those again, down to SEED_REPLY_DEPTH levels. Like real ones, they
+    // start with "@username" of the reply they answer and save that mention.
+    let parents = await prisma.comment.findMany({
+        where: { authorId: { in: userIds }, parentId: null },
+        select: replyParentSelect,
+    });
+    let nestedReplyCount = 0;
+    for (let depth = 1; depth <= SEED_REPLY_DEPTH; depth++) {
+        const created: typeof parents = [];
+        for (const parent of parents) {
+            if (Math.random() >= NESTED_REPLY_CHANCE) {
+                continue;
+            }
+            const authorIds = shuffle(
+                userIds.filter((id) => id !== parent.authorId),
+            ).slice(0, randomInt(1, 2));
+            for (const authorId of authorIds) {
+                created.push(
+                    await prisma.comment.create({
+                        data: {
+                            postId: parent.postId,
+                            parentId: parent.id,
+                            // The thread's top-level comment
+                            rootId: parent.rootId ?? parent.id,
+                            authorId,
+                            content: `@${parent.author.username} ${
+                                COMMENT_TEXTS[
+                                    randomInt(0, COMMENT_TEXTS.length - 1)
+                                ]
+                            }`,
+                            createdAt: new Date(
+                                parent.createdAt.getTime() +
+                                    Math.random() *
+                                        (Date.now() -
+                                            parent.createdAt.getTime()),
+                            ),
+                            mentions: { create: { userId: parent.authorId } },
+                        },
+                        select: replyParentSelect,
+                    }),
+                );
+            }
+        }
+        nestedReplyCount += created.length;
+        parents = created;
+    }
+
     // Each user likes some of the other users' replies
     const seedComments = await prisma.comment.findMany({
         where: { authorId: { in: userIds } },
@@ -225,14 +288,35 @@ async function main() {
     );
     await prisma.commentLike.createMany({ data: commentLikes });
 
-    // Count the likes on every reply, and the likes and comments on every
+    // Count the likes and replies on every reply, and the likes and comments on every
     // post. This also corrects ones by other users that lost likes or
     // comments when the old seed users were deleted above.
     await prisma.$executeRaw`
-        UPDATE "Comment" SET "likeCount" = (
-            SELECT COUNT(*) FROM "CommentLike"
-            WHERE "CommentLike"."commentId" = "Comment"."id"
-        )`;
+        UPDATE "Comment" SET
+            "likeCount" = (
+                SELECT COUNT(*) FROM "CommentLike"
+                WHERE "CommentLike"."commentId" = "Comment"."id"
+            )`;
+    // Every reply below a comment, at any depth: the pairs of a comment
+    // and a reply somewhere below it. Only top-level comments and level 1
+    // replies keep a count.
+    await prisma.$executeRaw`
+        WITH RECURSIVE "Below" AS (
+            SELECT "parentId" AS "ancestorId", "id" FROM "Comment"
+            WHERE "parentId" IS NOT NULL
+            UNION ALL
+            SELECT "Comment"."parentId", "Below"."id"
+            FROM "Below"
+            JOIN "Comment" ON "Comment"."id" = "Below"."ancestorId"
+            WHERE "Comment"."parentId" IS NOT NULL
+        )
+        UPDATE "Comment" SET "replyCount" = CASE
+            WHEN "parentId" IS NULL OR "parentId" = "rootId" THEN (
+                SELECT COUNT(*) FROM "Below"
+                WHERE "Below"."ancestorId" = "Comment"."id"
+            )
+            ELSE 0
+        END`;
     await prisma.$executeRaw`
         UPDATE "Post" SET
             "likeCount" = (
@@ -244,7 +328,7 @@ async function main() {
             )`;
 
     console.log(
-        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${likes.length} likes, ${comments.length} comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${likes.length} likes, ${comments.length} comments, ${nestedReplyCount} replies to comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
     );
 }
 

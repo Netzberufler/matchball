@@ -13,3 +13,13 @@ export function validateCommentContent(value: string) {
     }
     return null;
 }
+
+// A reply to a reply starts with "@username" of the one replied to, so it's
+// clear whom it answers. Adds it if the text doesn't start with it.
+export function withReplyMention(content: string, username: string) {
+    const mention = `@${username}`;
+    const startsWithMention =
+        content.toLowerCase().startsWith(mention.toLowerCase()) &&
+        !/[a-z0-9_]/i.test(content.charAt(mention.length));
+    return startsWithMention ? content : `${mention} ${content}`;
+}

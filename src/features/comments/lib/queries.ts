@@ -7,7 +7,7 @@ import {
     FEED_PAGE_SIZE,
     type FeedCursor,
     type FeedPage,
-    olderThan,
+    newerThan,
     toPage,
 } from "@/features/posts/utils/feed";
 
@@ -20,6 +20,9 @@ export function commentSelect(viewerId: string) {
         content: true,
         createdAt: true,
         likeCount: true,
+        parentId: true,
+        rootId: true,
+        replyCount: true,
         author: {
             select: { id: true, username: true, name: true, image: true },
         },
@@ -57,24 +60,45 @@ export function toPostComment({
 
 const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 
-// One page of a post's comments, newest first, like the feeds. Read from
-// the Comment (postId, createdAt, id) index, backwards. The id may come from
-// the URL, so it's checked first: Postgres rejects malformed UUIDs with an
-// error, and such a post has no comments anyway.
+// A page of a post's top-level comments, with every reply in their
+// threads (all shown at once), oldest first
+export type CommentPage = FeedPage<PostComment> & { replies: PostComment[] };
+
+// One page of a post's top-level comments, oldest first (unlike the feeds),
+// so a conversation reads from the top, with all replies in their threads.
+// Two queries: the page, on the Comment (postId, parentId, createdAt, id)
+// index, then the threads' replies, on the (rootId, createdAt, id) index.
+// The id may come from the URL, so it's checked first: Postgres rejects
+// malformed UUIDs with an error, and such a post has no comments anyway.
 export async function getCommentPage(
     postId: string,
     viewerId: string,
     cursor?: FeedCursor,
-): Promise<FeedPage<PostComment>> {
+): Promise<CommentPage> {
     if (!UUID_PATTERN.test(postId)) {
-        return { items: [], nextCursor: null };
+        return { items: [], nextCursor: null, replies: [] };
     }
-    // One extra comment tells whether there is another page
+    // Top-level comments only: replies show under their parent. One extra
+    // comment tells whether there is another page.
+    const where = { postId, parentId: null };
     const comments = await prisma.comment.findMany({
-        where: cursor ? { AND: [{ postId }, olderThan(cursor)] } : { postId },
+        where: cursor ? { AND: [where, newerThan(cursor)] } : where,
         select: commentSelect(viewerId),
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         take: FEED_PAGE_SIZE + 1,
     });
-    return toPage(comments.map(toPostComment));
+    const page = toPage(comments.map(toPostComment));
+
+    // The threads are built from the replies' parentIds
+    const replies =
+        page.items.length === 0
+            ? []
+            : await prisma.comment.findMany({
+                  where: {
+                      rootId: { in: page.items.map((comment) => comment.id) },
+                  },
+                  select: commentSelect(viewerId),
+                  orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              });
+    return { ...page, replies: replies.map(toPostComment) };
 }
