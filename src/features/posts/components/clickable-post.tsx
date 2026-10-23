@@ -40,6 +40,15 @@ export function ClickablePost({
         }
     }
 
+    // Pressing the mouse wheel on plain content starts autoscrolling in
+    // some browsers (Windows, Firefox with autoscroll on), which swallows the
+    // click. Links don't autoscroll, so stop it here too.
+    function onMouseDown(event: React.MouseEvent<HTMLElement>) {
+        if (event.button === 1 && !shouldIgnore(event)) {
+            event.preventDefault();
+        }
+    }
+
     // Middle click opens a new tab, like a link
     function onAuxClick(event: React.MouseEvent<HTMLElement>) {
         if (event.button === 1 && !shouldIgnore(event)) {
@@ -51,6 +60,7 @@ export function ClickablePost({
         <article
             className={`cursor-pointer ${className ?? ""}`}
             onClick={onClick}
+            onMouseDown={onMouseDown}
             onAuxClick={onAuxClick}
         >
             {children}
