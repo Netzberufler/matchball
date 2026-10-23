@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { Button, FieldError, Form, TextArea, TextField } from "@heroui/react";
 
 // Show the character count in warning colours from this many left on
@@ -32,6 +32,21 @@ export function ComposeForm({
     const [content, setContent] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Grow (and shrink) the text area with its text instead of scrolling.
+    // CSS field-sizing: content would do this, but Firefox lacks it. Its
+    // min-height still applies.
+    useLayoutEffect(() => {
+        const textArea = textAreaRef.current;
+        if (!textArea) {
+            return;
+        }
+        textArea.style.height = "auto";
+        // scrollHeight leaves out the borders, which the height includes
+        const borders = textArea.offsetHeight - textArea.clientHeight;
+        textArea.style.height = `${textArea.scrollHeight + borders}px`;
+    }, [content]);
 
     const charactersLeft = maxLength - content.length;
     const isEmpty = content.trim().length === 0;
@@ -73,7 +88,8 @@ export function ComposeForm({
                     autoFocus={autoFocus}
                 >
                     <TextArea
-                        className="min-h-18 resize-none text-lg"
+                        ref={textAreaRef}
+                        className="min-h-18 resize-none overflow-hidden text-lg"
                         placeholder={placeholder}
                     />
                     <FieldError />
