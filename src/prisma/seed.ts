@@ -28,6 +28,8 @@ const MAX_FOLLOWING_PER_USER = 4;
 const LIKE_CHANCE = 0.4;
 // The chance that a seed user replies to a post by another seed user
 const COMMENT_CHANCE = 0.15;
+// The chance that a seed user likes a reply by another seed user
+const COMMENT_LIKE_CHANCE = 0.3;
 
 const COMMENT_TEXTS = [
     "Love this!",
@@ -207,9 +209,30 @@ async function main() {
     );
     await prisma.comment.createMany({ data: comments });
 
-    // Count the likes and comments on every post. This also corrects posts
-    // by other users that lost likes or comments when the old seed users
-    // were deleted above.
+    // Each user likes some of the other users' replies
+    const seedComments = await prisma.comment.findMany({
+        where: { authorId: { in: userIds } },
+        select: { id: true, authorId: true },
+    });
+    const commentLikes = userIds.flatMap((userId) =>
+        seedComments
+            .filter(
+                (comment) =>
+                    comment.authorId !== userId &&
+                    Math.random() < COMMENT_LIKE_CHANCE,
+            )
+            .map((comment) => ({ commentId: comment.id, userId })),
+    );
+    await prisma.commentLike.createMany({ data: commentLikes });
+
+    // Count the likes on every reply, and the likes and comments on every
+    // post. This also corrects ones by other users that lost likes or
+    // comments when the old seed users were deleted above.
+    await prisma.$executeRaw`
+        UPDATE "Comment" SET "likeCount" = (
+            SELECT COUNT(*) FROM "CommentLike"
+            WHERE "CommentLike"."commentId" = "Comment"."id"
+        )`;
     await prisma.$executeRaw`
         UPDATE "Post" SET
             "likeCount" = (
@@ -221,7 +244,7 @@ async function main() {
             )`;
 
     console.log(
-        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${likes.length} likes and ${comments.length} comments (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${likes.length} likes, ${comments.length} comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
     );
 }
 

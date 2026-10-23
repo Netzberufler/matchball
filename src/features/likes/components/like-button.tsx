@@ -2,29 +2,38 @@
 
 import { Heart } from "lucide-react";
 import { Button } from "@heroui/react";
+import { setCommentLiked } from "@/features/likes/actions/set-comment-liked";
 import { setLiked } from "@/features/likes/actions/set-liked";
 import { likeStates } from "@/features/likes/lib/like-store";
 
 // "999", "1.2K", "3.4M"
 const countFormat = new Intl.NumberFormat("en", { notation: "compact" });
 
-// The latest like request per post. Only its answer is applied, so quick
-// clicks can't be undone by an earlier, slower answer.
+// Saves a like of a post or a comment
+const saveLike = { post: setLiked, comment: setCommentLiked };
+
+// The latest like request per post or comment. Only its answer is applied,
+// so quick clicks can't be undone by an earlier, slower answer.
 const latestRequests = new Map<string, number>();
 let requestCount = 0;
 
-// The heart under a post. It switches and counts right away, and saves in
-// the background; if saving fails, it switches back.
+// The heart under a post or comment. It switches and counts right away, and
+// saves in the background; if saving fails, it switches back.
 export function LikeButton({
-    postId,
+    kind,
+    id,
     isLiked: initialIsLiked,
     likeCount: initialLikeCount,
 }: {
-    postId: string;
+    kind: "post" | "comment";
+    // The post's or comment's id
+    id: string;
     isLiked: boolean;
     likeCount: number;
 }) {
-    const { isLiked, likeCount } = likeStates.useValue(postId, {
+    // Posts and comments are kept apart in the store and request map
+    const key = `${kind}:${id}`;
+    const { isLiked, likeCount } = likeStates.useValue(key, {
         isLiked: initialIsLiked,
         likeCount: initialLikeCount,
     });
@@ -32,18 +41,18 @@ export function LikeButton({
     function onPress() {
         const previous = { isLiked, likeCount };
         const like = !isLiked;
-        likeStates.set(postId, {
+        likeStates.set(key, {
             isLiked: like,
             likeCount: Math.max(0, likeCount + (like ? 1 : -1)),
         });
 
         const request = ++requestCount;
-        latestRequests.set(postId, request);
-        const isLatest = () => latestRequests.get(postId) === request;
-        setLiked(postId, like).then(
+        latestRequests.set(key, request);
+        const isLatest = () => latestRequests.get(key) === request;
+        saveLike[kind](id, like).then(
             // The server's count includes other people's likes since loading
-            (saved) => isLatest() && likeStates.set(postId, saved),
-            () => isLatest() && likeStates.set(postId, previous),
+            (saved) => isLatest() && likeStates.set(key, saved),
+            () => isLatest() && likeStates.set(key, previous),
         );
     }
 

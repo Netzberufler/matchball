@@ -36,6 +36,7 @@ model User {
   // Where this user is @mentioned
   postMentions    PostMention[]
   commentMentions CommentMention[]
+  commentLikes    CommentLike[]
 
   // The mention search: case-insensitive matches anywhere in the name
   // (ILIKE). Usernames are searched by prefix through their unique index,
@@ -162,6 +163,10 @@ model Comment {
   authorId  String           @db.Uuid
   author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
   mentions  CommentMention[]
+  // The number of CommentLike rows, kept in step with them by
+  // src/features/likes/actions/set-comment-liked.ts, so lists don't count
+  likeCount Int              @default(0)
+  likes     CommentLike[]
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
   createdAt DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt DateTime         @updatedAt @db.Timestamptz(6)
@@ -196,4 +201,19 @@ model CommentMention {
 
   @@id([commentId, userId])
   @@index([userId])
+}
+
+// userId likes commentId, like Like for posts
+model CommentLike {
+  commentId String   @db.Uuid
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  // One like per user and comment. Also the index for "does the viewer like
+  // these comments", which every page of comments asks.
+  @@id([commentId, userId])
+  // A user's comment likes, e.g. for deleting them with the user
+  @@index([userId, createdAt(sort: Desc)])
 }

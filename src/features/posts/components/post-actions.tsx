@@ -14,7 +14,8 @@ export function PostActions({
         <div className={`-ml-2 flex items-center gap-6 ${className ?? ""}`}>
             <CommentButton post={post} />
             <LikeButton
-                postId={post.id}
+                kind="post"
+                id={post.id}
                 isLiked={post.isLiked}
                 likeCount={post.likeCount}
             />

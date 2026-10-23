@@ -16,7 +16,7 @@ export async function PostView({ id }: { id: string }) {
     // In parallel: a post that doesn't exist simply has no comments
     const [post, firstCommentPage] = await Promise.all([
         getPost(id, user.id),
-        getCommentPage(id),
+        getCommentPage(id, user.id),
     ]);
     if (!post) {
         notFound();

@@ -46,7 +46,7 @@ export async function createComment(
                 authorId: user.id,
                 mentions: { createMany: { data: mentions } },
             },
-            select: commentSelect,
+            select: commentSelect(user.id),
         });
         const { commentCount } = await tx.post.update({
             where: { id: postId },

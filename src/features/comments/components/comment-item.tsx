@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { PostComment } from "@/features/comments/lib/queries";
+import { LikeButton } from "@/features/likes/components/like-button";
 import {
     formatFullPostDate,
     formatPostDate,
@@ -60,6 +61,14 @@ export function CommentItem({ comment }: { comment: PostComment }) {
                         mentions={comment.mentions}
                     />
                 </p>
+                <div className="-ml-2 mt-2 flex">
+                    <LikeButton
+                        kind="comment"
+                        id={comment.id}
+                        isLiked={comment.isLiked}
+                        likeCount={comment.likeCount}
+                    />
+                </div>
             </div>
         </article>
     );

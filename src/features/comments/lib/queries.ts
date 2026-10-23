@@ -11,26 +11,48 @@ import {
     toPage,
 } from "@/features/posts/utils/feed";
 
-// Only what a comment shows
-export const commentSelect = {
-    id: true,
-    content: true,
-    createdAt: true,
-    author: {
-        select: { id: true, username: true, name: true, image: true },
-    },
-    mentions: mentionsSelect,
-} satisfies Prisma.CommentSelect;
+// Only what a comment shows, as seen by the viewer. `likes` holds the
+// viewer's like, if any: Prisma loads them for a whole page in one query,
+// which the CommentLike primary key (commentId, userId) answers.
+export function commentSelect(viewerId: string) {
+    return {
+        id: true,
+        content: true,
+        createdAt: true,
+        likeCount: true,
+        author: {
+            select: { id: true, username: true, name: true, image: true },
+        },
+        mentions: mentionsSelect,
+        likes: {
+            where: { userId: viewerId },
+            select: { userId: true },
+            take: 1,
+        },
+    } satisfies Prisma.CommentSelect;
+}
 
-type CommentRow = Prisma.CommentGetPayload<{ select: typeof commentSelect }>;
+type CommentRow = Prisma.CommentGetPayload<{
+    select: ReturnType<typeof commentSelect>;
+}>;
 
-export type PostComment = Omit<CommentRow, "mentions"> & {
+export type PostComment = Omit<CommentRow, "mentions" | "likes"> & {
     // The usernames mentioned in the text that belong to real users
     mentions: string[];
+    // Whether the viewer likes the comment
+    isLiked: boolean;
 };
 
-export function toPostComment(comment: CommentRow): PostComment {
-    return { ...comment, mentions: toUsernames(comment.mentions) };
+export function toPostComment({
+    mentions,
+    likes,
+    ...comment
+}: CommentRow): PostComment {
+    return {
+        ...comment,
+        mentions: toUsernames(mentions),
+        isLiked: likes.length > 0,
+    };
 }
 
 const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
@@ -41,6 +63,7 @@ const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 // error, and such a post has no comments anyway.
 export async function getCommentPage(
     postId: string,
+    viewerId: string,
     cursor?: FeedCursor,
 ): Promise<FeedPage<PostComment>> {
     if (!UUID_PATTERN.test(postId)) {
@@ -49,7 +72,7 @@ export async function getCommentPage(
     // One extra comment tells whether there is another page
     const comments = await prisma.comment.findMany({
         where: cursor ? { AND: [{ postId }, olderThan(cursor)] } : { postId },
-        select: commentSelect,
+        select: commentSelect(viewerId),
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,
     });
