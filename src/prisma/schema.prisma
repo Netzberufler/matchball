@@ -29,6 +29,7 @@ model User {
   // Follows where this user is followed, i.e. their followers
   followers     Follow[]  @relation("FollowFollowing")
   likes         Like[]
+  comments      Comment[]
 }
 
 model Session {
@@ -78,19 +79,23 @@ model Verification {
 }
 
 model Post {
-  id        String   @id @default(uuid(7)) @db.Uuid
+  id           String    @id @default(uuid(7)) @db.Uuid
   // Plain text only; the limit is POST_MAX_LENGTH in src/features/posts/utils/post-rules.ts
-  content   String   @db.VarChar(160)
-  authorId  String   @db.Uuid
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content      String    @db.VarChar(160)
+  authorId     String    @db.Uuid
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   // The number of Like rows for this post, kept in step with them by
   // src/features/likes/actions/set-liked.ts, so feeds don't count likes
-  likeCount Int      @default(0)
-  likes     Like[]
+  likeCount    Int       @default(0)
+  likes        Like[]
+  // The number of comments, kept in step by
+  // src/features/comments/actions/create-comment.ts
+  commentCount Int       @default(0)
+  comments     Comment[]
   // Milliseconds, like JavaScript dates, so a (createdAt, id) feed cursor
   // that went through the browser still matches the stored value exactly
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(6)
 
   // Feeds are sorted newest first, with id as a tiebreaker so a
   // (createdAt, id) cursor can page through them later
@@ -129,4 +134,24 @@ model Like {
   // A user's likes, e.g. for a list of liked posts, and for deleting them
   // with the user
   @@index([userId, createdAt(sort: Desc)])
+}
+
+// A reply to a post. Users see "reply"; the code calls it a comment.
+model Comment {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  // Plain text only; the limit is COMMENT_MAX_LENGTH in
+  // src/features/comments/utils/comment-rules.ts
+  content   String   @db.VarChar(160)
+  postId    String   @db.Uuid
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String   @db.Uuid
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  // A post's comments in order, for listing and paging them
+  @@index([postId, createdAt, id])
+  // A user's comments, and deleting them with the user
+  @@index([authorId])
 }

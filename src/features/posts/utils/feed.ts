@@ -1,5 +1,5 @@
-// Feed paging, shared by the feed queries, the loadMorePosts action and the
-// feed component
+// Paging, newest first by (createdAt, id) cursor. Shared by the post feeds
+// and a post's comments, their queries, load-more actions and components.
 
 export const FEED_PAGE_SIZE = 10;
 
@@ -7,45 +7,98 @@ export const FEED_PAGE_SIZE = 10;
 // "user": one author's posts, for their profile page
 export type Feed = { type: "home" } | { type: "user"; authorId: string };
 
-// Points at the last post of a page; the next page starts after it
+// Points at the last item of a page; the next page starts after it
 export type FeedCursor = { createdAt: Date; id: string };
 
-export type FeedPage<Post> = {
-    posts: Post[];
+export type FeedPage<Item> = {
+    items: Item[];
     // null on the last page
     nextCursor: FeedCursor | null;
 };
 
 type FeedItem = { id: string };
 
-// Puts a freshly loaded first page on top of the posts already shown, e.g.
-// after a refresh or a new post. Posts that are already shown keep their
+// Puts a freshly loaded first page on top of the items already shown, e.g.
+// after a refresh or a new post. Items that are already shown keep their
 // place, so the pages loaded further down stay. If the fresh page doesn't
-// reach the shown posts, there could be a gap between them, so the feed
+// reach the shown items, there could be a gap between them, so the list
 // starts over from the fresh page.
-export function mergeLatestPage<Post extends FeedItem>(
-    current: FeedPage<Post>,
-    latest: FeedPage<Post>,
-): FeedPage<Post> {
-    const shownIds = new Set(current.posts.map((post) => post.id));
-    if (!latest.posts.some((post) => shownIds.has(post.id))) {
+export function mergeLatestPage<Item extends FeedItem>(
+    current: FeedPage<Item>,
+    latest: FeedPage<Item>,
+): FeedPage<Item> {
+    const shownIds = new Set(current.items.map((item) => item.id));
+    if (!latest.items.some((item) => shownIds.has(item.id))) {
         return latest;
     }
-    const newPosts = latest.posts.filter((post) => !shownIds.has(post.id));
-    return { ...current, posts: [...newPosts, ...current.posts] };
+    const newItems = latest.items.filter((item) => !shownIds.has(item.id));
+    return { ...current, items: [...newItems, ...current.items] };
 }
 
-// Adds the next page below the posts already shown
-export function appendPage<Post extends FeedItem>(
-    current: FeedPage<Post>,
-    next: FeedPage<Post>,
-): FeedPage<Post> {
-    const shownIds = new Set(current.posts.map((post) => post.id));
+// Adds the next page below the items already shown
+export function appendPage<Item extends FeedItem>(
+    current: FeedPage<Item>,
+    next: FeedPage<Item>,
+): FeedPage<Item> {
+    const shownIds = new Set(current.items.map((item) => item.id));
     return {
-        posts: [
-            ...current.posts,
-            ...next.posts.filter((post) => !shownIds.has(post.id)),
+        items: [
+            ...current.items,
+            ...next.items.filter((item) => !shownIds.has(item.id)),
         ],
         nextCursor: next.nextCursor,
+    };
+}
+
+// Adds one new item on top, e.g. the viewer's own new comment. The cursor
+// stays: it points at the bottom of the list.
+export function prependItem<Item extends FeedItem>(
+    current: FeedPage<Item>,
+    item: Item,
+): FeedPage<Item> {
+    return {
+        ...current,
+        items: [item, ...current.items.filter(({ id }) => id !== item.id)],
+    };
+}
+
+// Whether an action argument is a cursor; actions can be called with
+// anything
+export function isFeedCursor(value: unknown): value is FeedCursor {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+    const { createdAt, id } = value as Record<string, unknown>;
+    return (
+        createdAt instanceof Date &&
+        !Number.isNaN(createdAt.getTime()) &&
+        typeof id === "string" &&
+        /^[0-9a-f-]{36}$/i.test(id)
+    );
+}
+
+// Items after the cursor in list order: older, or just as old with a
+// smaller id. A Prisma `where` for posts and comments alike.
+export function olderThan(cursor: FeedCursor) {
+    return {
+        OR: [
+            { createdAt: { lt: cursor.createdAt } },
+            { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+        ],
+    };
+}
+
+// The page of `rows` (fetched with one extra row to tell whether there's
+// another page) and the cursor for the next one
+export function toPage<Item extends FeedItem & { createdAt: Date }>(
+    rows: Item[],
+): FeedPage<Item> {
+    const hasMore = rows.length > FEED_PAGE_SIZE;
+    const items = hasMore ? rows.slice(0, FEED_PAGE_SIZE) : rows;
+    const last = items.at(-1);
+    return {
+        items,
+        nextCursor:
+            hasMore && last ? { createdAt: last.createdAt, id: last.id } : null,
     };
 }

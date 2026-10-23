@@ -22,6 +22,9 @@ export function ClickablePost({
         const target = event.target as Element;
         return (
             event.defaultPrevented ||
+            // React passes on events from portals inside the post, e.g. a
+            // click in the reply popup, which isn't part of the post's HTML
+            !event.currentTarget.contains(target) ||
             target.closest("a, button, [role='button']") !== null ||
             // The user selected text, e.g. to copy it
             (window.getSelection()?.toString() ?? "") !== ""

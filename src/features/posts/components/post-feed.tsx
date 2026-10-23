@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, Spinner } from "@heroui/react";
+import { LoadMore } from "@/components/ui/load-more";
 import { loadMorePosts } from "@/features/posts/actions/load-more-posts";
 import type { FeedPost } from "@/features/posts/lib/queries";
 import {
@@ -54,31 +54,17 @@ export function PostFeed({
 
     return (
         <div className="flex flex-col gap-4">
-            <PostList posts={page.posts} emptyMessage={emptyMessage} />
+            <PostList posts={page.items} emptyMessage={emptyMessage} />
 
             {page.nextCursor ? (
-                <div className="flex flex-col items-center gap-2">
-                    {/* Same height as the button, so nothing jumps */}
-                    <div className="flex h-10 items-center md:h-9">
-                        {isPending ? (
-                            <Spinner
-                                role="status"
-                                aria-label="Loading more posts"
-                            />
-                        ) : (
-                            <Button variant="tertiary" onPress={loadMore}>
-                                Load more
-                            </Button>
-                        )}
-                    </div>
-                    {error && (
-                        <p className="text-sm text-danger" role="alert">
-                            {error}
-                        </p>
-                    )}
-                </div>
+                <LoadMore
+                    isPending={isPending}
+                    onPress={loadMore}
+                    error={error}
+                    loadingLabel="Loading more posts"
+                />
             ) : (
-                page.posts.length > 0 && (
+                page.items.length > 0 && (
                     <p className="text-center text-sm text-muted">
                         You&apos;ve reached the end. No more posts to show.
                     </p>

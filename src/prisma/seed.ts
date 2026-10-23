@@ -26,6 +26,23 @@ const MIN_FOLLOWING_PER_USER = 2;
 const MAX_FOLLOWING_PER_USER = 4;
 // The chance that a seed user likes a post by another seed user
 const LIKE_CHANCE = 0.4;
+// The chance that a seed user replies to a post by another seed user
+const COMMENT_CHANCE = 0.15;
+
+const COMMENT_TEXTS = [
+    "Love this!",
+    "Same here, every single time.",
+    "Count me in!",
+    "Great progress, keep it up!",
+    "Haha, so true.",
+    "Which court are you playing on?",
+    "Let's hit together next week.",
+    "Respect! That's a tough one.",
+    "Good luck out there!",
+    "I need to try that too.",
+    "Totally agree.",
+    "What racket are you using?",
+];
 
 const POST_TEXTS = [
     "Great hitting session this morning. The backhand finally feels right!",
@@ -104,8 +121,8 @@ function randomPastDate() {
 }
 
 async function main() {
-    // Remove earlier seed data; posts, likes, follows, sessions and accounts
-    // cascade
+    // Remove earlier seed data; posts, comments, likes, follows, sessions
+    // and accounts cascade
     await prisma.user.deleteMany({
         where: { email: { endsWith: `@${SEED_EMAIL_DOMAIN}` } },
     });
@@ -156,7 +173,7 @@ async function main() {
     // Each user likes some of the other users' posts
     const seedPosts = await prisma.post.findMany({
         where: { authorId: { in: userIds } },
-        select: { id: true, authorId: true },
+        select: { id: true, authorId: true, createdAt: true },
     });
     const likes = userIds.flatMap((userId) =>
         seedPosts
@@ -168,15 +185,43 @@ async function main() {
     );
     await prisma.like.createMany({ data: likes });
 
-    // Count the likes on every post. This also corrects posts by other users
-    // that lost likes when the old seed users were deleted above.
+    // Each user replies to a few of the other users' posts, some time after
+    // they were posted
+    const comments = userIds.flatMap((authorId) =>
+        seedPosts
+            .filter(
+                (post) =>
+                    post.authorId !== authorId &&
+                    Math.random() < COMMENT_CHANCE,
+            )
+            .map((post) => ({
+                postId: post.id,
+                authorId,
+                content:
+                    COMMENT_TEXTS[randomInt(0, COMMENT_TEXTS.length - 1)] ?? "",
+                createdAt: new Date(
+                    post.createdAt.getTime() +
+                        Math.random() * (Date.now() - post.createdAt.getTime()),
+                ),
+            })),
+    );
+    await prisma.comment.createMany({ data: comments });
+
+    // Count the likes and comments on every post. This also corrects posts
+    // by other users that lost likes or comments when the old seed users
+    // were deleted above.
     await prisma.$executeRaw`
-        UPDATE "Post" SET "likeCount" = (
-            SELECT COUNT(*) FROM "Like" WHERE "Like"."postId" = "Post"."id"
-        )`;
+        UPDATE "Post" SET
+            "likeCount" = (
+                SELECT COUNT(*) FROM "Like" WHERE "Like"."postId" = "Post"."id"
+            ),
+            "commentCount" = (
+                SELECT COUNT(*) FROM "Comment"
+                WHERE "Comment"."postId" = "Post"."id"
+            )`;
 
     console.log(
-        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows and ${likes.length} likes (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${likes.length} likes and ${comments.length} comments (password: ${SEED_PASSWORD})`,
     );
 }
 

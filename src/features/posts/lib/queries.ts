@@ -6,21 +6,23 @@ import { prisma } from "@/prisma/db";
 import { getFollowingIds } from "@/features/follows/lib/queries";
 import {
     FEED_PAGE_SIZE,
+    type Feed,
     type FeedCursor,
     type FeedPage,
-    type Feed,
+    olderThan,
+    toPage,
 } from "@/features/posts/utils/feed";
 
 // Only what a post shows, as seen by the viewer. `likes` holds the viewer's
 // like, if any: Prisma loads them for a whole page in one query, which the
-// Like primary key (postId, userId) answers. The reply count goes here once
-// replies exist.
+// Like primary key (postId, userId) answers.
 function postSelect(viewerId: string) {
     return {
         id: true,
         content: true,
         createdAt: true,
         likeCount: true,
+        commentCount: true,
         author: {
             select: { id: true, username: true, name: true, image: true },
         },
@@ -82,17 +84,6 @@ async function feedWhere(
     }
 }
 
-// Posts that come after the cursor in feed order: older, or just as old
-// with a smaller id
-function olderThan(cursor: FeedCursor): Prisma.PostWhereInput {
-    return {
-        OR: [
-            { createdAt: { lt: cursor.createdAt } },
-            { createdAt: cursor.createdAt, id: { lt: cursor.id } },
-        ],
-    };
-}
-
 // One page of a feed, newest first with id breaking ties. Without a cursor
 // it's the first page; with one, the page after the post it points to.
 export async function getFeedPage(
@@ -108,15 +99,5 @@ export async function getFeedPage(
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,
     });
-
-    const hasMore = posts.length > FEED_PAGE_SIZE;
-    const page = (hasMore ? posts.slice(0, FEED_PAGE_SIZE) : posts).map(
-        toFeedPost,
-    );
-    const last = page.at(-1);
-    return {
-        posts: page,
-        nextCursor:
-            hasMore && last ? { createdAt: last.createdAt, id: last.id } : null,
-    };
+    return toPage(posts.map(toFeedPost));
 }

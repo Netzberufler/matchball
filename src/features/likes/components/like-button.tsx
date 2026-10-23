@@ -3,7 +3,7 @@
 import { Heart } from "lucide-react";
 import { Button } from "@heroui/react";
 import { setLiked } from "@/features/likes/actions/set-liked";
-import { setLikeState, useLikeState } from "@/features/likes/lib/like-store";
+import { likeStates } from "@/features/likes/lib/like-store";
 
 // "999", "1.2K", "3.4M"
 const countFormat = new Intl.NumberFormat("en", { notation: "compact" });
@@ -24,7 +24,7 @@ export function LikeButton({
     isLiked: boolean;
     likeCount: number;
 }) {
-    const { isLiked, likeCount } = useLikeState(postId, {
+    const { isLiked, likeCount } = likeStates.useValue(postId, {
         isLiked: initialIsLiked,
         likeCount: initialLikeCount,
     });
@@ -32,7 +32,7 @@ export function LikeButton({
     function onPress() {
         const previous = { isLiked, likeCount };
         const like = !isLiked;
-        setLikeState(postId, {
+        likeStates.set(postId, {
             isLiked: like,
             likeCount: Math.max(0, likeCount + (like ? 1 : -1)),
         });
@@ -42,8 +42,8 @@ export function LikeButton({
         const isLatest = () => latestRequests.get(postId) === request;
         setLiked(postId, like).then(
             // The server's count includes other people's likes since loading
-            (saved) => isLatest() && setLikeState(postId, saved),
-            () => isLatest() && setLikeState(postId, previous),
+            (saved) => isLatest() && likeStates.set(postId, saved),
+            () => isLatest() && likeStates.set(postId, previous),
         );
     }
 

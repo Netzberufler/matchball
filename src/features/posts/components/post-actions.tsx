@@ -1,5 +1,4 @@
-import { MessageCircle } from "lucide-react";
-import { Button } from "@heroui/react";
+import { CommentButton } from "@/features/comments/components/comment-button";
 import { LikeButton } from "@/features/likes/components/like-button";
 import type { FeedPost } from "@/features/posts/lib/queries";
 
@@ -13,16 +12,11 @@ export function PostActions({
 }) {
     return (
         <div className={`-ml-2 flex items-center gap-6 ${className ?? ""}`}>
-            {/* TODO: replies, with their count */}
-            <Button
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                aria-label="Reply"
-                className="text-muted"
-            >
-                <MessageCircle className="size-4" aria-hidden />
-            </Button>
+            <CommentButton
+                postId={post.id}
+                commentCount={post.commentCount}
+                authorUsername={post.author.username}
+            />
             <LikeButton
                 postId={post.id}
                 isLiked={post.isLiked}

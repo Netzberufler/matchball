@@ -1,0 +1,98 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Button, FieldError, Form, TextArea, TextField } from "@heroui/react";
+
+// Show the character count in warning colours from this many left on
+const LOW_CHARACTERS_LEFT = 20;
+
+// A plain-text form with a character limit and count: a text area, the
+// submit button on the left and the count on the right. Used for posts and
+// comments. `action` saves the text; on success the form is cleared.
+export function ComposeForm({
+    placeholder,
+    submitLabel,
+    maxLength,
+    action,
+    onSuccess,
+    autoFocus,
+}: {
+    // Also the text area's accessible name
+    placeholder: string;
+    submitLabel: string;
+    maxLength: number;
+    action: (formData: FormData) => Promise<{ error: string | null }>;
+    onSuccess?: () => void;
+    autoFocus?: boolean;
+}) {
+    const [content, setContent] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [isPending, startTransition] = useTransition();
+
+    const charactersLeft = maxLength - content.length;
+    const isEmpty = content.trim().length === 0;
+
+    function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+
+        setError(null);
+        startTransition(async () => {
+            const result = await action(formData);
+            if (result.error) {
+                setError(result.error);
+            } else {
+                setContent("");
+                onSuccess?.();
+            }
+        });
+    }
+
+    return (
+        <Form
+            className="flex flex-col gap-3"
+            validationErrors={error ? { content: error } : {}}
+            onSubmit={onSubmit}
+        >
+            <TextField
+                aria-label={placeholder}
+                variant="secondary"
+                name="content"
+                value={content}
+                onChange={(value) => {
+                    setContent(value);
+                    setError(null);
+                }}
+                maxLength={maxLength}
+                autoFocus={autoFocus}
+            >
+                <TextArea
+                    className="min-h-24 resize-none text-lg"
+                    placeholder={placeholder}
+                />
+                <FieldError />
+            </TextField>
+
+            <div className="flex items-center justify-between gap-3">
+                <Button
+                    type="submit"
+                    isDisabled={isEmpty}
+                    isPending={isPending}
+                >
+                    {submitLabel}
+                </Button>
+                <span
+                    className={`text-sm tabular-nums ${
+                        charactersLeft <= LOW_CHARACTERS_LEFT
+                            ? "text-warning"
+                            : "text-muted"
+                    }`}
+                    aria-live="polite"
+                >
+                    {content.length} / {maxLength}
+                    <span className="sr-only"> characters used</span>
+                </span>
+            </div>
+        </Form>
+    );
+}
