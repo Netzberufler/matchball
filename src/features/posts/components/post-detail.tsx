@@ -49,7 +49,7 @@ export function PostDetail({ post }: { post: FeedPost }) {
             >
                 {formatFullPostDate(post.createdAt)}
             </time>
-            <PostActions />
+            <PostActions post={post} />
         </article>
     );
 }

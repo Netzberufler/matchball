@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
+import { requireSession } from "@/features/auth/lib/session";
 import { PostDetailFallback } from "@/features/posts/components/post-detail";
 import { PostView } from "@/features/posts/components/post-view";
 import { getPost } from "@/features/posts/lib/queries";
@@ -8,8 +9,9 @@ import { getPost } from "@/features/posts/lib/queries";
 export async function generateMetadata({
     params,
 }: PageProps<"/post/[id]">): Promise<Metadata> {
-    const { id } = await params;
-    const post = await getPost(id);
+    const [{ id }, { user }] = await Promise.all([params, requireSession()]);
+    // Same arguments as in PostView, so cache() shares the lookup
+    const post = await getPost(id, user.id);
     return {
         title: post
             ? `${post.author.name} (@${post.author.username})`

@@ -28,6 +28,7 @@ model User {
   following     Follow[]  @relation("FollowFollower")
   // Follows where this user is followed, i.e. their followers
   followers     Follow[]  @relation("FollowFollowing")
+  likes         Like[]
 }
 
 model Session {
@@ -82,6 +83,10 @@ model Post {
   content   String   @db.VarChar(160)
   authorId  String   @db.Uuid
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  // The number of Like rows for this post, kept in step with them by
+  // src/features/likes/actions/set-liked.ts, so feeds don't count likes
+  likeCount Int      @default(0)
+  likes     Like[]
   // Milliseconds, like JavaScript dates, so a (createdAt, id) feed cursor
   // that went through the browser still matches the stored value exactly
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -108,4 +113,20 @@ model Follow {
   @@id([followerId, followingId])
   // "Who follows X", e.g. for follower lists and counts
   @@index([followingId, followerId])
+}
+
+// userId likes postId
+model Like {
+  postId    String   @db.Uuid
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  // One like per user and post. Also the index for "does the viewer like
+  // these posts", which every feed page asks.
+  @@id([postId, userId])
+  // A user's likes, e.g. for a list of liked posts, and for deleting them
+  // with the user
+  @@index([userId, createdAt(sort: Desc)])
 }

@@ -73,7 +73,7 @@ export function PostItem({ post }: { post: FeedPost }) {
                 <p className="mt-1 whitespace-pre-wrap break-words">
                     {post.content}
                 </p>
-                <PostActions className="mt-2" />
+                <PostActions post={post} className="mt-2" />
             </div>
         </ClickablePost>
     );

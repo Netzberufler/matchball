@@ -8,7 +8,8 @@ import { PostDetail } from "./post-detail";
 // and the database at request time, so render it inside <Suspense> with
 // <PostDetailFallback />.
 export async function PostView({ id }: { id: string }) {
-    const [, post] = await Promise.all([requireSession(), getPost(id)]);
+    const { user } = await requireSession();
+    const post = await getPost(id, user.id);
     if (!post) {
         notFound();
     }

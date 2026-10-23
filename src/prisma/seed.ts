@@ -24,6 +24,8 @@ const POST_PERIOD_DAYS = 60;
 // Each seed user follows this many of the other seed users
 const MIN_FOLLOWING_PER_USER = 2;
 const MAX_FOLLOWING_PER_USER = 4;
+// The chance that a seed user likes a post by another seed user
+const LIKE_CHANCE = 0.4;
 
 const POST_TEXTS = [
     "Great hitting session this morning. The backhand finally feels right!",
@@ -102,7 +104,8 @@ function randomPastDate() {
 }
 
 async function main() {
-    // Remove earlier seed data; posts, follows, sessions and accounts cascade
+    // Remove earlier seed data; posts, likes, follows, sessions and accounts
+    // cascade
     await prisma.user.deleteMany({
         where: { email: { endsWith: `@${SEED_EMAIL_DOMAIN}` } },
     });
@@ -150,8 +153,30 @@ async function main() {
     );
     await prisma.follow.createMany({ data: follows });
 
+    // Each user likes some of the other users' posts
+    const seedPosts = await prisma.post.findMany({
+        where: { authorId: { in: userIds } },
+        select: { id: true, authorId: true },
+    });
+    const likes = userIds.flatMap((userId) =>
+        seedPosts
+            .filter(
+                (post) =>
+                    post.authorId !== userId && Math.random() < LIKE_CHANCE,
+            )
+            .map((post) => ({ postId: post.id, userId })),
+    );
+    await prisma.like.createMany({ data: likes });
+
+    // Count the likes on every post. This also corrects posts by other users
+    // that lost likes when the old seed users were deleted above.
+    await prisma.$executeRaw`
+        UPDATE "Post" SET "likeCount" = (
+            SELECT COUNT(*) FROM "Like" WHERE "Like"."postId" = "Post"."id"
+        )`;
+
     console.log(
-        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts and ${follows.length} follows (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows and ${likes.length} likes (password: ${SEED_PASSWORD})`,
     );
 }
 

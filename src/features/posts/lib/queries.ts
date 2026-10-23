@@ -11,29 +11,54 @@ import {
     type Feed,
 } from "@/features/posts/utils/feed";
 
-// Only what a post in a feed shows. Like and reply counts go here once
-// those features exist.
-const postSelect = {
-    id: true,
-    content: true,
-    createdAt: true,
-    author: {
-        select: { id: true, username: true, name: true, image: true },
-    },
-} satisfies Prisma.PostSelect;
+// Only what a post shows, as seen by the viewer. `likes` holds the viewer's
+// like, if any: Prisma loads them for a whole page in one query, which the
+// Like primary key (postId, userId) answers. The reply count goes here once
+// replies exist.
+function postSelect(viewerId: string) {
+    return {
+        id: true,
+        content: true,
+        createdAt: true,
+        likeCount: true,
+        author: {
+            select: { id: true, username: true, name: true, image: true },
+        },
+        likes: {
+            where: { userId: viewerId },
+            select: { userId: true },
+            take: 1,
+        },
+    } satisfies Prisma.PostSelect;
+}
 
-export type FeedPost = Prisma.PostGetPayload<{ select: typeof postSelect }>;
+type PostRow = Prisma.PostGetPayload<{
+    select: ReturnType<typeof postSelect>;
+}>;
+
+export type FeedPost = Omit<PostRow, "likes"> & {
+    // Whether the viewer likes the post
+    isLiked: boolean;
+};
+
+function toFeedPost({ likes, ...post }: PostRow): FeedPost {
+    return { ...post, isLiked: likes.length > 0 };
+}
 
 const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 
 // One post, for its own page, or null if there's no such post. The id comes
 // from the URL, so it's checked first: Postgres rejects malformed UUIDs with
 // an error. cache() shares the lookup between generateMetadata and the page.
-export const getPost = cache(async (id: string) => {
+export const getPost = cache(async (id: string, viewerId: string) => {
     if (!UUID_PATTERN.test(id)) {
         return null;
     }
-    return prisma.post.findUnique({ where: { id }, select: postSelect });
+    const post = await prisma.post.findUnique({
+        where: { id },
+        select: postSelect(viewerId),
+    });
+    return post && toFeedPost(post);
 });
 
 // Which posts belong in a feed, as seen by the signed-in viewer
@@ -79,13 +104,15 @@ export async function getFeedPage(
     // One extra post tells whether there is another page
     const posts = await prisma.post.findMany({
         where: cursor ? { AND: [where, olderThan(cursor)] } : where,
-        select: postSelect,
+        select: postSelect(viewerId),
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,
     });
 
     const hasMore = posts.length > FEED_PAGE_SIZE;
-    const page = hasMore ? posts.slice(0, FEED_PAGE_SIZE) : posts;
+    const page = (hasMore ? posts.slice(0, FEED_PAGE_SIZE) : posts).map(
+        toFeedPost,
+    );
     const last = page.at(-1);
     return {
         posts: page,
