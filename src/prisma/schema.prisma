@@ -285,6 +285,8 @@ model Notification {
   // A user's notifications, newest first, paged by (createdAt, id). Also
   // for deleting them with the user.
   @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
+  // The same, filtered to one type, for the tabs on /notifications
+  @@index([userId, type, createdAt(sort: Desc), id(sort: Desc)])
   // Removing a like's notification on unlike, by post or by reply and
   // actor. Also for deleting them with the post or reply.
   @@index([postId, actorId])

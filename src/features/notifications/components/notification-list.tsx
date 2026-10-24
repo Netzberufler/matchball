@@ -3,19 +3,30 @@
 import { useState, useTransition } from "react";
 import { Card, EmptyState, Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
-import { loadMoreNotifications } from "@/features/notifications/actions/load-more-notifications";
+import { loadNotifications } from "@/features/notifications/actions/load-notifications";
 import type { UserNotification } from "@/features/notifications/lib/queries";
+import {
+    getNotificationFilter,
+    type NotificationFilter,
+} from "@/features/notifications/utils/notification-filters";
 import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
 import { NotificationItem } from "./notification-item";
 
-// The signed-in user's notifications, newest first, with more loaded on
-// request
+// The signed-in user's notifications for one tab, newest first, with more
+// loaded on request. The tabs keep `page`, so it stays when switching tabs.
 export function NotificationList({
-    firstPage,
+    filter,
+    page,
+    onPageChange,
 }: {
-    firstPage: FeedPage<UserNotification>;
+    filter: NotificationFilter;
+    page: FeedPage<UserNotification>;
+    onPageChange: (
+        update: (
+            current: FeedPage<UserNotification>,
+        ) => FeedPage<UserNotification>,
+    ) => void;
 }) {
-    const [page, setPage] = useState(firstPage);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 
@@ -27,8 +38,8 @@ export function NotificationList({
         setError(null);
         startTransition(async () => {
             try {
-                const nextPage = await loadMoreNotifications(cursor);
-                setPage((current) => appendPage(current, nextPage));
+                const nextPage = await loadNotifications(filter, cursor);
+                onPageChange((current) => appendPage(current, nextPage));
             } catch {
                 setError("Couldn't load more notifications. Please try again.");
             }
@@ -39,8 +50,7 @@ export function NotificationList({
         return (
             <Card>
                 <EmptyState className="text-center">
-                    No notifications yet. Replies, likes and mentions will show
-                    up here.
+                    {getNotificationFilter(filter).emptyMessage}
                 </EmptyState>
             </Card>
         );

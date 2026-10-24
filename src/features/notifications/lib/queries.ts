@@ -4,6 +4,10 @@ import type { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
 import {
+    getNotificationFilter,
+    type NotificationFilter,
+} from "@/features/notifications/utils/notification-filters";
+import {
     FEED_PAGE_SIZE,
     type FeedCursor,
     type FeedPage,
@@ -75,15 +79,19 @@ function toUserNotification({
     };
 }
 
-// One page of the user's notifications, newest first with id breaking ties.
-// Reads the Notification (userId, createdAt, id) index in order.
+// One page of the user's notifications, all or of the filter's type, newest
+// first with id breaking ties. Reads the Notification (userId, createdAt,
+// id) index in order, or (userId, type, createdAt, id) for a type.
 export async function getNotificationsPage(
     userId: string,
+    filter: NotificationFilter,
     cursor?: FeedCursor,
 ): Promise<FeedPage<UserNotification>> {
+    const { type } = getNotificationFilter(filter);
+    const where = { userId, ...(type && { type }) };
     // One extra notification tells whether there is another page
     const notifications = await prisma.notification.findMany({
-        where: cursor ? { userId, ...olderThan(cursor) } : { userId },
+        where: cursor ? { ...where, ...olderThan(cursor) } : where,
         select: notificationSelect,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,
