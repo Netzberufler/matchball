@@ -17,13 +17,6 @@ export function getNavItems(username: string | null) {
     return [
         { href: "/", label: "Home", shortLabel: "Home", icon: House },
         {
-            href: "/notifications",
-            label: "Notifications",
-            shortLabel: "Notifications",
-            icon: Bell,
-            desktopOnly: true,
-        },
-        {
             href: "/matches",
             label: "Matches",
             shortLabel: "Matches",
@@ -40,6 +33,13 @@ export function getNavItems(username: string | null) {
             label: "Court Booking",
             shortLabel: "Courts",
             icon: CalendarCheck,
+        },
+        {
+            href: "/notifications",
+            label: "Notifications",
+            shortLabel: "Notifications",
+            icon: Bell,
+            desktopOnly: true,
         },
         {
             href: username === null ? null : profilePath(username),
