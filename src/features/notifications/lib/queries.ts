@@ -28,27 +28,37 @@ type NotificationRow = Prisma.NotificationGetPayload<{
     select: typeof notificationSelect;
 }>;
 
+// A follow links to the follower's profile and shows no text; the other
+// kinds are about a post or reply
 export type UserNotification = {
     id: string;
-    type: NotificationRow["type"];
     createdAt: Date;
     actor: NotificationRow["actor"];
-    // The post page it links to
-    postId: string;
-    // What was replied to, liked, or mentioned the user
-    target: "post" | "reply";
-    // The text shown with it: the new reply, the liked post or reply, or
-    // the one with the mention
-    text: string;
-    // The usernames mentioned in `text` that belong to real users
-    mentions: string[];
-};
+} & (
+    | { type: "FOLLOW" }
+    | {
+          type: Exclude<NotificationRow["type"], "FOLLOW">;
+          // The post page it links to
+          postId: string;
+          // What was replied to, liked, or mentioned the user
+          target: "post" | "reply";
+          // The text shown with it: the new reply, the liked post or
+          // reply, or the one with the mention
+          text: string;
+          // The usernames mentioned in `text` that belong to real users
+          mentions: string[];
+      }
+);
 
 function toUserNotification({
     post,
     comment,
     ...notification
 }: NotificationRow): UserNotification {
+    // Only follows are about no post
+    if (notification.type === "FOLLOW" || post === null) {
+        return { ...notification, type: "FOLLOW" };
+    }
     const shown = comment ?? post;
     // A new reply answers a reply if it has a parent, the post otherwise.
     // Likes and mentions are about the reply if there is one.

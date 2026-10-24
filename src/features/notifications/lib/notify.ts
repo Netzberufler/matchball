@@ -1,8 +1,9 @@
 import "server-only";
 
-// Notifications are written by the actions that cause them, in the same
-// transaction, so they can't go missing or outlive an unlike. Nobody is
-// notified of their own replies, likes or mentions.
+// Notifications are written by the actions that cause them (replies, likes,
+// mentions and follows), in the same transaction, so they can't go missing
+// or outlive an unlike or unfollow. Nobody is notified of their own
+// replies, likes or mentions.
 
 // The notifications of the users mentioned in a new post or reply, as rows
 // for a createMany nested in its create (which sets postId or commentId).

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AtSign, Heart, MessageCircle } from "lucide-react";
+import { AtSign, Heart, MessageCircle, UserPlus } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 import type { UserNotification } from "@/features/notifications/lib/queries";
@@ -11,38 +11,45 @@ import {
 import { postPath } from "@/features/posts/utils/post-path";
 import { profilePath } from "@/features/profile/utils/profile-path";
 
-const TYPE_DISPLAY = {
-    REPLY: {
-        icon: MessageCircle,
-        iconClassName: "text-accent",
-        action: (target: string) => `replied to your ${target}`,
-    },
-    LIKE: {
-        icon: Heart,
-        // Like a liked post's heart
-        iconClassName: "fill-current text-danger",
-        action: (target: string) => `liked your ${target}`,
-    },
-    MENTION: {
-        icon: AtSign,
-        iconClassName: "text-accent",
-        action: (target: string) => `mentioned you in a ${target}`,
-    },
+const TYPE_ICONS = {
+    REPLY: { icon: MessageCircle, className: "text-accent" },
+    // Like a liked post's heart
+    LIKE: { icon: Heart, className: "fill-current text-danger" },
+    MENTION: { icon: AtSign, className: "text-accent" },
+    FOLLOW: { icon: UserPlus, className: "text-accent" },
 };
 
+// What the actor did, after their name
+function describeAction(notification: UserNotification) {
+    switch (notification.type) {
+        case "REPLY":
+            return `replied to your ${notification.target}`;
+        case "LIKE":
+            return `liked your ${notification.target}`;
+        case "MENTION":
+            return `mentioned you in a ${notification.target}`;
+        case "FOLLOW":
+            return "followed you";
+    }
+}
+
 // One notification: what kind it is, who did it, and the text it's about.
-// Like a post in a feed, all of it leads to the post (see ClickablePost),
-// and its time is the link for keyboards and screen readers.
+// Like a post in a feed, all of it leads to the post, or for a follow to
+// the follower's profile (see ClickablePost), and its time is the link for
+// keyboards and screen readers.
 export function NotificationItem({
     notification,
 }: {
     notification: UserNotification;
 }) {
     const { actor } = notification;
-    const display = TYPE_DISPLAY[notification.type];
-    const Icon = display.icon;
+    const { icon: Icon, className: iconClassName } =
+        TYPE_ICONS[notification.type];
     const profileHref = profilePath(actor.username);
-    const href = postPath(notification.postId);
+    const href =
+        notification.type === "FOLLOW"
+            ? profileHref
+            : postPath(notification.postId);
 
     return (
         <ClickablePost
@@ -53,10 +60,7 @@ export function NotificationItem({
             {/* What happened; the text says it too. As tall as the avatar,
                 to center the icon beside it. */}
             <div className="mr-2 flex h-10 shrink-0 items-center">
-                <Icon
-                    className={`size-5 ${display.iconClassName}`}
-                    aria-hidden
-                />
+                <Icon className={`size-5 ${iconClassName}`} aria-hidden />
             </div>
             {/* Same target as the name link, so only that one is focusable
                 and announced */}
@@ -76,7 +80,7 @@ export function NotificationItem({
                     >
                         {actor.name}
                     </Link>{" "}
-                    {display.action(notification.target)}
+                    {describeAction(notification)}
                     <span className="text-muted" aria-hidden>
                         {" · "}
                     </span>
@@ -92,18 +96,25 @@ export function NotificationItem({
                         </time>
                     </Link>
                 </p>
-                {/* The liked text is the user's own, so it's muted; replies
-                    and mentions are new to them */}
-                <p
-                    className={`mt-1 whitespace-pre-wrap break-words ${
-                        notification.type === "LIKE" ? "text-muted" : ""
-                    }`}
-                >
-                    <TextWithMentions
-                        text={notification.text}
-                        mentions={notification.mentions}
-                    />
-                </p>
+                {/* Follows show who the new follower is, without text. The
+                    liked text is the user's own, so it's muted; replies and
+                    mentions are new to them. */}
+                {notification.type === "FOLLOW" ? (
+                    <p className="truncate text-sm text-muted">
+                        @{actor.username}
+                    </p>
+                ) : (
+                    <p
+                        className={`mt-1 whitespace-pre-wrap break-words ${
+                            notification.type === "LIKE" ? "text-muted" : ""
+                        }`}
+                    >
+                        <TextWithMentions
+                            text={notification.text}
+                            mentions={notification.mentions}
+                        />
+                    </p>
+                )}
             </div>
         </ClickablePost>
     );

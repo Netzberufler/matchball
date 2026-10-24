@@ -27,13 +27,33 @@ export async function setFollowing(
     }
 
     const key = { followerId: user.id, followingId: userId };
-    if (follow) {
-        // Does nothing if the follow already exists. Fails if the user
-        // doesn't exist, through the foreign key.
-        await prisma.follow.createMany({ data: key, skipDuplicates: true });
-    } else {
-        await prisma.follow.deleteMany({ where: key });
-    }
+    // The follow and the followed user's notification change together, and
+    // only when a follow was really added or removed, so a follow, unfollow
+    // and follow again leaves one notification
+    await prisma.$transaction(async (tx) => {
+        if (follow) {
+            // Does nothing if the follow already exists. Fails if the user
+            // doesn't exist, through the foreign key.
+            const { count: added } = await tx.follow.createMany({
+                data: key,
+                skipDuplicates: true,
+            });
+            if (added) {
+                await tx.notification.create({
+                    data: { userId, actorId: user.id, type: "FOLLOW" },
+                });
+            }
+        } else {
+            const { count: removed } = await tx.follow.deleteMany({
+                where: key,
+            });
+            if (removed) {
+                await tx.notification.deleteMany({
+                    where: { actorId: user.id, userId, type: "FOLLOW" },
+                });
+            }
+        }
+    });
     // Reload the page's server data, e.g. the follower count on the profile
     refresh();
     return { isFollowing: follow };

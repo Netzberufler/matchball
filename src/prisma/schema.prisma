@@ -39,7 +39,8 @@ model User {
   commentLikes        CommentLike[]
   // What happened to this user's posts and replies, for /notifications
   notifications       Notification[]   @relation("NotificationRecipient")
-  // Notifications this user caused by replying, liking or mentioning
+  // Notifications this user caused by replying, liking, mentioning or
+  // following
   causedNotifications Notification[]   @relation("NotificationActor")
 
   // The mention search: case-insensitive matches anywhere in the name
@@ -252,6 +253,8 @@ enum NotificationType {
   LIKE
   // Someone @mentioned the user in a post or reply
   MENTION
+  // Someone started following the user
+  FOLLOW
 }
 
 // Something that happened to a user's posts or replies, shown on
@@ -263,14 +266,14 @@ model Notification {
   // Who is notified
   userId    String           @db.Uuid
   user      User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
-  // Who replied, liked or mentioned
+  // Who replied, liked, mentioned or followed
   actorId   String           @db.Uuid
   actor     User             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
   type      NotificationType
-  // The post it's about, always set, so every notification links to a post
-  // page
-  postId    String           @db.Uuid
-  post      Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  // The post it's about, which it links to. Set on all but FOLLOW, which
+  // links to the follower's profile.
+  postId    String?          @db.Uuid
+  post      Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
   // Set when it's about a reply: the new reply (REPLY), the liked reply
   // (LIKE) or the reply with the mention (MENTION). Null when it's about
   // the post itself.
@@ -286,6 +289,7 @@ model Notification {
   // actor. Also for deleting them with the post or reply.
   @@index([postId, actorId])
   @@index([commentId, actorId])
-  // Deleting them with the actor
-  @@index([actorId])
+  // Removing a follow's notification on unfollow, by follower and
+  // followed user. Also for deleting them with the actor.
+  @@index([actorId, userId])
 }

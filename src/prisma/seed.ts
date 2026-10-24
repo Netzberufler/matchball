@@ -288,10 +288,17 @@ async function main() {
     );
     await prisma.commentLike.createMany({ data: commentLikes });
 
-    // The notifications the actions would have written for these likes and
-    // replies (see src/features/notifications/lib/notify.ts), at the same
-    // times. The seed's only mentions start replies, so they're covered by
-    // the reply notifications.
+    // The notifications the actions would have written for these follows,
+    // likes and replies (see src/features/notifications/lib/notify.ts), at
+    // the same times. The seed's only mentions start replies, so they're
+    // covered by the reply notifications.
+    await prisma.$executeRaw`
+        INSERT INTO "Notification"
+            ("id", "userId", "actorId", "type", "createdAt")
+        SELECT gen_random_uuid(), "followingId", "followerId", 'FOLLOW',
+            "createdAt"
+        FROM "Follow"
+        WHERE "followerId" = ANY(${userIds}::uuid[])`;
     await prisma.$executeRaw`
         INSERT INTO "Notification"
             ("id", "userId", "actorId", "type", "postId", "createdAt")
