@@ -1,13 +1,28 @@
-import { CalendarCheck, House, Swords, Trophy, UserRound } from "lucide-react";
+import {
+    Bell,
+    CalendarCheck,
+    House,
+    Swords,
+    Trophy,
+    UserRound,
+} from "lucide-react";
 import { profilePath } from "@/features/profile/utils/profile-path";
 
 // Shared by the desktop sidebar and the mobile nav bar.
 // shortLabel is used where space is tight (mobile nav bar).
+// desktopOnly items are left out of the mobile nav bar.
 // username is the signed-in user's, for the Profile link; null while it's
 // unknown during prerendering, which leaves that link without an href.
 export function getNavItems(username: string | null) {
     return [
         { href: "/", label: "Home", shortLabel: "Home", icon: House },
+        {
+            href: "/notifications",
+            label: "Notifications",
+            shortLabel: "Notifications",
+            icon: Bell,
+            desktopOnly: true,
+        },
         {
             href: "/matches",
             label: "Matches",

@@ -35,18 +35,36 @@ export async function setCommentLiked(
               })
             : await tx.commentLike.deleteMany({ where: key });
 
-        const comment = changed
-            ? await tx.comment.update({
-                  where: { id: commentId },
-                  data: {
-                      likeCount: liked ? { increment: 1 } : { decrement: 1 },
-                  },
-                  select: { likeCount: true },
-              })
-            : await tx.comment.findUniqueOrThrow({
-                  where: { id: commentId },
-                  select: { likeCount: true },
-              });
+        if (!changed) {
+            const comment = await tx.comment.findUniqueOrThrow({
+                where: { id: commentId },
+                select: { likeCount: true },
+            });
+            return comment.likeCount;
+        }
+
+        const comment = await tx.comment.update({
+            where: { id: commentId },
+            data: { likeCount: liked ? { increment: 1 } : { decrement: 1 } },
+            select: { likeCount: true, authorId: true, postId: true },
+        });
+        // Its author is notified of the like, and the notification goes
+        // again with an unlike
+        if (liked && comment.authorId !== user.id) {
+            await tx.notification.create({
+                data: {
+                    userId: comment.authorId,
+                    actorId: user.id,
+                    type: "LIKE",
+                    postId: comment.postId,
+                    commentId,
+                },
+            });
+        } else if (!liked) {
+            await tx.notification.deleteMany({
+                where: { commentId, actorId: user.id, type: "LIKE" },
+            });
+        }
         return comment.likeCount;
     });
 

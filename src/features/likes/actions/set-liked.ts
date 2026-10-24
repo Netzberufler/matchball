@@ -32,18 +32,40 @@ export async function setLiked(
               await tx.like.createMany({ data: key, skipDuplicates: true })
             : await tx.like.deleteMany({ where: key });
 
-        const post = changed
-            ? await tx.post.update({
-                  where: { id: postId },
-                  data: {
-                      likeCount: liked ? { increment: 1 } : { decrement: 1 },
-                  },
-                  select: { likeCount: true },
-              })
-            : await tx.post.findUniqueOrThrow({
-                  where: { id: postId },
-                  select: { likeCount: true },
-              });
+        if (!changed) {
+            const post = await tx.post.findUniqueOrThrow({
+                where: { id: postId },
+                select: { likeCount: true },
+            });
+            return post.likeCount;
+        }
+
+        const post = await tx.post.update({
+            where: { id: postId },
+            data: { likeCount: liked ? { increment: 1 } : { decrement: 1 } },
+            select: { likeCount: true, authorId: true },
+        });
+        // Its author is notified of the like, and the notification goes
+        // again with an unlike
+        if (liked && post.authorId !== user.id) {
+            await tx.notification.create({
+                data: {
+                    userId: post.authorId,
+                    actorId: user.id,
+                    type: "LIKE",
+                    postId,
+                },
+            });
+        } else if (!liked) {
+            await tx.notification.deleteMany({
+                where: {
+                    postId,
+                    actorId: user.id,
+                    commentId: null,
+                    type: "LIKE",
+                },
+            });
+        }
         return post.likeCount;
     });
 

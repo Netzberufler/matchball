@@ -14,29 +14,33 @@ datasource db {
 // (src/lib/auth.ts), which leaves id generation to Prisma.
 
 model User {
-  id              String           @id @default(uuid(7)) @db.Uuid
-  email           String           @unique
+  id                  String           @id @default(uuid(7)) @db.Uuid
+  email               String           @unique
   // Used for sign-in and in profile URLs: only a-z, 0-9 and _ (validated in src/lib/auth.ts)
-  username        String           @unique @db.VarChar(30)
+  username            String           @unique @db.VarChar(30)
   // Display name
-  name            String           @db.VarChar(50)
-  emailVerified   Boolean          @default(false)
-  image           String?
-  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
-  sessions        Session[]
-  accounts        Account[]
-  posts           Post[]
+  name                String           @db.VarChar(50)
+  emailVerified       Boolean          @default(false)
+  image               String?
+  createdAt           DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(6)
+  sessions            Session[]
+  accounts            Account[]
+  posts               Post[]
   // Follows where this user is the follower, i.e. whom they follow
-  following       Follow[]         @relation("FollowFollower")
+  following           Follow[]         @relation("FollowFollower")
   // Follows where this user is followed, i.e. their followers
-  followers       Follow[]         @relation("FollowFollowing")
-  likes           Like[]
-  comments        Comment[]
+  followers           Follow[]         @relation("FollowFollowing")
+  likes               Like[]
+  comments            Comment[]
   // Where this user is @mentioned
-  postMentions    PostMention[]
-  commentMentions CommentMention[]
-  commentLikes    CommentLike[]
+  postMentions        PostMention[]
+  commentMentions     CommentMention[]
+  commentLikes        CommentLike[]
+  // What happened to this user's posts and replies, for /notifications
+  notifications       Notification[]   @relation("NotificationRecipient")
+  // Notifications this user caused by replying, liking or mentioning
+  causedNotifications Notification[]   @relation("NotificationActor")
 
   // The mention search: case-insensitive matches anywhere in the name
   // (ILIKE). Usernames are searched by prefix through their unique index,
@@ -91,24 +95,25 @@ model Verification {
 }
 
 model Post {
-  id           String        @id @default(uuid(7)) @db.Uuid
+  id            String         @id @default(uuid(7)) @db.Uuid
   // Plain text only; the limit is POST_MAX_LENGTH in src/features/posts/utils/post-rules.ts
-  content      String        @db.VarChar(160)
-  authorId     String        @db.Uuid
-  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content       String         @db.VarChar(160)
+  authorId      String         @db.Uuid
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   // The number of Like rows for this post, kept in step with them by
   // src/features/likes/actions/set-liked.ts, so feeds don't count likes
-  likeCount    Int           @default(0)
-  likes        Like[]
+  likeCount     Int            @default(0)
+  likes         Like[]
   // The number of comments, kept in step by
   // src/features/comments/actions/create-comment.ts
-  commentCount Int           @default(0)
-  comments     Comment[]
-  mentions     PostMention[]
+  commentCount  Int            @default(0)
+  comments      Comment[]
+  mentions      PostMention[]
+  notifications Notification[]
   // Milliseconds, like JavaScript dates, so a (createdAt, id) feed cursor
   // that went through the browser still matches the stored value exactly
-  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
 
   // Feeds are sorted newest first, with id as a tiebreaker so a
   // (createdAt, id) cursor can page through them later
@@ -177,6 +182,7 @@ model Comment {
   rootId        String?          @db.Uuid
   root          Comment?         @relation("CommentThread", fields: [rootId], references: [id], onDelete: Cascade)
   threadReplies Comment[]        @relation("CommentThread")
+  notifications Notification[]
   // The number of replies below it, on top-level comments and level 1
   // replies (deeper ones can't be answered, so they keep 0), kept in step
   // by
@@ -237,4 +243,49 @@ model CommentLike {
   @@id([commentId, userId])
   // A user's comment likes, e.g. for deleting them with the user
   @@index([userId, createdAt(sort: Desc)])
+}
+
+enum NotificationType {
+  // Someone replied to the user's post or reply
+  REPLY
+  // Someone liked the user's post or reply
+  LIKE
+  // Someone @mentioned the user in a post or reply
+  MENTION
+}
+
+// Something that happened to a user's posts or replies, shown on
+// /notifications. Written together with what caused it (a reply, like or
+// mention), in the same transaction, so the list is a single indexed read
+// instead of collecting replies, likes and mentions on every page view.
+model Notification {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  // Who is notified
+  userId    String           @db.Uuid
+  user      User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  // Who replied, liked or mentioned
+  actorId   String           @db.Uuid
+  actor     User             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  // The post it's about, always set, so every notification links to a post
+  // page
+  postId    String           @db.Uuid
+  post      Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  // Set when it's about a reply: the new reply (REPLY), the liked reply
+  // (LIKE) or the reply with the mention (MENTION). Null when it's about
+  // the post itself.
+  commentId String?          @db.Uuid
+  comment   Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  // A user's notifications, newest first, paged by (createdAt, id). Also
+  // for deleting them with the user.
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
+  // Removing a like's notification on unlike, by post or by reply and
+  // actor. Also for deleting them with the post or reply.
+  @@index([postId, actorId])
+  @@index([commentId, actorId])
+  // Deleting them with the actor
+  @@index([actorId])
 }

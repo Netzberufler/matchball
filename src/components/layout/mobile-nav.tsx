@@ -16,8 +16,9 @@ function MobileNavList({
 }) {
     return (
         <ul className="grid h-full grid-cols-5 items-center">
-            {getNavItems(username).map(
-                ({ href, label, shortLabel, icon: Icon }) => {
+            {getNavItems(username)
+                .filter((item) => !item.desktopOnly)
+                .map(({ href, label, shortLabel, icon: Icon }) => {
                     const isActive = isActivePath(href, pathname);
                     const content = (
                         <>
@@ -47,8 +48,7 @@ function MobileNavList({
                             )}
                         </li>
                     );
-                },
-            )}
+                })}
         </ul>
     );
 }

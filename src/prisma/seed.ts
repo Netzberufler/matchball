@@ -288,6 +288,47 @@ async function main() {
     );
     await prisma.commentLike.createMany({ data: commentLikes });
 
+    // The notifications the actions would have written for these likes and
+    // replies (see src/features/notifications/lib/notify.ts), at the same
+    // times. The seed's only mentions start replies, so they're covered by
+    // the reply notifications.
+    await prisma.$executeRaw`
+        INSERT INTO "Notification"
+            ("id", "userId", "actorId", "type", "postId", "createdAt")
+        SELECT gen_random_uuid(), "Post"."authorId", "Like"."userId",
+            'LIKE', "Like"."postId", "Like"."createdAt"
+        FROM "Like" JOIN "Post" ON "Post"."id" = "Like"."postId"
+        WHERE "Like"."userId" = ANY(${userIds}::uuid[])
+            AND "Post"."authorId" <> "Like"."userId"`;
+    await prisma.$executeRaw`
+        INSERT INTO "Notification"
+            ("id", "userId", "actorId", "type", "postId", "commentId",
+             "createdAt")
+        SELECT gen_random_uuid(), "Comment"."authorId", "CommentLike"."userId",
+            'LIKE', "Comment"."postId", "Comment"."id",
+            "CommentLike"."createdAt"
+        FROM "CommentLike"
+        JOIN "Comment" ON "Comment"."id" = "CommentLike"."commentId"
+        WHERE "CommentLike"."userId" = ANY(${userIds}::uuid[])
+            AND "Comment"."authorId" <> "CommentLike"."userId"`;
+    // A reply notifies the author of the reply it answers, or for a
+    // top-level comment the post's
+    await prisma.$executeRaw`
+        INSERT INTO "Notification"
+            ("id", "userId", "actorId", "type", "postId", "commentId",
+             "createdAt")
+        SELECT gen_random_uuid(),
+            COALESCE("Parent"."authorId", "Post"."authorId"),
+            "Comment"."authorId", 'REPLY', "Comment"."postId", "Comment"."id",
+            "Comment"."createdAt"
+        FROM "Comment"
+        JOIN "Post" ON "Post"."id" = "Comment"."postId"
+        LEFT JOIN "Comment" AS "Parent"
+            ON "Parent"."id" = "Comment"."parentId"
+        WHERE "Comment"."authorId" = ANY(${userIds}::uuid[])
+            AND COALESCE("Parent"."authorId", "Post"."authorId")
+                <> "Comment"."authorId"`;
+
     // Count the likes and replies on every reply, and the likes and comments on every
     // post. This also corrects ones by other users that lost likes or
     // comments when the old seed users were deleted above.
