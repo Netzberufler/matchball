@@ -76,11 +76,11 @@ export function NotificationListFallback() {
             <ul className="divide-y divide-separator">
                 {[0, 1, 2].map((index) => (
                     <li key={index} className="flex gap-3 p-4">
-                        <div className="flex w-10 shrink-0 justify-end pt-2">
-                            <Skeleton className="size-6 rounded-full" />
+                        <div className="mr-2 flex h-10 shrink-0 items-center">
+                            <Skeleton className="size-5 rounded-full" />
                         </div>
-                        <div className="flex flex-1 flex-col gap-2">
-                            <Skeleton className="size-10 rounded-full" />
+                        <Skeleton className="size-10 shrink-0 rounded-full" />
+                        <div className="flex flex-1 flex-col gap-2 pt-1">
                             <Skeleton className="h-3.5 w-48 rounded-full" />
                             <Skeleton className="h-3.5 w-full rounded-full" />
                         </div>

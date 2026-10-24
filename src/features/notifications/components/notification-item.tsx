@@ -50,25 +50,26 @@ export function NotificationItem({
             // The hover colour of posts in the feeds
             className="flex gap-3 p-4 transition-colors hover:bg-surface-secondary/60"
         >
-            {/* As wide as an avatar, so the texts line up with posts */}
-            <div className="flex w-10 shrink-0 justify-end pt-2">
+            {/* What happened; the text says it too. As tall as the avatar,
+                to center the icon beside it. */}
+            <div className="mr-2 flex h-10 shrink-0 items-center">
                 <Icon
-                    className={`size-6 ${display.iconClassName}`}
+                    className={`size-5 ${display.iconClassName}`}
                     aria-hidden
                 />
             </div>
+            {/* Same target as the name link, so only that one is focusable
+                and announced */}
+            <Link
+                href={profileHref}
+                tabIndex={-1}
+                aria-hidden
+                className="shrink-0 self-start rounded-full transition-opacity hover:opacity-80"
+            >
+                <UserAvatar name={actor.name} image={actor.image} />
+            </Link>
             <div className="min-w-0 flex-1">
-                {/* Same target as the name link, so only that one is
-                    focusable and announced */}
-                <Link
-                    href={profileHref}
-                    tabIndex={-1}
-                    aria-hidden
-                    className="inline-block rounded-full transition-opacity hover:opacity-80"
-                >
-                    <UserAvatar name={actor.name} image={actor.image} />
-                </Link>
-                <p className="mt-2 text-sm">
+                <p className="text-sm">
                     <Link
                         href={profileHref}
                         className="font-semibold text-foreground hover:underline"
