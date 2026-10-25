@@ -17,7 +17,8 @@ export default function EditProfilePage() {
                 <BackButton />
                 <h1 className="text-xl font-semibold">Edit profile</h1>
             </div>
-            {/* Reads the session at request time */}
+            {/* Reads the session at request time. Both render a card; the
+                form's success message goes above it. */}
             <Suspense fallback={<EditProfileFallback />}>
                 <EditProfile />
             </Suspense>

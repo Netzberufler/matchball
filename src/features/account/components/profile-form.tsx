@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
     Alert,
     Button,
+    Card,
     Description,
     FieldError,
     Form,
@@ -14,7 +15,17 @@ import {
 import { updateProfile } from "@/features/account/actions/update-profile";
 import { validateName } from "@/features/auth/utils/auth-rules";
 
-export function ProfileForm({ name }: { name: string }) {
+// The form in a card, with the success message above the card. children is
+// shown in the card above the form.
+export function ProfileForm({
+    name,
+    username,
+    children,
+}: {
+    name: string;
+    username: string;
+    children: React.ReactNode;
+}) {
     const [isPending, startTransition] = useTransition();
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formError, setFormError] = useState<string | null>(null);
@@ -41,45 +52,74 @@ export function ProfileForm({ name }: { name: string }) {
     }
 
     return (
-        <Form
-            className="flex max-w-md flex-col gap-4"
-            validationErrors={fieldErrors}
-            onSubmit={onSubmit}
-        >
-            {formError && (
-                <Alert status="danger">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                        <Alert.Title>{formError}</Alert.Title>
-                    </Alert.Content>
-                </Alert>
-            )}
+        <div className="flex flex-col gap-4">
             {isSaved && (
-                <Alert status="success">
+                // Tinted and flat, so it doesn't look like another card
+                <Alert
+                    status="success"
+                    className="rounded-xl bg-success-soft px-3 py-2 shadow-none"
+                >
                     <Alert.Indicator />
                     <Alert.Content>
                         <Alert.Title>Your profile was saved</Alert.Title>
                     </Alert.Content>
                 </Alert>
             )}
+            <Card>
+                <Card.Content className="flex flex-col gap-6">
+                    {children}
+                    <Form
+                        className="flex flex-col gap-4"
+                        validationErrors={fieldErrors}
+                        onSubmit={onSubmit}
+                    >
+                        {formError && (
+                            <Alert status="danger">
+                                <Alert.Indicator />
+                                <Alert.Content>
+                                    <Alert.Title>{formError}</Alert.Title>
+                                </Alert.Content>
+                            </Alert>
+                        )}
 
-            <TextField
-                variant="secondary"
-                isRequired
-                name="name"
-                autoComplete="name"
-                defaultValue={name}
-                validate={validateName}
-            >
-                <Label>Name</Label>
-                <Input placeholder="Your full name" />
-                <Description>Shown on your profile</Description>
-                <FieldError />
-            </TextField>
+                        {/* Only shown: without a name, and disabled, it
+                            isn't part of the form data */}
+                        <TextField
+                            variant="secondary"
+                            isDisabled
+                            value={username}
+                        >
+                            <Label>Username</Label>
+                            <Input />
+                            <Description>
+                                Usernames can&apos;t be changed
+                            </Description>
+                        </TextField>
 
-            <Button type="submit" className="self-start" isPending={isPending}>
-                Save
-            </Button>
-        </Form>
+                        <TextField
+                            variant="secondary"
+                            isRequired
+                            name="name"
+                            autoComplete="name"
+                            defaultValue={name}
+                            validate={validateName}
+                        >
+                            <Label>Name</Label>
+                            <Input placeholder="Your full name" />
+                            <Description>Shown on your profile</Description>
+                            <FieldError />
+                        </TextField>
+
+                        <Button
+                            type="submit"
+                            className="self-start"
+                            isPending={isPending}
+                        >
+                            Save
+                        </Button>
+                    </Form>
+                </Card.Content>
+            </Card>
+        </div>
     );
 }
