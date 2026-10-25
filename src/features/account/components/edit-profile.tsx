@@ -2,9 +2,10 @@ import { Card, Skeleton } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { requireSession } from "@/features/auth/lib/session";
 import { ProfileForm } from "@/features/account/components/profile-form";
+import { ProfilePhoto } from "@/features/account/components/profile-photo";
 
-// The signed-in user's current profile above the profile form, which is
-// filled in with their data. Reads the session, so render it inside
+// The signed-in user's current profile and photo above the profile form,
+// which is filled in with their data. Reads the session, so render it inside
 // <Suspense> with <EditProfileFallback />.
 export async function EditProfile() {
     const { user } = await requireSession();
@@ -12,18 +13,11 @@ export async function EditProfile() {
     const username = user.username ?? "";
     return (
         <ProfileForm name={user.name} username={username}>
-            {/* Laid out like the user menu in the sidebar */}
-            <div className="flex items-center gap-3 rounded-2xl bg-surface-secondary p-4">
-                <UserAvatar name={user.name} image={user.image} />
-                <div className="flex min-w-0 flex-col">
-                    <span className="truncate font-medium text-foreground">
-                        {user.name}
-                    </span>
-                    <span className="truncate text-sm text-muted">
-                        @{username}
-                    </span>
-                </div>
-            </div>
+            <ProfilePhoto
+                name={user.name}
+                username={username}
+                image={user.image}
+            />
         </ProfileForm>
     );
 }
@@ -34,11 +28,16 @@ export function EditProfileFallback() {
     return (
         <Card aria-hidden>
             <Card.Content className="flex flex-col gap-6">
-                <div className="flex items-center gap-3 rounded-2xl bg-surface-secondary p-4">
+                <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface-secondary p-4">
                     <UserAvatar />
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-1 flex-col gap-1.5">
                         <Skeleton className="h-3.5 w-28 rounded-full" />
                         <Skeleton className="h-3 w-20 rounded-full" />
+                    </div>
+                    {/* The photo buttons */}
+                    <div className="flex gap-2">
+                        <Skeleton className="h-8 w-28 rounded-full" />
+                        <Skeleton className="h-8 w-28 rounded-full" />
                     </div>
                 </div>
                 <div className="flex flex-col gap-4">

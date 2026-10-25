@@ -72,6 +72,16 @@ export const auth = betterAuth({
             }
             const body = { ...ctx.body };
 
+            // Better Auth would store any image URL, e.g. a tracking pixel on
+            // another site. Profile photos are only set by the upload action
+            // in features/account/actions/avatar.ts, which stores them here.
+            if (body.image !== undefined) {
+                throw new APIError("BAD_REQUEST", {
+                    code: "IMAGE_NOT_ALLOWED",
+                    message: "Profile photos can only be uploaded",
+                });
+            }
+
             if (ctx.path === "/sign-up/email" && !body.username) {
                 throw new APIError("BAD_REQUEST", {
                     code: "USERNAME_REQUIRED",
