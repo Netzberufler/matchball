@@ -1,10 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Ellipsis, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Dropdown, Label } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { ACCOUNT_SETTINGS_PATH } from "@/features/account/utils/account-path";
 import { signOut } from "@/features/auth/actions/sign-out";
 
 export function UserMenuDropdown({
@@ -16,6 +18,7 @@ export function UserMenuDropdown({
     username: string;
     image?: string | null;
 }) {
+    const router = useRouter();
     const [, startTransition] = useTransition();
     const { resolvedTheme, setTheme } = useTheme();
     const isDark = resolvedTheme === "dark";
@@ -48,6 +51,8 @@ export function UserMenuDropdown({
                     onAction={(key) => {
                         if (key === "theme") {
                             setTheme(isDark ? "light" : "dark");
+                        } else if (key === "settings") {
+                            router.push(ACCOUNT_SETTINGS_PATH);
                         } else if (key === "sign-out") {
                             startTransition(() => signOut());
                         }
@@ -62,7 +67,6 @@ export function UserMenuDropdown({
                             <Label>{themeLabel}</Label>
                         </div>
                     </Dropdown.Item>
-                    {/* TODO: link to the settings page once it exists */}
                     <Dropdown.Item id="settings" textValue="Settings">
                         <div className="flex w-full items-center gap-2">
                             <Settings

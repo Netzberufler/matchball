@@ -1,4 +1,6 @@
-import { Button, Skeleton } from "@heroui/react";
+import Link from "next/link";
+import { Button, buttonVariants, Skeleton } from "@heroui/react";
+import { ACCOUNT_PROFILE_PATH } from "@/features/account/utils/account-path";
 import { requireSession } from "@/features/auth/lib/session";
 import { FollowButton } from "@/features/follows/components/follow-button";
 import { isFollowing } from "@/features/follows/lib/queries";
@@ -21,10 +23,16 @@ export async function ProfileActions({ username }: { username: string }) {
     if (profileUser.id === viewer.id) {
         return (
             <ButtonLine>
-                {/* TODO: edit the profile */}
-                <Button variant="tertiary" fullWidth>
+                {/* A link styled as a HeroUI button */}
+                <Link
+                    href={ACCOUNT_PROFILE_PATH}
+                    className={buttonVariants({
+                        variant: "tertiary",
+                        fullWidth: true,
+                    })}
+                >
                     Edit profile
-                </Button>
+                </Link>
             </ButtonLine>
         );
     }
