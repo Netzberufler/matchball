@@ -1,37 +1,42 @@
 "use server";
 
-import { headers } from "next/headers";
 import { refresh } from "next/cache";
-import { isAPIError } from "better-auth/api";
-import { auth } from "@/features/auth/lib/auth";
 import { requireSession } from "@/features/auth/lib/session";
+import { validateName } from "@/features/auth/utils/auth-rules";
 import {
-    type AuthFormError,
-    toAuthFormError,
-} from "@/features/auth/utils/auth-errors";
+    normalizeBio,
+    validateBio,
+} from "@/features/account/utils/profile-rules";
+import { prisma } from "@/prisma/db";
 
-// Better Auth validates the name again (see the hooks in lib/auth.ts)
+export type ProfileFormError = {
+    field?: "name" | "bio";
+    message: string;
+};
+
+// Saves the signed-in user's name and bio together, so either both or
+// neither change
 export async function updateProfile(
     formData: FormData,
-): Promise<{ error: AuthFormError | null }> {
-    await requireSession();
+): Promise<{ error: ProfileFormError | null }> {
+    const { user } = await requireSession();
 
-    try {
-        await auth.api.updateUser({
-            body: { name: String(formData.get("name") ?? "") },
-            headers: await headers(),
-        });
-    } catch (error) {
-        if (isAPIError(error)) {
-            return {
-                error: toAuthFormError({
-                    code: error.body?.code,
-                    message: error.body?.message,
-                }),
-            };
-        }
-        throw error;
+    // Validated again here: actions can be called without the form
+    const name = String(formData.get("name") ?? "").trim();
+    const nameError = validateName(name);
+    if (nameError) {
+        return { error: { field: "name", message: nameError } };
     }
+    const bioInput = String(formData.get("bio") ?? "");
+    const bioError = validateBio(bioInput);
+    if (bioError) {
+        return { error: { field: "bio", message: bioError } };
+    }
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { name, bio: normalizeBio(bioInput) },
+    });
 
     // Reload the page's server data, e.g. the name in the sidebar
     refresh();

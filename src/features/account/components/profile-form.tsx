@@ -10,9 +10,14 @@ import {
     Form,
     Input,
     Label,
+    TextArea,
     TextField,
 } from "@heroui/react";
 import { updateProfile } from "@/features/account/actions/update-profile";
+import {
+    BIO_MAX_LENGTH,
+    validateBio,
+} from "@/features/account/utils/profile-rules";
 import { validateName } from "@/features/auth/utils/auth-rules";
 
 // The form in a card, with the success message above the card. children is
@@ -20,12 +25,16 @@ import { validateName } from "@/features/auth/utils/auth-rules";
 export function ProfileForm({
     name,
     username,
+    bio,
     children,
 }: {
     name: string;
     username: string;
+    bio: string | null;
     children: React.ReactNode;
 }) {
+    // Controlled for the character count
+    const [bioValue, setBioValue] = useState(bio ?? "");
     const [isPending, startTransition] = useTransition();
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formError, setFormError] = useState<string | null>(null);
@@ -107,6 +116,29 @@ export function ProfileForm({
                             <Label>Name</Label>
                             <Input placeholder="Your full name" />
                             <Description>Shown on your profile</Description>
+                            <FieldError />
+                        </TextField>
+
+                        <TextField
+                            variant="secondary"
+                            name="bio"
+                            value={bioValue}
+                            onChange={setBioValue}
+                            maxLength={BIO_MAX_LENGTH}
+                            validate={validateBio}
+                        >
+                            <Label>Bio</Label>
+                            <TextArea
+                                rows={3}
+                                className="resize-none"
+                                placeholder="A few words about you"
+                            />
+                            <div className="flex justify-between gap-3">
+                                <Description>Shown on your profile</Description>
+                                <Description className="tabular-nums">
+                                    {bioValue.length}/{BIO_MAX_LENGTH}
+                                </Description>
+                            </div>
                             <FieldError />
                         </TextField>
 

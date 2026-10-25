@@ -48,6 +48,13 @@ export async function ProfileHeader({ username }: { username: string }) {
                         href={followingPath(user.username)}
                     />
                 </p>
+                {/* Keeps the user's line breaks; long words wrap rather
+                    than widen the page */}
+                {user.bio && (
+                    <p className="mt-2 break-words whitespace-pre-line">
+                        {user.bio}
+                    </p>
+                )}
             </div>
         </div>
     );

@@ -14,6 +14,7 @@ export const getProfileUser = cache(async (username: string) => {
             username: true,
             name: true,
             image: true,
+            bio: true,
             // Each count reads an index: Post (authorId, ...), and Follow's
             // primary key and (followingId, followerId). If they get slow
             // with many rows, store them as counters on User instead.

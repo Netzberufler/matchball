@@ -3,16 +3,22 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { requireSession } from "@/features/auth/lib/session";
 import { ProfileForm } from "@/features/account/components/profile-form";
 import { ProfilePhoto } from "@/features/account/components/profile-photo";
+import { getAccountProfile } from "@/features/account/lib/queries";
 
 // The signed-in user's current profile and photo above the profile form,
-// which is filled in with their data. Reads the session, so render it inside
-// <Suspense> with <EditProfileFallback />.
+// which is filled in with their data. Reads the session and the database, so
+// render it inside <Suspense> with <EditProfileFallback />.
 export async function EditProfile() {
     const { user } = await requireSession();
+    const profile = await getAccountProfile(user.id);
     // username is required in the database; Better Auth types it as optional
     const username = user.username ?? "";
     return (
-        <ProfileForm name={user.name} username={username}>
+        <ProfileForm
+            name={user.name}
+            username={username}
+            bio={profile?.bio ?? null}
+        >
             <ProfilePhoto
                 name={user.name}
                 username={username}
@@ -49,6 +55,12 @@ export function EditProfileFallback() {
                             <Skeleton className="h-3 w-32 rounded-full" />
                         </div>
                     ))}
+                    {/* The bio field */}
+                    <div className="flex flex-col gap-2">
+                        <Skeleton className="h-4 w-16 rounded-full" />
+                        <Skeleton className="h-20 rounded-xl" />
+                        <Skeleton className="h-3 w-32 rounded-full" />
+                    </div>
                     <Skeleton className="h-10 w-20 rounded-full md:h-9" />
                 </div>
             </Card.Content>

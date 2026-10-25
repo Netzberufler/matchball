@@ -20,6 +20,8 @@ model User {
   username            String           @unique @db.VarChar(30)
   // Display name
   name                String           @db.VarChar(50)
+  // Shown on the profile; null when the user hasn't written one
+  bio                 String?          @db.VarChar(160)
   emailVerified       Boolean          @default(false)
   image               String?
   createdAt           DateTime         @default(now()) @db.Timestamptz(6)
