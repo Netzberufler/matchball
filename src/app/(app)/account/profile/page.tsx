@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { BackButton } from "@/components/ui/back-button";
+import { AccountTabs } from "@/features/account/components/account-tabs";
 import {
     EditProfile,
     EditProfileFallback,
@@ -13,9 +13,10 @@ export const metadata: Metadata = {
 export default function EditProfilePage() {
     return (
         <>
-            <div className="mb-4 flex items-center gap-2">
-                <BackButton />
-                <h1 className="text-xl font-semibold">Edit profile</h1>
+            {/* For screen readers; the selected tab shows the page */}
+            <h1 className="sr-only">Edit profile</h1>
+            <div className="mb-4">
+                <AccountTabs selected="profile" />
             </div>
             {/* Reads the session at request time. Both render a card; the
                 form's success message goes above it. */}

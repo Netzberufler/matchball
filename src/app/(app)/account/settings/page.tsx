@@ -1,8 +1,6 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { buttonVariants } from "@heroui/react";
-import { BackButton } from "@/components/ui/back-button";
-import { ACCOUNT_PROFILE_PATH } from "@/features/account/utils/account-path";
+import { Card } from "@heroui/react";
+import { AccountTabs } from "@/features/account/components/account-tabs";
 
 export const metadata: Metadata = {
     title: "Settings",
@@ -11,18 +9,19 @@ export const metadata: Metadata = {
 export default function SettingsPage() {
     return (
         <>
-            <div className="mb-4 flex items-center gap-2">
-                <BackButton />
-                <h1 className="text-xl font-semibold">Settings</h1>
+            {/* For screen readers; the selected tab shows the page */}
+            <h1 className="sr-only">Settings</h1>
+            <div className="mb-4">
+                <AccountTabs selected="settings" />
             </div>
-            <p className="text-muted">Manage your account.</p>
-            {/* A link styled as a HeroUI button */}
-            <Link
-                href={ACCOUNT_PROFILE_PATH}
-                className={`mt-4 ${buttonVariants({ variant: "tertiary" })}`}
-            >
-                Edit profile
-            </Link>
+            {/* TODO: account settings */}
+            <Card>
+                <Card.Content>
+                    <p className="text-muted">
+                        Account settings are coming soon.
+                    </p>
+                </Card.Content>
+            </Card>
         </>
     );
 }
