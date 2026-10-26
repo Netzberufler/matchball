@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Card } from "@heroui/react";
+import { BackButton } from "@/components/ui/back-button";
 import { AccountTabs } from "@/features/account/components/account-tabs";
 
 export const metadata: Metadata = {
@@ -9,8 +10,10 @@ export const metadata: Metadata = {
 export default function SettingsPage() {
     return (
         <>
-            {/* For screen readers; the selected tab shows the page */}
-            <h1 className="sr-only">Settings</h1>
+            <div className="mb-4 flex items-center gap-2">
+                <BackButton href="/" />
+                <h1 className="text-xl font-semibold">Manage your account</h1>
+            </div>
             <div className="mb-4">
                 <AccountTabs selected="settings" />
             </div>

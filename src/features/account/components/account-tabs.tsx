@@ -8,12 +8,8 @@ import {
 } from "@/features/account/utils/account-path";
 
 const ACCOUNT_TABS = [
+    { key: "settings", label: "Settings", href: ACCOUNT_SETTINGS_PATH },
     { key: "profile", label: "Edit profile", href: ACCOUNT_PROFILE_PATH },
-    {
-        key: "settings",
-        label: "Account Settings",
-        href: ACCOUNT_SETTINGS_PATH,
-    },
 ] as const;
 
 type AccountTab = (typeof ACCOUNT_TABS)[number]["key"];

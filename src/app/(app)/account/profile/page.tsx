@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { BackButton } from "@/components/ui/back-button";
 import { AccountTabs } from "@/features/account/components/account-tabs";
 import {
     EditProfile,
@@ -13,8 +14,10 @@ export const metadata: Metadata = {
 export default function EditProfilePage() {
     return (
         <>
-            {/* For screen readers; the selected tab shows the page */}
-            <h1 className="sr-only">Edit profile</h1>
+            <div className="mb-4 flex items-center gap-2">
+                <BackButton href="/" />
+                <h1 className="text-xl font-semibold">Manage your account</h1>
+            </div>
             <div className="mb-4">
                 <AccountTabs selected="profile" />
             </div>
