@@ -22,6 +22,8 @@ model User {
   name                String           @db.VarChar(50)
   // Shown on the profile; null when the user hasn't written one
   bio                 String?          @db.VarChar(160)
+  // Optional; null means "Prefer not to say" in the profile form
+  gender              Gender?
   emailVerified       Boolean          @default(false)
   image               String?
   createdAt           DateTime         @default(now()) @db.Timestamptz(6)
@@ -246,6 +248,12 @@ model CommentLike {
   @@id([commentId, userId])
   // A user's comment likes, e.g. for deleting them with the user
   @@index([userId, createdAt(sort: Desc)])
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
 }
 
 enum NotificationType {

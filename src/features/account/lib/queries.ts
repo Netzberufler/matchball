@@ -6,6 +6,6 @@ import { prisma } from "@/prisma/db";
 export async function getAccountProfile(userId: string) {
     return prisma.user.findUnique({
         where: { id: userId },
-        select: { bio: true },
+        select: { bio: true, gender: true },
     });
 }

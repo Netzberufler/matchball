@@ -18,6 +18,7 @@ export async function EditProfile() {
             name={user.name}
             username={username}
             bio={profile?.bio ?? null}
+            gender={profile?.gender ?? null}
         >
             <ProfilePhoto
                 name={user.name}
@@ -60,6 +61,11 @@ export function EditProfileFallback() {
                         <Skeleton className="h-4 w-16 rounded-full" />
                         <Skeleton className="h-20 rounded-xl" />
                         <Skeleton className="h-3 w-32 rounded-full" />
+                    </div>
+                    {/* The gender select */}
+                    <div className="flex flex-col gap-2">
+                        <Skeleton className="h-4 w-16 rounded-full" />
+                        <Skeleton className="h-10 rounded-xl md:h-9" />
                     </div>
                     <Skeleton className="h-10 w-20 rounded-full md:h-9" />
                 </div>

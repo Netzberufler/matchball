@@ -10,12 +10,17 @@ import {
     Form,
     Input,
     Label,
+    ListBox,
+    Select,
     TextArea,
     TextField,
 } from "@heroui/react";
 import { updateProfile } from "@/features/account/actions/update-profile";
 import {
     BIO_MAX_LENGTH,
+    GENDER_OPTIONS,
+    GENDER_NOT_SAID,
+    type Gender,
     validateBio,
 } from "@/features/account/utils/profile-rules";
 import { validateName } from "@/features/auth/utils/auth-rules";
@@ -26,11 +31,14 @@ export function ProfileForm({
     name,
     username,
     bio,
+    gender,
     children,
 }: {
     name: string;
     username: string;
     bio: string | null;
+    // null when the user prefers not to say
+    gender: Gender | null;
     children: React.ReactNode;
 }) {
     // Controlled for the character count
@@ -141,6 +149,38 @@ export function ProfileForm({
                             </div>
                             <FieldError />
                         </TextField>
+
+                        <Select
+                            variant="secondary"
+                            name="gender"
+                            // No gender stored shows as "Prefer not to say"
+                            defaultValue={gender ?? GENDER_NOT_SAID}
+                        >
+                            <Label>Gender</Label>
+                            <Select.Trigger>
+                                <Select.Value />
+                                <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                                <ListBox>
+                                    {GENDER_OPTIONS.map(({ value, label }) => (
+                                        <ListBox.Item
+                                            key={value}
+                                            id={value}
+                                            textValue={label}
+                                        >
+                                            {label}
+                                            <ListBox.ItemIndicator />
+                                        </ListBox.Item>
+                                    ))}
+                                </ListBox>
+                            </Select.Popover>
+                            <Description>
+                                <span className="underline">Not</span> shown on
+                                your profile
+                            </Description>
+                            <FieldError />
+                        </Select>
 
                         <Button
                             type="submit"
