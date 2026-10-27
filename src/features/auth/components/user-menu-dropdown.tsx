@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { type ComponentProps, type ReactNode, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Ellipsis, LogOut, Moon, Settings, Sun } from "lucide-react";
@@ -18,6 +18,41 @@ export function UserMenuDropdown({
     username: string;
     image?: string | null;
 }) {
+    return (
+        <AccountMenu
+            label={`Account menu for ${name}`}
+            triggerClassName="mx-auto flex w-fit items-center gap-3 rounded-full text-left transition-colors transform-none hover:bg-default aria-expanded:bg-default lg:mx-0 lg:w-full lg:px-2 lg:py-2"
+            placement="top start"
+        >
+            <UserAvatar name={name} image={image} />
+            {/* Only the avatar in the narrow tablet sidebar */}
+            <span className="hidden min-w-0 flex-col lg:flex">
+                <span className="truncate font-medium text-foreground">
+                    {name}
+                </span>
+                <span className="truncate text-sm text-muted">@{username}</span>
+            </span>
+            <Ellipsis
+                className="ml-auto hidden size-5 shrink-0 text-muted lg:block"
+                aria-hidden
+            />
+        </AccountMenu>
+    );
+}
+
+// The theme, settings and sign-out menu, opened by the given trigger content
+// (children). Needs no session, so it can render without <Suspense>.
+export function AccountMenu({
+    label,
+    triggerClassName,
+    placement,
+    children,
+}: {
+    label: string;
+    triggerClassName: string;
+    placement: ComponentProps<typeof Dropdown.Popover>["placement"];
+    children: ReactNode;
+}) {
     const router = useRouter();
     const [, startTransition] = useTransition();
     const { resolvedTheme, setTheme } = useTheme();
@@ -27,26 +62,10 @@ export function UserMenuDropdown({
 
     return (
         <Dropdown>
-            <Dropdown.Trigger
-                aria-label={`Account menu for ${name}`}
-                className="mx-auto flex w-fit items-center gap-3 rounded-full text-left transition-colors transform-none hover:bg-default aria-expanded:bg-default lg:mx-0 lg:w-full lg:px-2 lg:py-2"
-            >
-                <UserAvatar name={name} image={image} />
-                {/* Only the avatar in the narrow tablet sidebar */}
-                <span className="hidden min-w-0 flex-col lg:flex">
-                    <span className="truncate font-medium text-foreground">
-                        {name}
-                    </span>
-                    <span className="truncate text-sm text-muted">
-                        @{username}
-                    </span>
-                </span>
-                <Ellipsis
-                    className="ml-auto hidden size-5 shrink-0 text-muted lg:block"
-                    aria-hidden
-                />
+            <Dropdown.Trigger aria-label={label} className={triggerClassName}>
+                {children}
             </Dropdown.Trigger>
-            <Dropdown.Popover placement="top start">
+            <Dropdown.Popover placement={placement}>
                 <Dropdown.Menu
                     onAction={(key) => {
                         if (key === "theme") {

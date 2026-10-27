@@ -26,6 +26,7 @@ function BallMark({ className }: { className?: string }) {
 }
 
 const sizes = {
+    small: { ball: "size-7", name: "text-xl" },
     default: { ball: "size-8", name: "text-2xl" },
     large: { ball: "size-11", name: "text-4xl" },
 };
