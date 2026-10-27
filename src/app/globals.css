@@ -93,3 +93,37 @@
     --mobile-nav-height: 4.25rem;
     --mobile-nav-offset: max(0.75rem, env(safe-area-inset-bottom));
 }
+
+/* HeroUI's drawer slides in with a CSS transition from its data-entering
+   styles, but React Aria removes data-entering before the browser ever draws
+   them, so the drawer and backdrop appeared without animating. Give the
+   transitions an explicit starting point instead. */
+.drawer__backdrop {
+    @starting-style {
+        opacity: 0;
+    }
+}
+
+.drawer__content--left .drawer__dialog {
+    @starting-style {
+        translate: -100% 0;
+    }
+}
+
+.drawer__content--right .drawer__dialog {
+    @starting-style {
+        translate: 100% 0;
+    }
+}
+
+.drawer__content--top .drawer__dialog {
+    @starting-style {
+        translate: 0 -100%;
+    }
+}
+
+.drawer__content--bottom .drawer__dialog {
+    @starting-style {
+        translate: 0 100%;
+    }
+}
