@@ -27,6 +27,6 @@ export default function AddMatchPage() {
 // Rendered at request time, not prerendered: the date picker works from
 // today's date
 async function AddMatch() {
-    await requireSession();
-    return <AddMatchForm />;
+    const { user } = await requireSession();
+    return <AddMatchForm viewer={{ name: user.name, image: user.image }} />;
 }

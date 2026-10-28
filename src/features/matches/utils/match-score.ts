@@ -42,6 +42,18 @@ export function getSets(score: MatchScore, side: MatchSide): SetScore[] {
     );
 }
 
+// Every way to win a regular set, as (winner, loser) games; isValidSet
+// accepts exactly these, either way round
+export const WON_SET_SCORES = [
+    [6, 0],
+    [6, 1],
+    [6, 2],
+    [6, 3],
+    [6, 4],
+    [7, 5],
+    [7, 6],
+] as const;
+
 // A finished regular set: 6 games with a lead of two (6:0 to 6:4), 7:5,
 // or 7:6 after a tiebreak at 6:6
 function isValidSet(a: number, b: number) {
@@ -93,6 +105,14 @@ export function getScoreWinner(score: MatchScore): MatchSide | null {
 // The highest number a score field takes. Sets end at 7 games, but match
 // tiebreaks can go on past 10 points.
 export const SCORE_MAX = 99;
+// The most games a player can win in a set (7:5 or 7:6)
+export const SET_GAMES_MAX = 7;
+
+// The highest number a set's score fields take: games in the first two
+// sets, and in the third, points for a match tiebreak
+export function scoreMax(set: 1 | 2 | 3) {
+    return set < 3 ? SET_GAMES_MAX : SCORE_MAX;
+}
 
 // A set as entered in the form: the player's games and the opponent's
 // (points for a match tiebreak), null where a field was left empty
@@ -101,6 +121,24 @@ export type EnteredSet = { own: number | null; opponent: number | null };
 export type ScoreError = { set: 1 | 2 | 3; message: string };
 
 const SET_RULE = "6:0 to 6:4, 7:5 or 7:6";
+
+// Whether each player won one of the first two sets, so a third set
+// decides the match. False while either set is incomplete or level.
+export function areFirstSetsSplit([set1, set2]: EnteredSet[]) {
+    if (
+        !set1 ||
+        !set2 ||
+        set1.own === null ||
+        set1.opponent === null ||
+        set2.own === null ||
+        set2.opponent === null ||
+        set1.own === set1.opponent ||
+        set2.own === set2.opponent
+    ) {
+        return false;
+    }
+    return set1.own > set1.opponent !== set2.own > set2.opponent;
+}
 
 // The three sets entered for a match as its Match columns, with the player
 // who entered them as player 1, or why they aren't a finished match. A
@@ -111,6 +149,18 @@ export function parseEnteredScore(
 ): { score: MatchScore; error?: never } | { score?: never; error: ScoreError } {
     for (const [index, set] of sets.entries()) {
         const number = (index + 1) as 1 | 2 | 3;
+        const max = scoreMax(number);
+        if ((set.own ?? 0) > max || (set.opponent ?? 0) > max) {
+            return {
+                error: {
+                    set: number,
+                    message:
+                        number < 3
+                            ? `A set has at most ${SET_GAMES_MAX} games`
+                            : `Scores go up to ${SCORE_MAX}`,
+                },
+            };
+        }
         if ((set.own === null) !== (set.opponent === null)) {
             return {
                 error: {
@@ -142,7 +192,7 @@ export function parseEnteredScore(
         { own: number; opponent: number },
         EnteredSet,
     ];
-    const split = set1.own > set1.opponent !== set2.own > set2.opponent;
+    const split = areFirstSetsSplit(sets);
     if (!split && set3.own !== null) {
         return {
             error: {

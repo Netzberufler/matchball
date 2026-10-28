@@ -1,7 +1,4 @@
-import {
-    type EnteredSet,
-    SCORE_MAX,
-} from "@/features/matches/utils/match-score";
+import type { EnteredSet } from "@/features/matches/utils/match-score";
 
 // Field names of the add match form, read by the form for checking before
 // it's sent and by createMatch
@@ -13,15 +10,11 @@ export function scoreField(set: 1 | 2 | 3, side: "own" | "opponent") {
     return `set${set}${side === "own" ? "Own" : "Opponent"}`;
 }
 
-// A score field's number, or null when it's empty or not a whole number
-// from 0 to SCORE_MAX
+// A score field's number, or null when it's empty or not a whole number.
+// Numbers that are too high are kept, so parseEnteredScore can say so.
 function readScore(formData: FormData, name: string) {
     const value = String(formData.get(name) ?? "").trim();
-    if (!/^\d{1,2}$/.test(value)) {
-        return null;
-    }
-    const score = Number(value);
-    return score <= SCORE_MAX ? score : null;
+    return /^\d{1,3}$/.test(value) ? Number(value) : null;
 }
 
 // The three sets as entered, from the player's side
