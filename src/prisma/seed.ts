@@ -1,5 +1,9 @@
 import "dotenv/config";
 import { hashPassword } from "better-auth/crypto";
+import {
+    getScoreWinner,
+    type MatchScore,
+} from "../features/matches/utils/match-score";
 import { prisma } from "./db";
 
 // Every seeded user can sign in with their username or email and this password
@@ -35,6 +39,27 @@ const COMMENT_LIKE_CHANCE = 0.3;
 // see createComment)
 const NESTED_REPLY_CHANCE = 0.4;
 const SEED_REPLY_DEPTH = 2;
+// Matches between random pairs of seed users, spread over this many days
+// before today
+const MATCH_COUNT = 40;
+const MATCH_PERIOD_DAYS = 180;
+// The chance that a match goes to a third set, and that the third set is a
+// match tiebreak rather than a full set
+const THREE_SET_CHANCE = 0.35;
+const MATCH_TIEBREAK_CHANCE = 0.5;
+// Scores of a won set, as (winner, loser) games; repeats make them likelier
+const WON_SET_SCORES: [number, number][] = [
+    [6, 0],
+    [6, 1],
+    [6, 2],
+    [6, 2],
+    [6, 3],
+    [6, 3],
+    [6, 4],
+    [6, 4],
+    [7, 5],
+    [7, 6],
+];
 
 // What a reply needs to get replies of its own in the seed
 const replyParentSelect = {
@@ -137,9 +162,75 @@ function randomPastDate() {
     );
 }
 
+// A won set as (winner, loser) games
+function randomWonSet() {
+    return WON_SET_SCORES[randomInt(0, WON_SET_SCORES.length - 1)]!;
+}
+
+// A won match tiebreak as (winner, loser) points: mostly 10:0 to 10:8,
+// sometimes one that went past 10
+function randomWonMatchTiebreak(): [number, number] {
+    if (Math.random() < 0.8) {
+        return [10, randomInt(0, 8)];
+    }
+    const winner = randomInt(11, 13);
+    return [winner, winner - 2];
+}
+
+// A finished best-of-three score. Sets are written as (winner, loser) and
+// flipped where player 2 won them.
+function randomMatchScore(): MatchScore {
+    const player1Wins = Math.random() < 0.5;
+    const asPlayer1 = (set: [number, number], wonByWinner: boolean) =>
+        player1Wins === wonByWinner ? set : ([set[1], set[0]] as const);
+
+    if (Math.random() >= THREE_SET_CHANCE) {
+        const set1 = asPlayer1(randomWonSet(), true);
+        const set2 = asPlayer1(randomWonSet(), true);
+        return {
+            set1Player1: set1[0],
+            set1Player2: set1[1],
+            set2Player1: set2[0],
+            set2Player2: set2[1],
+            set3Player1: null,
+            set3Player2: null,
+            set3IsMatchTiebreak: false,
+        };
+    }
+    // The winner lost the first or the second set, then won the third
+    const winnerLostFirst = Math.random() < 0.5;
+    const set1 = asPlayer1(randomWonSet(), !winnerLostFirst);
+    const set2 = asPlayer1(randomWonSet(), winnerLostFirst);
+    const isMatchTiebreak = Math.random() < MATCH_TIEBREAK_CHANCE;
+    const set3 = asPlayer1(
+        isMatchTiebreak ? randomWonMatchTiebreak() : randomWonSet(),
+        true,
+    );
+    return {
+        set1Player1: set1[0],
+        set1Player2: set1[1],
+        set2Player1: set2[0],
+        set2Player2: set2[1],
+        set3Player1: set3[0],
+        set3Player2: set3[1],
+        set3IsMatchTiebreak: isMatchTiebreak,
+    };
+}
+
+// A day within MATCH_PERIOD_DAYS before today, as midnight UTC like the
+// date column returns it
+function randomPastMatchDay() {
+    const date = new Date(
+        Date.now() - randomInt(0, MATCH_PERIOD_DAYS) * 24 * 60 * 60 * 1000,
+    );
+    return new Date(
+        Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+}
+
 async function main() {
-    // Remove earlier seed data; posts, comments, likes, follows, sessions
-    // and accounts cascade
+    // Remove earlier seed data; posts, comments, likes, follows, matches,
+    // sessions and accounts cascade
     await prisma.user.deleteMany({
         where: { email: { endsWith: `@${SEED_EMAIL_DOMAIN}` } },
     });
@@ -186,6 +277,24 @@ async function main() {
             .map((followingId) => ({ followerId, followingId })),
     );
     await prisma.follow.createMany({ data: follows });
+
+    // Matches between random pairs of users, won by whoever won the score
+    const matches = Array.from({ length: MATCH_COUNT }, () => {
+        const [player1Id, player2Id] = shuffle(userIds) as [string, string];
+        const score = randomMatchScore();
+        const winner = getScoreWinner(score);
+        if (!winner) {
+            throw new Error(`Invalid seed score: ${JSON.stringify(score)}`);
+        }
+        return {
+            playedAt: randomPastMatchDay(),
+            player1Id,
+            player2Id,
+            winnerId: winner === "player1" ? player1Id : player2Id,
+            ...score,
+        };
+    });
+    await prisma.match.createMany({ data: matches });
 
     // Each user likes some of the other users' posts
     const seedPosts = await prisma.post.findMany({
@@ -376,7 +485,7 @@ async function main() {
             )`;
 
     console.log(
-        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${likes.length} likes, ${comments.length} comments, ${nestedReplyCount} replies to comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${matches.length} matches, ${likes.length} likes, ${comments.length} comments, ${nestedReplyCount} replies to comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
     );
 }
 

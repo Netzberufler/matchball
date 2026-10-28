@@ -46,6 +46,10 @@ model User {
   // Notifications this user caused by replying, liking, mentioning or
   // following
   causedNotifications Notification[]   @relation("NotificationActor")
+  // Matches this user played, on either side
+  matchesAsPlayer1    Match[]          @relation("MatchPlayer1")
+  matchesAsPlayer2    Match[]          @relation("MatchPlayer2")
+  matchesWon          Match[]          @relation("MatchWinner")
 
   // The mention search: case-insensitive matches anywhere in the name
   // (ILIKE). Usernames are searched by prefix through their unique index,
@@ -304,4 +308,48 @@ model Notification {
   // Removing a follow's notification on unfollow, by follower and
   // followed user. Also for deleting them with the actor.
   @@index([actorId, userId])
+}
+
+// A singles match between two users, best of three sets. Neither side is
+// "the player": the same row is every match's history for both users, and
+// pages show it from the viewer's side (src/features/matches/utils/match-score.ts).
+//
+// The score is stored as games per set and side, in plain columns, so stats
+// like games won and lost are sums over indexed rows instead of parsing a
+// score string. A regular set ends 6:0 to 6:4, 7:5 or 7:6 (tiebreak at
+// 6:6). The third set is null in two-set matches, and can be a match
+// tiebreak instead (first to 10 points, two clear), common in club play;
+// then its columns hold tiebreak points, e.g. 10:8. Scores are validated by
+// isValidMatchScore in src/features/matches/utils/match-score.ts.
+model Match {
+  id                  String   @id @default(uuid(7)) @db.Uuid
+  // The day it was played; there is no time of day
+  playedAt            DateTime @db.Date
+  player1Id           String   @db.Uuid
+  player1             User     @relation("MatchPlayer1", fields: [player1Id], references: [id], onDelete: Cascade)
+  player2Id           String   @db.Uuid
+  player2             User     @relation("MatchPlayer2", fields: [player2Id], references: [id], onDelete: Cascade)
+  // player1Id or player2Id. Stored rather than worked out from the score so
+  // "matches X won" is a plain filter, and so later a retired or walked-over
+  // match can have a winner without a complete score.
+  winnerId            String   @db.Uuid
+  winner              User     @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
+  set1Player1         Int      @db.SmallInt
+  set1Player2         Int      @db.SmallInt
+  set2Player1         Int      @db.SmallInt
+  set2Player2         Int      @db.SmallInt
+  set3Player1         Int?     @db.SmallInt
+  set3Player2         Int?     @db.SmallInt
+  // The third set was a match tiebreak, so set3Player1/2 are points
+  set3IsMatchTiebreak Boolean  @default(false)
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+
+  // A user's matches, newest first, from both columns: Postgres combines
+  // the two indexes for "player1Id = X OR player2Id = X". id breaks ties
+  // between matches on the same day.
+  @@index([player1Id, playedAt(sort: Desc), id(sort: Desc)])
+  @@index([player2Id, playedAt(sort: Desc), id(sort: Desc)])
+  // Matches a user won, and deleting them with the user
+  @@index([winnerId])
 }
