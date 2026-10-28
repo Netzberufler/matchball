@@ -5,7 +5,8 @@ import { Avatar } from "@heroui/react";
 // session loads) the fallback is an empty circle. alt is empty and the
 // initials are hidden from screen readers because the name is always shown
 // or announced next to it.
-// size "md" is HeroUI's 40px; "xl" is for the profile page header.
+// size "md" is HeroUI's 40px; "sm" (32px) is for dense lists like the
+// matches table; "xl" is for the profile page header.
 export function UserAvatar({
     name,
     image,
@@ -13,7 +14,7 @@ export function UserAvatar({
 }: {
     name?: string;
     image?: string | null;
-    size?: "md" | "xl";
+    size?: "sm" | "md" | "xl";
 }) {
     const sizeClasses = AVATAR_SIZE_CLASSES[size];
     return (
@@ -40,6 +41,7 @@ export function UserAvatar({
 }
 
 const AVATAR_SIZE_CLASSES = {
+    sm: { avatar: "size-8", fallback: "text-xs" },
     md: { avatar: "", fallback: "" },
     xl: {
         avatar: "size-24 rounded-full sm:size-35",

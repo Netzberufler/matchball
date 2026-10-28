@@ -113,7 +113,7 @@ export function AddMatchForm() {
                             <Description>
                                 Games per set. Leave set 3 empty after two sets;
                                 for a match tiebreak enter its points, e.g.
-                                10–8.
+                                10:8.
                             </Description>
                         )}
                     </fieldset>

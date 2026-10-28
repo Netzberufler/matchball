@@ -100,7 +100,7 @@ export type EnteredSet = { own: number | null; opponent: number | null };
 
 export type ScoreError = { set: 1 | 2 | 3; message: string };
 
-const SET_RULE = "6–0 to 6–4, 7–5 or 7–6";
+const SET_RULE = "6:0 to 6:4, 7:5 or 7:6";
 
 // The three sets entered for a match as its Match columns, with the player
 // who entered them as player 1, or why they aren't a finished match. A
@@ -174,7 +174,7 @@ export function parseEnteredScore(
                 error: {
                     set: 3,
                     message: isMatchTiebreak
-                        ? "A match tiebreak ends 10–0 to 10–8, or two points apart after 9–9, e.g. 11–9"
+                        ? "A match tiebreak ends 10:0 to 10:8, or two points apart after 9:9, e.g. 11:9"
                         : `Set 3 ends ${SET_RULE}, or is a match tiebreak to 10`,
                 },
             };
@@ -194,11 +194,9 @@ export function parseEnteredScore(
     };
 }
 
-// Sets as they're usually written, e.g. "6–3" or "[10–7]" for a match
-// tiebreak
+// A set as the app shows it, e.g. "6:3", or "10:7" for a match tiebreak
 export function formatSet(set: SetScore) {
-    const score = `${set.own}–${set.opponent}`;
-    return set.isMatchTiebreak ? `[${score}]` : score;
+    return `${set.own}:${set.opponent}`;
 }
 
 const playedAtFormat = new Intl.DateTimeFormat("en", {

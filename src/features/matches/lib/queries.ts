@@ -28,11 +28,15 @@ const matchSelect = {
     set3IsMatchTiebreak: true,
 } satisfies Prisma.MatchSelect;
 
+type MatchUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
+
 // A match from one player's point of view
 export type UserMatch = {
     id: string;
     playedAt: Date;
-    opponent: Prisma.UserGetPayload<{ select: typeof userSelect }>;
+    // The user whose matches these are
+    player: MatchUser;
+    opponent: MatchUser;
     won: boolean;
     // The player's games first
     sets: SetScore[];
@@ -53,6 +57,7 @@ export async function getRecentMatches(userId: string): Promise<UserMatch[]> {
         return {
             id: match.id,
             playedAt: match.playedAt,
+            player: side === "player1" ? match.player1 : match.player2,
             opponent: side === "player1" ? match.player2 : match.player1,
             won: match.winnerId === userId,
             sets: getSets(match, side),
