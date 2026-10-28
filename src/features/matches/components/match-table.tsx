@@ -6,6 +6,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import type { UserMatch } from "@/features/matches/lib/queries";
 import {
     formatPlayedAt,
+    formatPlayedAtParts,
     formatSet,
 } from "@/features/matches/utils/match-score";
 import { profilePath } from "@/features/profile/utils/profile-path";
@@ -31,20 +32,18 @@ export function MatchTable({ matches }: { matches: UserMatch[] | null }) {
                     className="text-sm sm:min-w-[32rem]"
                 >
                     <Table.Header>
-                        {/* On phones the date and the player move into the
-                            opponent's cell, so the score fits without
-                            scrolling */}
-                        <Table.Column className={WIDE_ONLY_CLASS}>
-                            Date
-                        </Table.Column>
+                        <Table.Column className={CELL_CLASS}>Date</Table.Column>
+                        {/* Always the viewer, so phones leave it out to
+                            fit the score without scrolling */}
                         <Table.Column className={WIDE_ONLY_CLASS}>
                             Player
                         </Table.Column>
-                        <Table.Column isRowHeader>
-                            <span className="sm:hidden">Players</span>
-                            <span className="max-sm:hidden">Opponent</span>
+                        <Table.Column isRowHeader className={CELL_CLASS}>
+                            Opponent
                         </Table.Column>
-                        <Table.Column className={SCORE_COLUMN_CLASS}>
+                        <Table.Column
+                            className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}
+                        >
                             Score
                         </Table.Column>
                     </Table.Header>
@@ -60,9 +59,9 @@ export function MatchTable({ matches }: { matches: UserMatch[] | null }) {
                                         <Table.Cell
                                             key={column}
                                             className={
-                                                column < 2
+                                                column === 1
                                                     ? WIDE_ONLY_CLASS
-                                                    : undefined
+                                                    : CELL_CLASS
                                             }
                                         >
                                             <Skeleton className="h-4 w-20 rounded-lg" />
@@ -82,25 +81,20 @@ function MatchRow({ match }: { match: UserMatch }) {
     return (
         <Table.Row id={match.id}>
             <Table.Cell
-                className={`whitespace-nowrap text-muted ${WIDE_ONLY_CLASS}`}
+                className={`whitespace-nowrap text-muted ${CELL_CLASS}`}
             >
-                {formatPlayedAt(match.playedAt)}
+                <PlayedAt playedAt={match.playedAt} />
             </Table.Cell>
             <Table.Cell className={WIDE_ONLY_CLASS}>
                 <PlayerLink user={match.player} />
             </Table.Cell>
-            <Table.Cell>
-                <span className="flex min-w-0 flex-col gap-1 max-sm:max-w-36">
-                    <span className="sm:hidden">
-                        <PlayerLink user={match.player} />
-                    </span>
+            <Table.Cell className={CELL_CLASS}>
+                {/* Long names end in "…" on phones, so the score fits */}
+                <span className="block max-sm:max-w-28">
                     <PlayerLink user={match.opponent} />
-                    <span className="text-xs text-muted sm:hidden">
-                        {formatPlayedAt(match.playedAt)}
-                    </span>
                 </span>
             </Table.Cell>
-            <Table.Cell className={SCORE_COLUMN_CLASS}>
+            <Table.Cell className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}>
                 <span
                     className={`flex gap-1.5 whitespace-nowrap border-l-4 pl-2 tabular-nums sm:gap-3 ${
                         match.won ? "border-l-success" : "border-l-danger"
@@ -129,6 +123,21 @@ function MatchRow({ match }: { match: UserMatch }) {
     );
 }
 
+// When the match was played: "Oct 26, 2026", or on phones "Oct 26" with the
+// year below
+function PlayedAt({ playedAt }: { playedAt: Date }) {
+    const { day, year } = formatPlayedAtParts(playedAt);
+    return (
+        <>
+            <span className="max-sm:hidden">{formatPlayedAt(playedAt)}</span>
+            <span className="flex flex-col sm:hidden">
+                {day}
+                <span className="text-xs">{year}</span>
+            </span>
+        </>
+    );
+}
+
 // A player's avatar, name and username, linking to their profile
 function PlayerLink({ user }: { user: UserMatch["player"] }) {
     return (
@@ -154,8 +163,10 @@ function PlayerLink({ user }: { user: UserMatch["player"] }) {
     );
 }
 
-// Hides the date and player columns below the sm breakpoint
+// Hides the player column below the sm breakpoint
 const WIDE_ONLY_CLASS = "max-sm:hidden";
+// Less padding on phones, for the score's sake
+const CELL_CLASS = "max-sm:px-3";
 // Room for three sets with a match tiebreak. On smaller screens the
 // column takes what's left.
 const SCORE_COLUMN_CLASS = "md:min-w-36";

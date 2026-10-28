@@ -261,3 +261,17 @@ const playedAtFormat = new Intl.DateTimeFormat("en", {
 export function formatPlayedAt(playedAt: Date) {
     return playedAtFormat.format(playedAt);
 }
+
+const playedOnFormat = new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+});
+
+// The day and the year apart, e.g. "Oct 12" and "2026", for narrow columns
+export function formatPlayedAtParts(playedAt: Date) {
+    return {
+        day: playedOnFormat.format(playedAt),
+        year: String(playedAt.getUTCFullYear()),
+    };
+}
