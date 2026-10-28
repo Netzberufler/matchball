@@ -90,6 +90,110 @@ export function getScoreWinner(score: MatchScore): MatchSide | null {
     return set3.own > set3.opponent ? "player1" : "player2";
 }
 
+// The highest number a score field takes. Sets end at 7 games, but match
+// tiebreaks can go on past 10 points.
+export const SCORE_MAX = 99;
+
+// A set as entered in the form: the player's games and the opponent's
+// (points for a match tiebreak), null where a field was left empty
+export type EnteredSet = { own: number | null; opponent: number | null };
+
+export type ScoreError = { set: 1 | 2 | 3; message: string };
+
+const SET_RULE = "6–0 to 6–4, 7–5 or 7–6";
+
+// The three sets entered for a match as its Match columns, with the player
+// who entered them as player 1, or why they aren't a finished match. A
+// third set where someone reached 10 is a match tiebreak: a regular set
+// never goes past 7.
+export function parseEnteredScore(
+    sets: [EnteredSet, EnteredSet, EnteredSet],
+): { score: MatchScore; error?: never } | { score?: never; error: ScoreError } {
+    for (const [index, set] of sets.entries()) {
+        const number = (index + 1) as 1 | 2 | 3;
+        if ((set.own === null) !== (set.opponent === null)) {
+            return {
+                error: {
+                    set: number,
+                    message: `Enter both scores of set ${number}`,
+                },
+            };
+        }
+        if (number < 3 && set.own === null) {
+            return {
+                error: {
+                    set: number,
+                    message: `Enter the score of set ${number}`,
+                },
+            };
+        }
+        if (number < 3 && !isValidSet(set.own ?? 0, set.opponent ?? 0)) {
+            return {
+                error: {
+                    set: number,
+                    message: `A set ends ${SET_RULE}`,
+                },
+            };
+        }
+    }
+
+    const [set1, set2, set3] = sets as [
+        { own: number; opponent: number },
+        { own: number; opponent: number },
+        EnteredSet,
+    ];
+    const split = set1.own > set1.opponent !== set2.own > set2.opponent;
+    if (!split && set3.own !== null) {
+        return {
+            error: {
+                set: 3,
+                message:
+                    "The first two sets decided the match, so leave set 3 empty",
+            },
+        };
+    }
+    if (split && set3.own === null) {
+        return {
+            error: {
+                set: 3,
+                message: "The first two sets were split, so enter set 3",
+            },
+        };
+    }
+    const isMatchTiebreak =
+        set3.own !== null &&
+        set3.opponent !== null &&
+        Math.max(set3.own, set3.opponent) >= 10;
+    if (set3.own !== null && set3.opponent !== null) {
+        if (
+            isMatchTiebreak
+                ? !isValidMatchTiebreak(set3.own, set3.opponent)
+                : !isValidSet(set3.own, set3.opponent)
+        ) {
+            return {
+                error: {
+                    set: 3,
+                    message: isMatchTiebreak
+                        ? "A match tiebreak ends 10–0 to 10–8, or two points apart after 9–9, e.g. 11–9"
+                        : `Set 3 ends ${SET_RULE}, or is a match tiebreak to 10`,
+                },
+            };
+        }
+    }
+
+    return {
+        score: {
+            set1Player1: set1.own,
+            set1Player2: set1.opponent,
+            set2Player1: set2.own,
+            set2Player2: set2.opponent,
+            set3Player1: set3.own,
+            set3Player2: set3.opponent,
+            set3IsMatchTiebreak: isMatchTiebreak,
+        },
+    };
+}
+
 // Sets as they're usually written, e.g. "6–3" or "[10–7]" for a match
 // tiebreak
 export function formatSet(set: SetScore) {
