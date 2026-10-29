@@ -273,8 +273,10 @@ enum NotificationType {
   MATCH_REQUEST
   // The opponent accepted a match the user logged
   MATCH_CONFIRMED
-  // The opponent declined a match the user logged, which deleted it
+  // The opponent declined a match the user logged
   MATCH_DECLINED
+  // The user who logged a match against this user withdrew it
+  MATCH_WITHDRAWN
 }
 
 // Something that happened to a user's posts or replies, shown on
@@ -299,8 +301,9 @@ model Notification {
   // the post itself.
   commentId String?          @db.Uuid
   comment   Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  // The match it's about, on MATCH_REQUEST and MATCH_CONFIRMED. Null on
-  // MATCH_DECLINED, whose match is deleted.
+  // The match it's about, set on all MATCH_ types. Declined and withdrawn
+  // matches are kept (see MatchStatus), so these still show their date and
+  // score.
   matchId   String?          @db.Uuid
   match     Match?           @relation(fields: [matchId], references: [id], onDelete: Cascade)
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
@@ -328,6 +331,10 @@ enum MatchStatus {
   // Accepted by player 2. Only confirmed matches count anywhere: lists,
   // stats and feeds.
   CONFIRMED
+  // Declined by player 2, or withdrawn by player 1. To the players they're
+  // gone; they're kept only for the notifications about them.
+  DECLINED
+  WITHDRAWN
 }
 
 // A singles match between two users, best of three sets. Neither side is
@@ -343,9 +350,9 @@ enum MatchStatus {
 // isValidMatchScore in src/features/matches/utils/match-score.ts.
 //
 // Player 1 is always the user who logged the match. It starts PENDING until
-// player 2 accepts it, which confirms it, or declines it, which deletes it;
-// player 1 can withdraw it, which deletes it too
-// (src/features/matches/actions/pending-match.ts).
+// player 2 accepts or declines it, or player 1 withdraws it
+// (src/features/matches/actions/pending-match.ts). Each sets its status;
+// none of them deletes it, so its notifications keep its details.
 model Match {
   id                  String         @id @default(uuid(7)) @db.Uuid
   // The day it was played; there is no time of day
@@ -368,7 +375,7 @@ model Match {
   // The third set was a match tiebreak, so set3Player1/2 are points
   set3IsMatchTiebreak Boolean        @default(false)
   status              MatchStatus    @default(PENDING)
-  // The request to player 2, and player 1's notice once it's accepted
+  // The request to player 2, and the notice of how it was answered
   notifications       Notification[]
   createdAt           DateTime       @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime       @updatedAt @db.Timestamptz(6)

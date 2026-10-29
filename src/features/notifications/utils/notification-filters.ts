@@ -35,7 +35,12 @@ export const NOTIFICATION_FILTERS = [
     {
         key: "matches",
         label: "Matches",
-        types: ["MATCH_REQUEST", "MATCH_CONFIRMED", "MATCH_DECLINED"],
+        types: [
+            "MATCH_REQUEST",
+            "MATCH_CONFIRMED",
+            "MATCH_DECLINED",
+            "MATCH_WITHDRAWN",
+        ],
         emptyMessage: "No match requests or answers yet.",
     },
 ] as const;

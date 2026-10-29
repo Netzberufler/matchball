@@ -3,6 +3,7 @@ import {
     AtSign,
     CircleCheck,
     CircleX,
+    Undo2,
     Heart,
     MessageCircle,
     Trophy,
@@ -32,6 +33,15 @@ const TYPE_ICONS = {
     MATCH_REQUEST: { icon: Trophy, className: "text-accent" },
     MATCH_CONFIRMED: { icon: CircleCheck, className: "text-success" },
     MATCH_DECLINED: { icon: CircleX, className: "text-danger" },
+    MATCH_WITHDRAWN: { icon: Undo2, className: "text-muted" },
+};
+
+// How a match that was asked about was answered, after its score
+const MATCH_STATUS_LABELS = {
+    PENDING: null,
+    CONFIRMED: "Confirmed",
+    DECLINED: "Declined",
+    WITHDRAWN: "Withdrawn",
 };
 
 // Where the pending and confirmed matches are
@@ -54,6 +64,8 @@ function describeAction(notification: UserNotification) {
             return "confirmed your match";
         case "MATCH_DECLINED":
             return "declined your match";
+        case "MATCH_WITHDRAWN":
+            return "withdrew their match against you";
     }
 }
 
@@ -71,17 +83,22 @@ function NotificationText({
                     @{notification.actor.username}
                 </p>
             );
-        // The day and score from the user's side, or nothing once the
-        // match is gone
+        // The day and score from the user's side. A request also says how
+        // it was answered, as it stays after that.
         case "MATCH_REQUEST":
         case "MATCH_CONFIRMED":
-        case "MATCH_DECLINED": {
+        case "MATCH_DECLINED":
+        case "MATCH_WITHDRAWN": {
             const { match } = notification;
             if (!match) {
                 return (
                     <p className="text-sm text-muted">The match was deleted.</p>
                 );
             }
+            const statusLabel =
+                notification.type === "MATCH_REQUEST"
+                    ? MATCH_STATUS_LABELS[match.status]
+                    : null;
             return (
                 <p className="mt-1 text-sm tabular-nums">
                     <span className="text-muted">
@@ -89,6 +106,12 @@ function NotificationText({
                         {" · "}
                     </span>
                     {match.sets.map(formatSet).join(" ")}
+                    {statusLabel && (
+                        <span className="text-muted">
+                            {" · "}
+                            {statusLabel}
+                        </span>
+                    )}
                 </p>
             );
         }
@@ -119,6 +142,7 @@ function notificationHref(notification: UserNotification) {
         case "MATCH_REQUEST":
         case "MATCH_CONFIRMED":
         case "MATCH_DECLINED":
+        case "MATCH_WITHDRAWN":
             return MATCHES_PATH;
         default:
             return postPath(notification.postId);

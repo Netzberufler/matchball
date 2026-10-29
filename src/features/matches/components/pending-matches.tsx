@@ -82,7 +82,7 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
                             Accept
                         </Button>
                     )}
-                    {/* Asks first, as the match is deleted */}
+                    {/* Asks first, as it can't be undone */}
                     <AlertDialog
                         isOpen={isConfirmOpen}
                         onOpenChange={setIsConfirmOpen}
@@ -108,8 +108,8 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
                                     <AlertDialog.Body>
                                         <p>
                                             {match.isLoggedByUser
-                                                ? `The match against ${name} is deleted and they can no longer accept it. You can log it again with the right result.`
-                                                : `The match is deleted and ${name} is told you declined it. This can't be undone.`}
+                                                ? `The match against ${name} is removed and they're told you withdrew it. You can log it again with the right result.`
+                                                : `The match is removed and ${name} is told you declined it. This can't be undone.`}
                                         </p>
                                     </AlertDialog.Body>
                                     <AlertDialog.Footer>

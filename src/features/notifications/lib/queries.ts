@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Prisma } from "@/prisma/generated/client";
+import type { MatchStatus, Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 import { getSets, type SetScore } from "@/features/matches/utils/match-score";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
@@ -31,6 +31,7 @@ const notificationSelect = {
     match: {
         select: {
             playedAt: true,
+            status: true,
             player1Id: true,
             set1Player1: true,
             set1Player2: true,
@@ -63,9 +64,14 @@ export type UserNotification = {
     | { type: "FOLLOW" }
     | {
           type: MatchNotificationType;
-          // From the notified user's side. Null once the match is gone, as
-          // for MATCH_DECLINED.
-          match: { playedAt: Date; sets: SetScore[] } | null;
+          // The sets from the notified user's side, and how the match was
+          // answered, e.g. that a request was declined later. Null only for
+          // match notifications written before matches were kept.
+          match: {
+              playedAt: Date;
+              sets: SetScore[];
+              status: MatchStatus;
+          } | null;
       }
     | {
           type: Exclude<
@@ -104,6 +110,7 @@ function toUserNotification({
             type,
             match: match && {
                 playedAt: match.playedAt,
+                status: match.status,
                 sets: getSets(
                     match,
                     match.player1Id === userId ? "player1" : "player2",

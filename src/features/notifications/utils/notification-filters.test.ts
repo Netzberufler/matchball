@@ -49,7 +49,12 @@ describe("getNotificationFilter", () => {
 
     it("groups the match notifications in one tab", () => {
         expect(getNotificationFilter("matches")).toMatchObject({
-            types: ["MATCH_REQUEST", "MATCH_CONFIRMED", "MATCH_DECLINED"],
+            types: [
+                "MATCH_REQUEST",
+                "MATCH_CONFIRMED",
+                "MATCH_DECLINED",
+                "MATCH_WITHDRAWN",
+            ],
         });
     });
 });
