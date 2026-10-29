@@ -12,8 +12,9 @@ import {
 import { getScoreWinner } from "@/features/matches/utils/match-score";
 import { prisma } from "@/prisma/db";
 
-// Saves a match the signed-in user played, with them as player 1, then
-// goes to /matches. Server actions can be called with any data, not just
+// Saves a match the signed-in user played, with them as player 1, as
+// pending until the opponent accepts it (see pending-match.ts), then goes
+// to /matches. Server actions can be called with any data, not just
 // the form's, so everything is checked here before anything is saved.
 export async function createMatch(
     formData: FormData,
@@ -53,7 +54,8 @@ export async function createMatch(
         };
     }
 
-    // Only the checked values are saved; the winner follows from the score
+    // Only the checked values are saved; the winner follows from the score.
+    // The opponent's request is written with it, so it can't go missing.
     await prisma.match.create({
         data: {
             playedAt,
@@ -67,6 +69,14 @@ export async function createMatch(
             set3Player1: score.set3Player1,
             set3Player2: score.set3Player2,
             set3IsMatchTiebreak: score.set3IsMatchTiebreak,
+            status: "PENDING",
+            notifications: {
+                create: {
+                    userId: opponent.id,
+                    actorId: user.id,
+                    type: "MATCH_REQUEST",
+                },
+            },
         },
     });
 

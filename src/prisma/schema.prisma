@@ -269,6 +269,12 @@ enum NotificationType {
   MENTION
   // Someone started following the user
   FOLLOW
+  // Someone logged a match against the user, who has to accept or decline it
+  MATCH_REQUEST
+  // The opponent accepted a match the user logged
+  MATCH_CONFIRMED
+  // The opponent declined a match the user logged, which deleted it
+  MATCH_DECLINED
 }
 
 // Something that happened to a user's posts or replies, shown on
@@ -293,6 +299,10 @@ model Notification {
   // the post itself.
   commentId String?          @db.Uuid
   comment   Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  // The match it's about, on MATCH_REQUEST and MATCH_CONFIRMED. Null on
+  // MATCH_DECLINED, whose match is deleted.
+  matchId   String?          @db.Uuid
+  match     Match?           @relation(fields: [matchId], references: [id], onDelete: Cascade)
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
   createdAt DateTime         @default(now()) @db.Timestamptz(3)
 
@@ -308,6 +318,16 @@ model Notification {
   // Removing a follow's notification on unfollow, by follower and
   // followed user. Also for deleting them with the actor.
   @@index([actorId, userId])
+  // Deleting them with the match
+  @@index([matchId])
+}
+
+enum MatchStatus {
+  // Logged by player 1, waiting for player 2 to accept or decline it
+  PENDING
+  // Accepted by player 2. Only confirmed matches count anywhere: lists,
+  // stats and feeds.
+  CONFIRMED
 }
 
 // A singles match between two users, best of three sets. Neither side is
@@ -321,35 +341,44 @@ model Notification {
 // tiebreak instead (first to 10 points, two clear), common in club play;
 // then its columns hold tiebreak points, e.g. 10:8. Scores are validated by
 // isValidMatchScore in src/features/matches/utils/match-score.ts.
+//
+// Player 1 is always the user who logged the match. It starts PENDING until
+// player 2 accepts it, which confirms it, or declines it, which deletes it;
+// player 1 can withdraw it, which deletes it too
+// (src/features/matches/actions/pending-match.ts).
 model Match {
-  id                  String   @id @default(uuid(7)) @db.Uuid
+  id                  String         @id @default(uuid(7)) @db.Uuid
   // The day it was played; there is no time of day
-  playedAt            DateTime @db.Date
-  player1Id           String   @db.Uuid
-  player1             User     @relation("MatchPlayer1", fields: [player1Id], references: [id], onDelete: Cascade)
-  player2Id           String   @db.Uuid
-  player2             User     @relation("MatchPlayer2", fields: [player2Id], references: [id], onDelete: Cascade)
+  playedAt            DateTime       @db.Date
+  player1Id           String         @db.Uuid
+  player1             User           @relation("MatchPlayer1", fields: [player1Id], references: [id], onDelete: Cascade)
+  player2Id           String         @db.Uuid
+  player2             User           @relation("MatchPlayer2", fields: [player2Id], references: [id], onDelete: Cascade)
   // player1Id or player2Id. Stored rather than worked out from the score so
   // "matches X won" is a plain filter, and so later a retired or walked-over
   // match can have a winner without a complete score.
-  winnerId            String   @db.Uuid
-  winner              User     @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
-  set1Player1         Int      @db.SmallInt
-  set1Player2         Int      @db.SmallInt
-  set2Player1         Int      @db.SmallInt
-  set2Player2         Int      @db.SmallInt
-  set3Player1         Int?     @db.SmallInt
-  set3Player2         Int?     @db.SmallInt
+  winnerId            String         @db.Uuid
+  winner              User           @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
+  set1Player1         Int            @db.SmallInt
+  set1Player2         Int            @db.SmallInt
+  set2Player1         Int            @db.SmallInt
+  set2Player2         Int            @db.SmallInt
+  set3Player1         Int?           @db.SmallInt
+  set3Player2         Int?           @db.SmallInt
   // The third set was a match tiebreak, so set3Player1/2 are points
-  set3IsMatchTiebreak Boolean  @default(false)
-  createdAt           DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+  set3IsMatchTiebreak Boolean        @default(false)
+  status              MatchStatus    @default(PENDING)
+  // The request to player 2, and player 1's notice once it's accepted
+  notifications       Notification[]
+  createdAt           DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
 
-  // A user's matches, newest first, from both columns: Postgres combines
-  // the two indexes for "player1Id = X OR player2Id = X". id breaks ties
-  // between matches on the same day.
-  @@index([player1Id, playedAt(sort: Desc), id(sort: Desc)])
-  @@index([player2Id, playedAt(sort: Desc), id(sort: Desc)])
+  // A user's confirmed or pending matches, newest first, from both
+  // columns: Postgres combines the two indexes for "(player1Id = X OR
+  // player2Id = X) AND status = S". id breaks ties between matches on the
+  // same day.
+  @@index([player1Id, status, playedAt(sort: Desc), id(sort: Desc)])
+  @@index([player2Id, status, playedAt(sort: Desc), id(sort: Desc)])
   // Matches a user won, and deleting them with the user
   @@index([winnerId])
 }

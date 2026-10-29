@@ -95,31 +95,47 @@ function MatchRow({ match }: { match: UserMatch }) {
                 </span>
             </Table.Cell>
             <Table.Cell className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}>
-                <span
-                    className={`flex gap-1.5 whitespace-nowrap border-l-4 pl-2 tabular-nums sm:gap-3 ${
-                        match.won ? "border-l-success" : "border-l-danger"
-                    }`}
-                >
-                    {/* The bar's colour, for screen readers */}
-                    <span className="sr-only">
-                        {match.won ? "Won" : "Lost"}:
-                    </span>
-                    {match.sets.map((set, index) => (
-                        <span
-                            key={index}
-                            // Sets the player won stand out
-                            className={
-                                set.own > set.opponent
-                                    ? "font-semibold text-foreground"
-                                    : "text-muted"
-                            }
-                        >
-                            {formatSet(set)}
-                        </span>
-                    ))}
-                </span>
+                <MatchScore match={match} />
             </Table.Cell>
         </Table.Row>
+    );
+}
+
+// The sets from the player's side, with a bar on the left: green if they
+// won, red if they lost. Pending matches show it too, as the result that
+// counts once the match is confirmed.
+export function MatchScore({
+    match,
+    isPending = false,
+}: {
+    match: UserMatch;
+    isPending?: boolean;
+}) {
+    const result = match.won ? "Won" : "Lost";
+    return (
+        <span
+            className={`flex gap-1.5 whitespace-nowrap border-l-4 pl-2 tabular-nums sm:gap-3 ${
+                match.won ? "border-l-success" : "border-l-danger"
+            }`}
+        >
+            {/* The bar's meaning, for screen readers */}
+            <span className="sr-only">
+                {isPending ? `${result} if confirmed` : result}:
+            </span>
+            {match.sets.map((set, index) => (
+                <span
+                    key={index}
+                    // Sets the player won stand out
+                    className={
+                        set.own > set.opponent
+                            ? "font-semibold text-foreground"
+                            : "text-muted"
+                    }
+                >
+                    {formatSet(set)}
+                </span>
+            ))}
+        </span>
     );
 }
 
@@ -139,7 +155,7 @@ function PlayedAt({ playedAt }: { playedAt: Date }) {
 }
 
 // A player's avatar, name and username, linking to their profile
-function PlayerLink({ user }: { user: UserMatch["player"] }) {
+export function PlayerLink({ user }: { user: UserMatch["player"] }) {
     return (
         <Link
             href={profilePath(user.username)}
@@ -174,8 +190,3 @@ const SCORE_COLUMN_CLASS = "md:min-w-36";
 const PLACEHOLDER_ROWS = Array.from({ length: 5 }, (_, index) => ({
     id: index,
 }));
-
-// Shown while the matches load; the shape of MatchTable
-export function MatchTableFallback() {
-    return <MatchTable matches={null} />;
-}

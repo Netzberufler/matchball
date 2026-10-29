@@ -1,36 +1,42 @@
 // The tabs on /notifications. Shared by the query, the actions and the tabs.
-// `type` is the only notification type a tab shows; null shows them all.
+// `types` are the notification types a tab shows; null shows them all.
 export const NOTIFICATION_FILTERS = [
     {
         key: "all",
         label: "All",
-        type: null,
+        types: null,
         emptyMessage:
-            "No notifications yet. Follows, replies, likes and mentions will show up here.",
+            "No notifications yet. Follows, replies, likes, mentions and matches will show up here.",
     },
     {
         key: "followers",
         label: "Followers",
-        type: "FOLLOW",
+        types: ["FOLLOW"],
         emptyMessage: "No new followers yet.",
     },
     {
         key: "mentions",
         label: "Mentions",
-        type: "MENTION",
+        types: ["MENTION"],
         emptyMessage: "Nobody has mentioned you yet.",
     },
     {
         key: "replies",
         label: "Replies",
-        type: "REPLY",
+        types: ["REPLY"],
         emptyMessage: "Nobody has replied to you yet.",
     },
     {
         key: "likes",
         label: "Likes",
-        type: "LIKE",
+        types: ["LIKE"],
         emptyMessage: "Nobody has liked your posts or replies yet.",
+    },
+    {
+        key: "matches",
+        label: "Matches",
+        types: ["MATCH_REQUEST", "MATCH_CONFIRMED", "MATCH_DECLINED"],
+        emptyMessage: "No match requests or answers yet.",
     },
 ] as const;
 

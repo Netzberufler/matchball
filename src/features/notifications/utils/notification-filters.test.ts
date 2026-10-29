@@ -6,9 +6,11 @@ import {
 } from "@/features/notifications/utils/notification-filters";
 
 describe("NOTIFICATION_FILTERS", () => {
-    it("has a unique key and type per tab", () => {
+    it("has a unique key per tab, and each type in one tab", () => {
         const keys = NOTIFICATION_FILTERS.map((filter) => filter.key);
-        const types = NOTIFICATION_FILTERS.map((filter) => filter.type);
+        const types = NOTIFICATION_FILTERS.flatMap(
+            (filter) => filter.types ?? [],
+        );
         expect(new Set(keys).size).toBe(keys.length);
         expect(new Set(types).size).toBe(types.length);
     });
@@ -16,13 +18,13 @@ describe("NOTIFICATION_FILTERS", () => {
     it("starts with the tab that shows everything", () => {
         expect(NOTIFICATION_FILTERS[0]).toMatchObject({
             key: "all",
-            type: null,
+            types: null,
         });
     });
 });
 
 describe("isNotificationFilter", () => {
-    it.each(["all", "followers", "mentions", "replies", "likes"])(
+    it.each(["all", "followers", "mentions", "replies", "likes", "matches"])(
         "accepts %s",
         (value) => {
             expect(isNotificationFilter(value)).toBe(true);
@@ -41,7 +43,13 @@ describe("getNotificationFilter", () => {
     it("returns the tab for a key", () => {
         expect(getNotificationFilter("likes")).toMatchObject({
             label: "Likes",
-            type: "LIKE",
+            types: ["LIKE"],
+        });
+    });
+
+    it("groups the match notifications in one tab", () => {
+        expect(getNotificationFilter("matches")).toMatchObject({
+            types: ["MATCH_REQUEST", "MATCH_CONFIRMED", "MATCH_DECLINED"],
         });
     });
 });

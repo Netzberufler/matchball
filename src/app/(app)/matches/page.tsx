@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@heroui/react";
-import { Matches } from "@/features/matches/components/matches";
-import { MatchTableFallback } from "@/features/matches/components/match-table";
+import {
+    Matches,
+    MatchesFallback,
+} from "@/features/matches/components/matches";
 
 export const metadata: Metadata = {
     title: "Matches",
@@ -28,7 +30,7 @@ export default function MatchesPage() {
                 </Link>
             </div>
             {/* Reads the session at request time */}
-            <Suspense fallback={<MatchTableFallback />}>
+            <Suspense fallback={<MatchesFallback />}>
                 <Matches />
             </Suspense>
         </>

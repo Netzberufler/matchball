@@ -43,6 +43,8 @@ const SEED_REPLY_DEPTH = 2;
 // before today
 const MATCH_COUNT = 40;
 const MATCH_PERIOD_DAYS = 180;
+// How many of them are still waiting for player 2 to accept them
+const PENDING_MATCH_COUNT = 6;
 // The chance that a match goes to a third set, and that the third set is a
 // match tiebreak rather than a full set
 const THREE_SET_CHANCE = 0.35;
@@ -278,8 +280,9 @@ async function main() {
     );
     await prisma.follow.createMany({ data: follows });
 
-    // Matches between random pairs of users, won by whoever won the score
-    const matches = Array.from({ length: MATCH_COUNT }, () => {
+    // Matches between random pairs of users, won by whoever won the score.
+    // The first few are still pending.
+    const matches = Array.from({ length: MATCH_COUNT }, (_, index) => {
         const [player1Id, player2Id] = shuffle(userIds) as [string, string];
         const score = randomMatchScore();
         const winner = getScoreWinner(score);
@@ -292,6 +295,10 @@ async function main() {
             player2Id,
             winnerId: winner === "player1" ? player1Id : player2Id,
             ...score,
+            status:
+                index < PENDING_MATCH_COUNT
+                    ? ("PENDING" as const)
+                    : ("CONFIRMED" as const),
         };
     });
     await prisma.match.createMany({ data: matches });
@@ -398,7 +405,7 @@ async function main() {
     await prisma.commentLike.createMany({ data: commentLikes });
 
     // The notifications the actions would have written for these follows,
-    // likes and replies (see src/features/notifications/lib/notify.ts), at
+    // likes, replies and pending matches (see src/features/notifications/lib/notify.ts), at
     // the same times. The seed's only mentions start replies, so they're
     // covered by the reply notifications.
     await prisma.$executeRaw`
@@ -444,6 +451,16 @@ async function main() {
         WHERE "Comment"."authorId" = ANY(${userIds}::uuid[])
             AND COALESCE("Parent"."authorId", "Post"."authorId")
                 <> "Comment"."authorId"`;
+    // A pending match asks player 2 to accept it. Confirmed ones get no
+    // notification, as the seed doesn't know when they were accepted.
+    await prisma.$executeRaw`
+        INSERT INTO "Notification"
+            ("id", "userId", "actorId", "type", "matchId", "createdAt")
+        SELECT gen_random_uuid(), "player2Id", "player1Id", 'MATCH_REQUEST',
+            "id", "createdAt"
+        FROM "Match"
+        WHERE "player1Id" = ANY(${userIds}::uuid[])
+            AND "status" = 'PENDING'`;
 
     // Count the likes and replies on every reply, and the likes and comments on every
     // post. This also corrects ones by other users that lost likes or
@@ -485,7 +502,7 @@ async function main() {
             )`;
 
     console.log(
-        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${matches.length} matches, ${likes.length} likes, ${comments.length} comments, ${nestedReplyCount} replies to comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
+        `Seeded ${SEED_USERS.length} users, ${postCounts.reduce((sum, count) => sum + count, 0)} posts, ${follows.length} follows, ${matches.length} matches (${PENDING_MATCH_COUNT} pending), ${likes.length} likes, ${comments.length} comments, ${nestedReplyCount} replies to comments and ${commentLikes.length} comment likes (password: ${SEED_PASSWORD})`,
     );
 }
 
