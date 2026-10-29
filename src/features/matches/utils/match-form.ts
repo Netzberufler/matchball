@@ -1,11 +1,12 @@
-// Shared by the add match form, which checks its data before sending it,
-// and the createMatch action, which checks it again before saving. Written
+// Shared by the add and edit match forms, which check their data before
+// sending it, and the createMatch and updateMatch actions, which check it
+// again before saving. Written
 // with zod/mini, as the form uses it in the browser.
 import * as z from "zod/mini";
 import { parseEnteredScore } from "@/features/matches/utils/match-score";
 import { formFields, formText } from "@/lib/form-validation";
 
-// Field names of the add match form
+// Field names of the match form
 export const PLAYED_AT_FIELD = "playedAt";
 export const OPPONENT_FIELD = "opponentId";
 export const SET_NUMBERS = [1, 2, 3] as const;
@@ -24,8 +25,10 @@ const SCORE_FIELDS = SET_NUMBERS.flatMap((set) => [
     scoreField(set, "opponent"),
 ]);
 
-// Every field the form sends. Nothing else is read from the form data.
+// Every field the add form sends. Nothing else is read from the form data.
 const MATCH_FORM_FIELDS = [PLAYED_AT_FIELD, OPPONENT_FIELD, ...SCORE_FIELDS];
+// The edit form's: the opponent can't be changed
+const EDIT_MATCH_FORM_FIELDS = [PLAYED_AT_FIELD, ...SCORE_FIELDS];
 
 // The earliest year a match can have been played
 const MIN_PLAYED_YEAR = 1900;
@@ -36,7 +39,9 @@ const SCORE_MESSAGE = "Scores are whole numbers";
 
 export type MatchFormError =
     | { field: typeof PLAYED_AT_FIELD | typeof OPPONENT_FIELD; message: string }
-    | { field: "score"; set: 1 | 2 | 3; message: string };
+    | { field: "score"; set: 1 | 2 | 3; message: string }
+    // About the whole form, e.g. that nothing was changed
+    | { field: "form"; message: string };
 
 // A score field: empty (null) or a whole number. Its length is checked
 // first, so only short text reaches the other checks. The tennis rules,
@@ -81,6 +86,37 @@ const opponentIdSchema = formText(
     ),
 );
 
+// The score fields, as numbers or null
+const scoreFields = {
+    set1Own: scoreNumber,
+    set1Opponent: scoreNumber,
+    set2Own: scoreNumber,
+    set2Opponent: scoreNumber,
+    set3Own: scoreNumber,
+    set3Opponent: scoreNumber,
+};
+
+type ScoreFields = { [K in keyof typeof scoreFields]: number | null };
+
+// The score fields as Match columns with the user as player 1, or an issue
+// at ["score", set] if they aren't a finished match
+function toMatchScore(fields: ScoreFields, ctx: z.core.ParsePayload) {
+    const { score, error } = parseEnteredScore([
+        { own: fields.set1Own, opponent: fields.set1Opponent },
+        { own: fields.set2Own, opponent: fields.set2Opponent },
+        { own: fields.set3Own, opponent: fields.set3Opponent },
+    ]);
+    if (error) {
+        ctx.issues.push({
+            code: "custom",
+            message: error.message,
+            path: ["score", error.set],
+            input: fields,
+        });
+    }
+    return score;
+}
+
 // Everything the add match form sends. Gives the day played, the
 // opponent's user id and the score as Match columns with the user as
 // player 1. Whether the opponent exists, and isn't the user, needs the
@@ -89,26 +125,11 @@ export const matchFormSchema = z.pipe(
     z.object({
         [PLAYED_AT_FIELD]: playedAtSchema,
         [OPPONENT_FIELD]: opponentIdSchema,
-        set1Own: scoreNumber,
-        set1Opponent: scoreNumber,
-        set2Own: scoreNumber,
-        set2Opponent: scoreNumber,
-        set3Own: scoreNumber,
-        set3Opponent: scoreNumber,
+        ...scoreFields,
     } satisfies Record<(typeof MATCH_FORM_FIELDS)[number], z.ZodMiniType>),
     z.transform((fields, ctx) => {
-        const { score, error } = parseEnteredScore([
-            { own: fields.set1Own, opponent: fields.set1Opponent },
-            { own: fields.set2Own, opponent: fields.set2Opponent },
-            { own: fields.set3Own, opponent: fields.set3Opponent },
-        ]);
-        if (error) {
-            ctx.issues.push({
-                code: "custom",
-                message: error.message,
-                path: ["score", error.set],
-                input: fields,
-            });
+        const score = toMatchScore(fields, ctx);
+        if (!score) {
             return z.NEVER;
         }
         return {
@@ -119,11 +140,35 @@ export const matchFormSchema = z.pipe(
     }),
 );
 
+// Everything the edit match form sends: like the add form's, without the
+// opponent, which stays the same
+export const editMatchFormSchema = z.pipe(
+    z.object({
+        [PLAYED_AT_FIELD]: playedAtSchema,
+        ...scoreFields,
+    } satisfies Record<(typeof EDIT_MATCH_FORM_FIELDS)[number], z.ZodMiniType>),
+    z.transform((fields, ctx) => {
+        const score = toMatchScore(fields, ctx);
+        if (!score) {
+            return z.NEVER;
+        }
+        return { playedAt: fields[PLAYED_AT_FIELD], score };
+    }),
+);
+
 export type MatchForm = z.output<typeof matchFormSchema>;
 
 // Checks the add match form's data. Only its own fields are read.
 export function parseMatchForm(formData: FormData) {
     return matchFormSchema.safeParse(formFields(formData, MATCH_FORM_FIELDS));
+}
+
+// Checks the edit match form's data, like parseMatchForm. An opponent
+// that's sent along is ignored.
+export function parseEditMatchForm(formData: FormData) {
+    return editMatchFormSchema.safeParse(
+        formFields(formData, EDIT_MATCH_FORM_FIELDS),
+    );
 }
 
 // The first problem Zod found, as the form shows it: at the date, the

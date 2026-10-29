@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { Clock } from "lucide-react";
-import { AlertDialog, Button, Card } from "@heroui/react";
+import { AlertDialog, Button, buttonVariants, Card } from "@heroui/react";
 import {
     acceptMatch,
     declineMatch,
@@ -13,10 +14,11 @@ import { formatPlayedAt } from "@/features/matches/utils/match-score";
 import { MatchScore, PlayerLink } from "./match-table";
 
 // The viewer's pending matches, as cards rather than table rows so the
-// buttons fit on phones. Matches the viewer logged wait for the opponent,
-// and can be withdrawn; matches logged against the viewer can be accepted
-// or declined. The actions reload the page's data, which moves an accepted
-// match to the table below and drops a declined or withdrawn one.
+// buttons fit on phones. Matches the viewer logged or last edited wait for
+// the opponent, and can be withdrawn; the others can be accepted or
+// declined. Both players can edit them. The actions reload the page's data,
+// which moves an accepted match to the table below and drops a declined or
+// withdrawn one.
 export function PendingMatches({ matches }: { matches: PendingMatch[] }) {
     return (
         <ul className="flex flex-col gap-3">
@@ -40,7 +42,7 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
     function onAccept() {
         setError(null);
         startAccept(async () => {
-            setError((await acceptMatch(match.id)).error);
+            setError((await acceptMatch(match.id, match.version)).error);
         });
     }
 
@@ -49,7 +51,7 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
         setError(null);
         startRemove(async () => {
             const remove = match.isLoggedByUser ? withdrawMatch : declineMatch;
-            setError((await remove(match.id)).error);
+            setError((await remove(match.id, match.version)).error);
             setIsConfirmOpen(false);
         });
     }
@@ -68,7 +70,7 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
                     <Clock className="mt-0.5 size-4 shrink-0" aria-hidden />
                     {match.isLoggedByUser
                         ? `Waiting for ${name} to confirm. The match is logged once they accept it.`
-                        : `${name} logged this match against you. Accept it if the result is right.`}
+                        : `${name} is waiting for you to confirm this match. Accept it if the result is right, or edit it.`}
                 </p>
                 <div className="flex flex-wrap gap-2">
                     {!match.isLoggedByUser && (
@@ -82,6 +84,18 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
                             Accept
                         </Button>
                     )}
+                    {/* A link styled as a grey HeroUI button. Saving the
+                        edit makes the viewer the one who waits. */}
+                    <Link
+                        href={`/matches/${match.id}/edit`}
+                        aria-disabled={isBusy}
+                        className={`${buttonVariants({
+                            size: "sm",
+                            variant: "tertiary",
+                        })} ${isBusy ? "pointer-events-none opacity-50" : ""}`}
+                    >
+                        Edit
+                    </Link>
                     {/* Asks first, as it can't be undone */}
                     <AlertDialog
                         isOpen={isConfirmOpen}

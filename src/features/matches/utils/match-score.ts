@@ -42,6 +42,28 @@ export function getSets(score: MatchScore, side: MatchSide): SetScore[] {
     );
 }
 
+// Whether two scores are the same match result, each read from its own
+// side, e.g. a stored match from player 2's side and a newly entered one
+// from player 1's (the user's)
+export function isSameScore(
+    a: MatchScore,
+    aSide: MatchSide,
+    b: MatchScore,
+    bSide: MatchSide,
+) {
+    const aSets = getSets(a, aSide);
+    const bSets = getSets(b, bSide);
+    return (
+        aSets.length === bSets.length &&
+        aSets.every(
+            (set, index) =>
+                set.own === bSets[index]?.own &&
+                set.opponent === bSets[index]?.opponent &&
+                set.isMatchTiebreak === bSets[index]?.isMatchTiebreak,
+        )
+    );
+}
+
 // Every way to win a regular set, as (winner, loser) games; isValidSet
 // accepts exactly these, either way round
 export const WON_SET_SCORES = [

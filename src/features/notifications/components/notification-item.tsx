@@ -6,6 +6,7 @@ import {
     Undo2,
     Heart,
     MessageCircle,
+    Pencil,
     Trophy,
     UserPlus,
 } from "lucide-react";
@@ -34,9 +35,10 @@ const TYPE_ICONS = {
     MATCH_CONFIRMED: { icon: CircleCheck, className: "text-success" },
     MATCH_DECLINED: { icon: CircleX, className: "text-danger" },
     MATCH_WITHDRAWN: { icon: Undo2, className: "text-muted" },
+    MATCH_UPDATED: { icon: Pencil, className: "text-accent" },
 };
 
-// How a match that was asked about was answered, after its score
+// How a match the user was asked to confirm was answered, after its score
 const MATCH_STATUS_LABELS = {
     PENDING: null,
     CONFIRMED: "Confirmed",
@@ -66,6 +68,8 @@ function describeAction(notification: UserNotification) {
             return "declined your match";
         case "MATCH_WITHDRAWN":
             return "withdrew their match against you";
+        case "MATCH_UPDATED":
+            return "changed the match against you";
     }
 }
 
@@ -83,12 +87,13 @@ function NotificationText({
                     @{notification.actor.username}
                 </p>
             );
-        // The day and score from the user's side. A request also says how
-        // it was answered, as it stays after that.
+        // The day and score from the user's side, as they are now. A request
+        // or change also says how it was answered, as it stays after that.
         case "MATCH_REQUEST":
         case "MATCH_CONFIRMED":
         case "MATCH_DECLINED":
-        case "MATCH_WITHDRAWN": {
+        case "MATCH_WITHDRAWN":
+        case "MATCH_UPDATED": {
             const { match } = notification;
             if (!match) {
                 return (
@@ -96,7 +101,8 @@ function NotificationText({
                 );
             }
             const statusLabel =
-                notification.type === "MATCH_REQUEST"
+                notification.type === "MATCH_REQUEST" ||
+                notification.type === "MATCH_UPDATED"
                     ? MATCH_STATUS_LABELS[match.status]
                     : null;
             return (
@@ -143,6 +149,7 @@ function notificationHref(notification: UserNotification) {
         case "MATCH_CONFIRMED":
         case "MATCH_DECLINED":
         case "MATCH_WITHDRAWN":
+        case "MATCH_UPDATED":
             return MATCHES_PATH;
         default:
             return postPath(notification.postId);

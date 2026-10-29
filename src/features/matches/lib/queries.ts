@@ -1,12 +1,14 @@
 import "server-only";
 
-import type { MatchStatus, Prisma } from "@/prisma/generated/client";
-import { prisma } from "@/prisma/db";
+import { scoreField, SET_NUMBERS } from "@/features/matches/utils/match-form";
 import {
     getSets,
     type MatchSide,
     type SetScore,
 } from "@/features/matches/utils/match-score";
+import { idSchema } from "@/lib/action-input";
+import type { MatchStatus, Prisma } from "@/prisma/generated/client";
+import { prisma } from "@/prisma/db";
 
 // How many of a user's latest matches /matches shows
 const RECENT_MATCHES_LIMIT = 50;
@@ -80,9 +82,12 @@ export async function getRecentMatches(userId: string): Promise<UserMatch[]> {
 
 // A pending match, and whose move it is
 export type PendingMatch = UserMatch & {
-    // The user logged it (player 1), so the opponent has to accept it.
-    // Otherwise the opponent logged it, and the user has to.
+    // The user logged or last edited it (player 1), so the opponent has to
+    // accept it. Otherwise the opponent did, and the user has to.
     isLoggedByUser: boolean;
+    // Its updatedAt, sent back with an answer or edit, which only goes
+    // through if the match hasn't changed since
+    version: Date;
 };
 
 // All of the user's pending matches, newest first: the ones they logged
@@ -94,10 +99,54 @@ export async function getPendingMatches(
     const matches = await prisma.match.findMany({
         where: userMatchesWhere(userId, "PENDING"),
         orderBy: [{ playedAt: "desc" }, { id: "desc" }],
-        select: matchSelect,
+        select: { ...matchSelect, updatedAt: true },
     });
     return matches.map((match) => ({
         ...toUserMatch(match, userId),
         isLoggedByUser: match.player1.id === userId,
+        version: match.updatedAt,
     }));
+}
+
+// A pending match as the edit form starts out: the day and the games of
+// each set from the user's side, by score field name (see scoreField)
+export type EditableMatch = {
+    id: string;
+    version: Date;
+    opponent: MatchUser;
+    // As the date picker takes it, e.g. "2026-10-28"
+    playedAt: string;
+    scores: Record<string, number | null>;
+};
+
+// One of the user's pending matches, for its edit form. Null if there's no
+// such match, the user doesn't play in it, or it's no longer pending.
+export async function getEditableMatch(
+    matchId: string,
+    userId: string,
+): Promise<EditableMatch | null> {
+    if (!idSchema.safeParse(matchId).success) {
+        return null;
+    }
+    const match = await prisma.match.findFirst({
+        where: { id: matchId, ...userMatchesWhere(userId, "PENDING") },
+        select: { ...matchSelect, updatedAt: true },
+    });
+    if (!match) {
+        return null;
+    }
+    const { opponent, sets } = toUserMatch(match, userId);
+    const scores: EditableMatch["scores"] = {};
+    for (const set of SET_NUMBERS) {
+        scores[scoreField(set, "own")] = sets[set - 1]?.own ?? null;
+        scores[scoreField(set, "opponent")] = sets[set - 1]?.opponent ?? null;
+    }
+    return {
+        id: match.id,
+        version: match.updatedAt,
+        opponent,
+        // Stored as midnight UTC
+        playedAt: match.playedAt.toISOString().slice(0, 10),
+        scores,
+    };
 }

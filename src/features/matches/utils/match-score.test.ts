@@ -7,6 +7,7 @@ import {
     formatSet,
     getScoreWinner,
     getSets,
+    isSameScore,
     type MatchScore,
     parseEnteredScore,
     scoreMax,
@@ -83,6 +84,65 @@ describe("getSets", () => {
             "player1",
         );
         expect(sets).toHaveLength(2);
+    });
+});
+
+describe("isSameScore", () => {
+    it("matches the same score from the same side", () => {
+        const a = score([6, 3], [4, 6], [10, 8], true);
+        expect(isSameScore(a, "player1", { ...a }, "player1")).toBe(true);
+    });
+
+    it("matches a score entered from the other side", () => {
+        expect(
+            isSameScore(
+                score([6, 3], [4, 6], [10, 8], true),
+                "player2",
+                score([3, 6], [6, 4], [8, 10], true),
+                "player1",
+            ),
+        ).toBe(true);
+    });
+
+    it("tells apart a changed set", () => {
+        expect(
+            isSameScore(
+                score([6, 3], [6, 4]),
+                "player1",
+                score([6, 3], [6, 2]),
+                "player1",
+            ),
+        ).toBe(false);
+    });
+
+    it("tells apart the same games from the other side", () => {
+        expect(
+            isSameScore(
+                score([6, 3], [6, 4]),
+                "player1",
+                score([6, 3], [6, 4]),
+                "player2",
+            ),
+        ).toBe(false);
+    });
+
+    it("tells apart a third set and a match tiebreak", () => {
+        expect(
+            isSameScore(
+                score([6, 3], [4, 6], [7, 5]),
+                "player1",
+                score([6, 3], [4, 6], [10, 8], true),
+                "player1",
+            ),
+        ).toBe(false);
+        expect(
+            isSameScore(
+                score([6, 3], [6, 4]),
+                "player1",
+                score([6, 3], [4, 6], [6, 4]),
+                "player1",
+            ),
+        ).toBe(false);
     });
 });
 

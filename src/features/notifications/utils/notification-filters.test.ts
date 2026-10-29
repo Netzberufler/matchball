@@ -54,6 +54,7 @@ describe("getNotificationFilter", () => {
                 "MATCH_CONFIRMED",
                 "MATCH_DECLINED",
                 "MATCH_WITHDRAWN",
+                "MATCH_UPDATED",
             ],
         });
     });

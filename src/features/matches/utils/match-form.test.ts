@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
     type MatchFormError,
+    parseEditMatchForm,
     parseMatchForm,
     scoreField,
     toMatchFormError,
@@ -121,6 +122,46 @@ describe("parseMatchForm", () => {
             parseMatchForm(matchFormData({ set3Own: null, set3Opponent: null }))
                 .success,
         ).toBe(true);
+    });
+});
+
+describe("parseEditMatchForm", () => {
+    it("returns the day and score without an opponent", () => {
+        const result = parseEditMatchForm(matchFormData({ opponentId: null }));
+        expect(result.success && result.data).toEqual({
+            playedAt: new Date("2026-10-12T00:00:00Z"),
+            score: {
+                set1Player1: 6,
+                set1Player2: 3,
+                set2Player1: 6,
+                set2Player2: 4,
+                set3Player1: null,
+                set3Player2: null,
+                set3IsMatchTiebreak: false,
+            },
+        });
+    });
+
+    it("ignores an opponent that's sent along", () => {
+        const result = parseEditMatchForm(
+            matchFormData({ opponentId: "not-a-user-id" }),
+        );
+        expect(result.success && result.data).not.toHaveProperty("opponentId");
+    });
+
+    it("checks the date and score like the add form", () => {
+        const dateResult = parseEditMatchForm(
+            matchFormData({ playedAt: "2026-11-30" }),
+        );
+        expect(
+            !dateResult.success && toMatchFormError(dateResult.error),
+        ).toEqual(PLAYED_AT_ERROR);
+        const scoreResult = parseEditMatchForm(
+            matchFormData({ set2Own: "6", set2Opponent: "6" }),
+        );
+        expect(
+            !scoreResult.success && toMatchFormError(scoreResult.error),
+        ).toMatchObject({ field: "score", set: 2 });
     });
 });
 

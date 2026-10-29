@@ -40,6 +40,7 @@ export const NOTIFICATION_FILTERS = [
             "MATCH_CONFIRMED",
             "MATCH_DECLINED",
             "MATCH_WITHDRAWN",
+            "MATCH_UPDATED",
         ],
         emptyMessage: "No match requests or answers yet.",
     },

@@ -277,6 +277,9 @@ enum NotificationType {
   MATCH_DECLINED
   // The user who logged a match against this user withdrew it
   MATCH_WITHDRAWN
+  // The other player changed the date or score of a pending match, which
+  // the user now has to accept or decline
+  MATCH_UPDATED
 }
 
 // Something that happened to a user's posts or replies, shown on
@@ -349,7 +352,9 @@ enum MatchStatus {
 // then its columns hold tiebreak points, e.g. 10:8. Scores are validated by
 // isValidMatchScore in src/features/matches/utils/match-score.ts.
 //
-// Player 1 is always the user who logged the match. It starts PENDING until
+// Player 1 is always the user who logged the match, or who last edited it
+// while pending, which makes the editor player 1 (see
+// src/features/matches/actions/update-match.ts). It stays PENDING until
 // player 2 accepts or declines it, or player 1 withdraws it
 // (src/features/matches/actions/pending-match.ts). Each sets its status;
 // none of them deletes it, so its notifications keep its details.
@@ -378,7 +383,9 @@ model Match {
   // The request to player 2, and the notice of how it was answered
   notifications       Notification[]
   createdAt           DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
+  // Milliseconds, like JavaScript dates: the edit form sends it back as
+  // the version it was loaded from, which must still match exactly
+  updatedAt           DateTime       @updatedAt @db.Timestamptz(3)
 
   // A user's confirmed or pending matches, newest first, from both
   // columns: Postgres combines the two indexes for "(player1Id = X OR
