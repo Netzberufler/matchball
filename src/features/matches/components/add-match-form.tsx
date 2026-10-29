@@ -17,17 +17,16 @@ import {
 } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { Viewer } from "@/features/auth/components/viewer-provider";
-import {
-    createMatch,
-    type MatchFormError,
-} from "@/features/matches/actions/create-match";
+import { createMatch } from "@/features/matches/actions/create-match";
 import type { Opponent } from "@/features/matches/actions/search-opponents";
 import {
+    type MatchFormError,
     OPPONENT_FIELD,
     PLAYED_AT_FIELD,
-    readEnteredSets,
+    parseMatchForm,
     scoreField,
     SET_NUMBERS,
+    toMatchFormError,
 } from "@/features/matches/utils/match-form";
 import {
     areFirstSetsSplit,
@@ -96,23 +95,28 @@ export function AddMatchForm({ viewer }: { viewer: Viewer }) {
         const formData = new FormData(event.currentTarget);
 
         setFieldErrors({});
-        // Checked here first, so a wrong score doesn't need a round trip
-        const { error } = parseEnteredScore(readEnteredSets(formData));
-        if (error) {
-            setScoreError({ field: "score", ...error });
+        setScoreError(null);
+        // Checked here first with the schema createMatch uses, so mistakes
+        // don't need a round trip
+        const parsed = parseMatchForm(formData);
+        if (!parsed.success) {
+            showError(toMatchFormError(parsed.error));
             return;
         }
-        setScoreError(null);
 
         startTransition(async () => {
             // Redirects to /matches on success, so only errors come back
             const { error } = await createMatch(formData);
-            if (error.field === "score") {
-                setScoreError(error);
-            } else {
-                setFieldErrors({ [error.field]: error.message });
-            }
+            showError(error);
         });
+    }
+
+    function showError(error: MatchFormError) {
+        if (error.field === "score") {
+            setScoreError(error);
+        } else {
+            setFieldErrors({ [error.field]: error.message });
+        }
     }
 
     return (

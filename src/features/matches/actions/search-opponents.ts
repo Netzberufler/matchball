@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { NAME_MAX_LENGTH } from "@/features/auth/utils/auth-rules";
 import { prisma } from "@/prisma/db";
@@ -9,6 +10,15 @@ const MAX_RESULTS = 6;
 // Names are searched from this many characters on: shorter patterns can't
 // use the trigram index on User.name
 const NAME_SEARCH_MIN_LENGTH = 3;
+
+// What was typed in the opponent field: a name or username, maybe with an
+// "@". Its length is checked before anything else happens to it.
+const searchQuerySchema = z
+    .string()
+    .max(NAME_MAX_LENGTH + 10)
+    .trim()
+    .transform((text) => text.replace(/^@/, ""))
+    .pipe(z.string().min(1).max(NAME_MAX_LENGTH));
 
 export type Opponent = {
     id: string;
@@ -25,13 +35,11 @@ export async function searchOpponents(query: unknown): Promise<Opponent[]> {
     const { user } = await requireSession();
 
     // Checked here: actions can be called with anything
-    if (typeof query !== "string") {
+    const parsed = searchQuerySchema.safeParse(query);
+    if (!parsed.success) {
         return [];
     }
-    const text = query.trim().replace(/^@/, "");
-    if (text.length === 0 || text.length > NAME_MAX_LENGTH) {
-        return [];
-    }
+    const text = parsed.data;
     const username = text.toLowerCase();
 
     const users = await prisma.user.findMany({

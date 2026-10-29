@@ -4,67 +4,69 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/features/auth/lib/session";
 import {
+    type MatchFormError,
     OPPONENT_FIELD,
-    PLAYED_AT_FIELD,
-    parsePlayedAt,
-    readEnteredSets,
+    parseMatchForm,
+    toMatchFormError,
 } from "@/features/matches/utils/match-form";
-import {
-    getScoreWinner,
-    parseEnteredScore,
-    type ScoreError,
-} from "@/features/matches/utils/match-score";
+import { getScoreWinner } from "@/features/matches/utils/match-score";
 import { prisma } from "@/prisma/db";
 
-export type MatchFormError =
-    | { field: typeof PLAYED_AT_FIELD | typeof OPPONENT_FIELD; message: string }
-    | { field: "score"; set: ScoreError["set"]; message: string };
-
 // Saves a match the signed-in user played, with them as player 1, then
-// goes to /matches
+// goes to /matches. Server actions can be called with any data, not just
+// the form's, so everything is checked here before anything is saved.
 export async function createMatch(
     formData: FormData,
 ): Promise<{ error: MatchFormError }> {
+    // Only signed-in users, and they can only add their own matches: player
+    // 1 is always the session's user, never a value from the form
     const { user } = await requireSession();
 
-    // Validated again here: actions can be called without the form
-    const playedAt = parsePlayedAt(formData.get(PLAYED_AT_FIELD));
-    if (!playedAt) {
-        return {
-            error: {
-                field: PLAYED_AT_FIELD,
-                message: "Choose the day you played, today or earlier",
-            },
-        };
+    // The form's fields only, as text of limited length, with a valid date,
+    // a user id and a finished score (see matchFormSchema)
+    const parsed = parseMatchForm(formData);
+    if (!parsed.success) {
+        return { error: toMatchFormError(parsed.error) };
     }
+    const { playedAt, opponentId, score } = parsed.data;
 
-    const opponentId = String(formData.get(OPPONENT_FIELD) ?? "");
-    const opponent = /^[0-9a-f-]{36}$/i.test(opponentId)
-        ? await prisma.user.findUnique({
-              where: { id: opponentId },
-              select: { id: true },
-          })
-        : null;
-    if (!opponent || opponent.id === user.id) {
+    // A real user, and not the signed-in one
+    const opponent =
+        opponentId === user.id
+            ? null
+            : await prisma.user.findUnique({
+                  where: { id: opponentId },
+                  select: { id: true },
+              });
+    if (!opponent) {
         return {
             error: { field: OPPONENT_FIELD, message: "Choose your opponent" },
         };
     }
 
-    const { score, error } = parseEnteredScore(readEnteredSets(formData));
-    if (error) {
-        return { error: { field: "score", ...error } };
+    // The schema only lets finished matches through; refuse rather than
+    // guess should that ever change
+    const winner = getScoreWinner(score);
+    if (!winner) {
+        return {
+            error: { field: "score", set: 1, message: "Enter the full score" },
+        };
     }
 
+    // Only the checked values are saved; the winner follows from the score
     await prisma.match.create({
         data: {
             playedAt,
             player1Id: user.id,
             player2Id: opponent.id,
-            // parseEnteredScore only returns finished matches
-            winnerId:
-                getScoreWinner(score) === "player1" ? user.id : opponent.id,
-            ...score,
+            winnerId: winner === "player1" ? user.id : opponent.id,
+            set1Player1: score.set1Player1,
+            set1Player2: score.set1Player2,
+            set2Player1: score.set2Player1,
+            set2Player2: score.set2Player2,
+            set3Player1: score.set3Player1,
+            set3Player2: score.set3Player2,
+            set3IsMatchTiebreak: score.set3IsMatchTiebreak,
         },
     });
 
