@@ -1,8 +1,11 @@
-import { z } from "zod";
+// Shared by the add match form, which checks its data before sending it,
+// and the createMatch action, which checks it again before saving. Written
+// with zod/mini, as the form uses it in the browser.
+import * as z from "zod/mini";
 import { parseEnteredScore } from "@/features/matches/utils/match-score";
+import { formFields, formText } from "@/lib/form-validation";
 
-// Field names of the add match form, read by the form for checking before
-// it's sent and by createMatch
+// Field names of the add match form
 export const PLAYED_AT_FIELD = "playedAt";
 export const OPPONENT_FIELD = "opponentId";
 export const SET_NUMBERS = [1, 2, 3] as const;
@@ -35,71 +38,76 @@ export type MatchFormError =
     | { field: typeof PLAYED_AT_FIELD | typeof OPPONENT_FIELD; message: string }
     | { field: "score"; set: 1 | 2 | 3; message: string };
 
-// A form field as text. FormData gives null for a missing field, which
-// counts as empty, and a File for an upload, which `schema` refuses.
-function formText<T extends z.ZodType>(schema: T) {
-    return z.preprocess((value) => value ?? "", schema);
-}
-
 // A score field: empty (null) or a whole number. Its length is checked
 // first, so only short text reaches the other checks. The tennis rules,
 // including each set's highest score, are checked for the whole score
 // below.
 const scoreNumber = formText(
-    z
-        .string(SCORE_MESSAGE)
-        .max(3, SCORE_MESSAGE)
-        .regex(/^\d*$/, SCORE_MESSAGE)
-        .transform((value) => (value === "" ? null : Number(value))),
+    z.pipe(
+        z
+            .string(SCORE_MESSAGE)
+            .check(
+                z.maxLength(3, SCORE_MESSAGE),
+                z.regex(/^\d*$/, SCORE_MESSAGE),
+            ),
+        z.transform((value) => (value === "" ? null : Number(value))),
+    ),
 );
 
-// Everything the add match form sends, checked by the form before sending
-// and by createMatch before saving. Gives the day played (midnight UTC),
-// the opponent's user id and the score as Match columns with the user as
+// The day played, as midnight UTC (see parsePlayedAt)
+const playedAtSchema = formText(
+    z.pipe(
+        z.string(PLAYED_AT_MESSAGE).check(z.maxLength(10, PLAYED_AT_MESSAGE)),
+        z.transform((value, ctx) => {
+            const date = parsePlayedAt(value);
+            if (!date) {
+                ctx.issues.push({
+                    code: "custom",
+                    message: PLAYED_AT_MESSAGE,
+                    input: value,
+                });
+                return z.NEVER;
+            }
+            return date;
+        }),
+    ),
+);
+
+// A user id
+const opponentIdSchema = formText(
+    z.pipe(
+        z.string(OPPONENT_MESSAGE).check(z.maxLength(36, OPPONENT_MESSAGE)),
+        z.uuid(OPPONENT_MESSAGE),
+    ),
+);
+
+// Everything the add match form sends. Gives the day played, the
+// opponent's user id and the score as Match columns with the user as
 // player 1. Whether the opponent exists, and isn't the user, needs the
 // database and the session, so createMatch checks that.
-export const matchFormSchema = z
-    .object({
-        [PLAYED_AT_FIELD]: formText(
-            z
-                .string(PLAYED_AT_MESSAGE)
-                .max(10, PLAYED_AT_MESSAGE)
-                .transform((value, ctx) => {
-                    const date = parsePlayedAt(value);
-                    if (!date) {
-                        ctx.addIssue({
-                            code: "custom",
-                            message: PLAYED_AT_MESSAGE,
-                        });
-                        return z.NEVER;
-                    }
-                    return date;
-                }),
-        ),
-        [OPPONENT_FIELD]: formText(
-            z
-                .string(OPPONENT_MESSAGE)
-                .max(36, OPPONENT_MESSAGE)
-                .pipe(z.uuid(OPPONENT_MESSAGE)),
-        ),
+export const matchFormSchema = z.pipe(
+    z.object({
+        [PLAYED_AT_FIELD]: playedAtSchema,
+        [OPPONENT_FIELD]: opponentIdSchema,
         set1Own: scoreNumber,
         set1Opponent: scoreNumber,
         set2Own: scoreNumber,
         set2Opponent: scoreNumber,
         set3Own: scoreNumber,
         set3Opponent: scoreNumber,
-    } satisfies Record<(typeof MATCH_FORM_FIELDS)[number], z.ZodType>)
-    .transform((fields, ctx) => {
+    } satisfies Record<(typeof MATCH_FORM_FIELDS)[number], z.ZodMiniType>),
+    z.transform((fields, ctx) => {
         const { score, error } = parseEnteredScore([
             { own: fields.set1Own, opponent: fields.set1Opponent },
             { own: fields.set2Own, opponent: fields.set2Opponent },
             { own: fields.set3Own, opponent: fields.set3Opponent },
         ]);
         if (error) {
-            ctx.addIssue({
+            ctx.issues.push({
                 code: "custom",
                 message: error.message,
                 path: ["score", error.set],
+                input: fields,
             });
             return z.NEVER;
         }
@@ -108,22 +116,19 @@ export const matchFormSchema = z
             opponentId: fields[OPPONENT_FIELD],
             score,
         };
-    });
+    }),
+);
 
-export type MatchForm = z.infer<typeof matchFormSchema>;
+export type MatchForm = z.output<typeof matchFormSchema>;
 
 // Checks the add match form's data. Only its own fields are read.
 export function parseMatchForm(formData: FormData) {
-    return matchFormSchema.safeParse(
-        Object.fromEntries(
-            MATCH_FORM_FIELDS.map((name) => [name, formData.get(name)]),
-        ),
-    );
+    return matchFormSchema.safeParse(formFields(formData, MATCH_FORM_FIELDS));
 }
 
 // The first problem Zod found, as the form shows it: at the date, the
 // opponent, or below the scores, with the set it's about
-export function toMatchFormError(error: z.ZodError): MatchFormError {
+export function toMatchFormError(error: z.core.$ZodError): MatchFormError {
     const [field, set] = error.issues[0]?.path ?? [];
     const message = error.issues[0]?.message ?? SCORE_MESSAGE;
     if (field === PLAYED_AT_FIELD || field === OPPONENT_FIELD) {

@@ -13,12 +13,19 @@ import {
 } from "@heroui/react";
 import { signUp } from "@/features/auth/actions/sign-up";
 import {
+    emailSchema,
+    nameSchema,
+    passwordSchema,
     USERNAME_MAX_LENGTH,
-    validateEmail,
-    validateName,
-    validatePassword,
-    validateUsername,
+    usernameSchema,
 } from "@/features/auth/utils/auth-rules";
+import { validator } from "@/lib/form-validation";
+
+// The same checks signUp runs on the server
+const validateEmail = validator(emailSchema);
+const validateUsername = validator(usernameSchema);
+const validateName = validator(nameSchema);
+const validatePassword = validator(passwordSchema);
 
 export function SignUpForm() {
     const [username, setUsername] = useState("");

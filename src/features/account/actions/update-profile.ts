@@ -2,12 +2,11 @@
 
 import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
-import { validateName } from "@/features/auth/utils/auth-rules";
 import {
-    normalizeBio,
-    parseGender,
-    validateBio,
+    PROFILE_FIELDS,
+    profileFormSchema,
 } from "@/features/account/utils/profile-rules";
+import { firstError, formFields } from "@/lib/form-validation";
 import { prisma } from "@/prisma/db";
 
 export type ProfileFormError = {
@@ -22,26 +21,22 @@ export async function updateProfile(
 ): Promise<{ error: ProfileFormError | null }> {
     const { user } = await requireSession();
 
-    // Validated again here: actions can be called without the form
-    const name = String(formData.get("name") ?? "").trim();
-    const nameError = validateName(name);
-    if (nameError) {
-        return { error: { field: "name", message: nameError } };
+    // Checked again here with the form's schema: actions can be called
+    // without the form
+    const parsed = profileFormSchema.safeParse(
+        formFields(formData, PROFILE_FIELDS),
+    );
+    if (!parsed.success) {
+        const { field, message } = firstError(parsed.error);
+        return {
+            error: { field: field as ProfileFormError["field"], message },
+        };
     }
-    const bioInput = String(formData.get("bio") ?? "");
-    const bioError = validateBio(bioInput);
-    if (bioError) {
-        return { error: { field: "bio", message: bioError } };
-    }
-    // Optional; only the Gender enum's values, anything else is refused
-    const gender = parseGender(formData.get("gender"));
-    if (gender === undefined) {
-        return { error: { field: "gender", message: "Choose a gender" } };
-    }
+    const { name, bio, gender } = parsed.data;
 
     await prisma.user.update({
         where: { id: user.id },
-        data: { name, bio: normalizeBio(bioInput), gender },
+        data: { name, bio, gender },
     });
 
     // Reload the page's server data, e.g. the name in the sidebar

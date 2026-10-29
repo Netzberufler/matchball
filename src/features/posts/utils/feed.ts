@@ -1,6 +1,7 @@
 // Paging by (createdAt, id) cursor: newest first for the post feeds, oldest
 // first for a post's comments. Shared by their queries, load-more actions
-// and components.
+// and components. The actions check cursors with feedCursorSchema in
+// src/lib/action-input.ts.
 
 export const FEED_PAGE_SIZE = 10;
 
@@ -49,21 +50,6 @@ export function appendPage<Item extends FeedItem>(
         ],
         nextCursor: next.nextCursor,
     };
-}
-
-// Whether an action argument is a cursor; actions can be called with
-// anything
-export function isFeedCursor(value: unknown): value is FeedCursor {
-    if (typeof value !== "object" || value === null) {
-        return false;
-    }
-    const { createdAt, id } = value as Record<string, unknown>;
-    return (
-        createdAt instanceof Date &&
-        !Number.isNaN(createdAt.getTime()) &&
-        typeof id === "string" &&
-        /^[0-9a-f-]{36}$/i.test(id)
-    );
 }
 
 // Items after the cursor in list order: older, or just as old with a

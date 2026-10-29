@@ -4,7 +4,8 @@ import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
 import { findMentionedUsers } from "@/features/mentions/lib/queries";
 import { mentionNotifications } from "@/features/notifications/lib/notify";
-import { validatePostContent } from "@/features/posts/utils/post-rules";
+import { postContentSchema } from "@/features/posts/utils/post-rules";
+import { formText } from "@/lib/form-validation";
 import { prisma } from "@/prisma/db";
 
 export async function createPost(
@@ -12,12 +13,16 @@ export async function createPost(
 ): Promise<{ error: string | null }> {
     const { user } = await requireSession();
 
-    // Validated again here: actions can be called without the form
-    const content = String(formData.get("content") ?? "").trim();
-    const error = validatePostContent(content);
-    if (error) {
-        return { error };
+    // Checked here: actions can be called without the form
+    const parsed = formText(postContentSchema).safeParse(
+        formData.get("content"),
+    );
+    if (!parsed.success) {
+        return {
+            error: parsed.error.issues[0]?.message ?? "Write something first",
+        };
     }
+    const content = parsed.data;
 
     // Only real users are saved as mentions, so only they become links
     const mentions = await findMentionedUsers(content);

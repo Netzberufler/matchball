@@ -18,12 +18,17 @@ import {
 import { updateProfile } from "@/features/account/actions/update-profile";
 import {
     BIO_MAX_LENGTH,
+    bioSchema,
     GENDER_OPTIONS,
     GENDER_NOT_SAID,
     type Gender,
-    validateBio,
 } from "@/features/account/utils/profile-rules";
-import { validateName } from "@/features/auth/utils/auth-rules";
+import { nameSchema } from "@/features/auth/utils/auth-rules";
+import { validator } from "@/lib/form-validation";
+
+// The same checks updateProfile runs on the server
+const validateName = validator(nameSchema);
+const validateBio = validator(bioSchema);
 
 // The form in a card, with the success message above the card. children is
 // shown in the card above the form.

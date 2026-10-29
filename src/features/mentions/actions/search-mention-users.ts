@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { USERNAME_MAX_LENGTH } from "@/features/auth/utils/auth-rules";
 import { prisma } from "@/prisma/db";
@@ -9,6 +10,12 @@ const MAX_RESULTS = 6;
 // Names are searched from this many characters on: shorter patterns can't
 // use the trigram index on User.name
 const NAME_SEARCH_MIN_LENGTH = 3;
+
+// What follows the @: only username characters, so it's also safe to use
+// in a LIKE pattern
+const mentionQuerySchema = z
+    .string()
+    .regex(new RegExp(`^[a-z0-9_]{1,${USERNAME_MAX_LENGTH}}$`));
 
 export type MentionUser = {
     id: string;
@@ -22,18 +29,16 @@ export type MentionUser = {
 // characters on, names with a word starting with it (on the trigram
 // index). Exact username first, then other usernames, then names.
 export async function searchMentionUsers(
-    query: unknown,
+    input: unknown,
 ): Promise<MentionUser[]> {
     await requireSession();
 
-    // Checked here: actions can be called with anything. The query is what
-    // follows the @, which can only be username characters.
-    if (
-        typeof query !== "string" ||
-        !new RegExp(`^[a-z0-9_]{1,${USERNAME_MAX_LENGTH}}$`).test(query)
-    ) {
+    // Checked here: actions can be called with anything
+    const parsed = mentionQuerySchema.safeParse(input);
+    if (!parsed.success) {
         return [];
     }
+    const query = parsed.data;
 
     const users = await prisma.user.findMany({
         where: {

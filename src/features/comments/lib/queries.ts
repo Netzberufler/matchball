@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Prisma } from "@/prisma/generated/client";
+import { idSchema } from "@/lib/action-input";
 import { prisma } from "@/prisma/db";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
 import {
@@ -58,8 +59,6 @@ export function toPostComment({
     };
 }
 
-const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
-
 // A page of a post's top-level comments, with every reply in their
 // threads (all shown at once), oldest first
 export type CommentPage = FeedPage<PostComment> & { replies: PostComment[] };
@@ -75,7 +74,7 @@ export async function getCommentPage(
     viewerId: string,
     cursor?: FeedCursor,
 ): Promise<CommentPage> {
-    if (!UUID_PATTERN.test(postId)) {
+    if (!idSchema.safeParse(postId).success) {
         return { items: [], nextCursor: null, replies: [] };
     }
     // Top-level comments only: replies show under their parent. One extra

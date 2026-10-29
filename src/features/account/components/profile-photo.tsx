@@ -6,8 +6,12 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { removeAvatar, uploadAvatar } from "@/features/account/actions/avatar";
 import {
     AVATAR_ACCEPTED_TYPES,
-    validateAvatarFile,
+    avatarFileSchema,
 } from "@/features/account/utils/avatar-rules";
+import { validator } from "@/lib/form-validation";
+
+// Quick feedback before uploading; uploadAvatar checks the file again
+const validateAvatarFile = validator(avatarFileSchema);
 
 // The signed-in user's avatar, name and username, laid out like the user
 // menu in the sidebar, with buttons to upload or delete their photo

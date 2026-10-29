@@ -2,21 +2,21 @@
 
 import { requireSession } from "@/features/auth/lib/session";
 import { getCommentPage } from "@/features/comments/lib/queries";
-import { isFeedCursor } from "@/features/posts/utils/feed";
-
-const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
+import {
+    feedCursorSchema,
+    idSchema,
+    parseActionInput,
+} from "@/lib/action-input";
 
 // The page of a post's comments after `cursor`. Checks its arguments:
 // actions can be called with anything, not just what the list sends.
-export async function loadMoreComments(postId: unknown, cursor: unknown) {
+export async function loadMoreComments(
+    postIdInput: unknown,
+    cursorInput: unknown,
+) {
     const { user } = await requireSession();
 
-    if (
-        typeof postId !== "string" ||
-        !UUID_PATTERN.test(postId) ||
-        !isFeedCursor(cursor)
-    ) {
-        throw new Error("Invalid post or cursor");
-    }
+    const postId = parseActionInput(idSchema, postIdInput);
+    const cursor = parseActionInput(feedCursorSchema, cursorInput);
     return getCommentPage(postId, user.id, cursor);
 }

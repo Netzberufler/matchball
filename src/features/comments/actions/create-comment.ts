@@ -7,14 +7,15 @@ import {
     toPostComment,
 } from "@/features/comments/lib/queries";
 import {
-    validateCommentContent,
+    commentContentSchema,
+    typedCommentSchema,
     withReplyMention,
 } from "@/features/comments/utils/comment-rules";
 import { findMentionedUsers } from "@/features/mentions/lib/queries";
 import { mentionNotifications } from "@/features/notifications/lib/notify";
+import { idSchema, parseActionInput } from "@/lib/action-input";
+import { formText } from "@/lib/form-validation";
 import { prisma } from "@/prisma/db";
-
-const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 
 // Adds a comment to a post, or with `replyToId`, a reply to one of its
 // comments or to a level 1 reply (deeper replies can't be answered, so a
@@ -23,8 +24,8 @@ const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 // of the top-level comment and level 1 reply above it (each counts all
 // replies below it).
 export async function createComment(
-    postId: unknown,
-    replyToId: unknown,
+    postIdInput: unknown,
+    replyToIdInput: unknown,
     formData: FormData,
 ): Promise<
     | { error: string; comment?: never }
@@ -39,17 +40,18 @@ export async function createComment(
     const { user } = await requireSession();
 
     // Checked here: actions can be called with anything
-    if (
-        typeof postId !== "string" ||
-        !UUID_PATTERN.test(postId) ||
-        (replyToId !== null &&
-            (typeof replyToId !== "string" || !UUID_PATTERN.test(replyToId)))
-    ) {
-        throw new Error("Invalid post or comment");
+    const postId = parseActionInput(idSchema, postIdInput);
+    const parentId = parseActionInput(idSchema.nullable(), replyToIdInput);
+    const typed = formText(typedCommentSchema).safeParse(
+        formData.get("content"),
+    );
+    if (!typed.success) {
+        return {
+            error: typed.error.issues[0]?.message ?? "Write something first",
+        };
     }
 
-    let content = String(formData.get("content") ?? "").trim();
-    const parentId = replyToId;
+    let content = typed.data;
     // The thread's top-level comment: the parent's, or the parent itself
     let rootId: string | null = null;
     // Whom the reply answers, for their notification: the parent's author,
@@ -80,10 +82,14 @@ export async function createComment(
         content = withReplyMention(content, parent.author.username);
     }
 
-    const error = validateCommentContent(content);
-    if (error) {
-        return { error };
+    // The text as saved, with the reply's @mention
+    const saved = commentContentSchema.safeParse(content);
+    if (!saved.success) {
+        return {
+            error: saved.error.issues[0]?.message ?? "Write something first",
+        };
     }
+    content = saved.data;
 
     const mentions = await findMentionedUsers(content);
 

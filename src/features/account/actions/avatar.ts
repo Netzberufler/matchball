@@ -8,7 +8,7 @@ import {
     processAvatar,
     saveAvatar,
 } from "@/features/account/lib/avatar-storage";
-import { AVATAR_MAX_BYTES } from "@/features/account/utils/avatar-rules";
+import { avatarUploadSchema } from "@/features/account/utils/avatar-rules";
 import { prisma } from "@/prisma/db";
 
 // Sets the signed-in user's profile photo from an uploaded image. The image
@@ -20,13 +20,11 @@ export async function uploadAvatar(
     const { user } = await requireSession();
 
     // Checked here: actions can be called with anything
-    const file = formData.get("photo");
-    if (!(file instanceof File) || file.size === 0) {
-        return { error: "Choose an image" };
+    const parsed = avatarUploadSchema.safeParse(formData.get("photo"));
+    if (!parsed.success) {
+        return { error: parsed.error.issues[0]?.message ?? "Choose an image" };
     }
-    if (file.size > AVATAR_MAX_BYTES) {
-        return { error: "This image is too large" };
-    }
+    const file = parsed.data;
 
     let webp: Buffer;
     try {

@@ -8,19 +8,31 @@ import {
     type AuthFormError,
     toAuthFormError,
 } from "@/features/auth/utils/auth-errors";
+import {
+    SIGN_UP_FIELDS,
+    signUpFormSchema,
+} from "@/features/auth/utils/auth-rules";
+import { firstError, formFields } from "@/lib/form-validation";
 
-// Better Auth validates the input again (see the hooks in lib/auth.ts)
+// Checks the form's fields with the schema the form uses, then creates the
+// account. Better Auth validates the input again (see the hooks in
+// lib/auth.ts).
 export async function signUp(
     formData: FormData,
 ): Promise<{ error: AuthFormError }> {
+    const parsed = signUpFormSchema.safeParse(
+        formFields(formData, SIGN_UP_FIELDS),
+    );
+    if (!parsed.success) {
+        const { field, message } = firstError(parsed.error);
+        return {
+            error: { field: field as AuthFormError["field"], message },
+        };
+    }
+
     try {
         await auth.api.signUpEmail({
-            body: {
-                email: String(formData.get("email") ?? ""),
-                username: String(formData.get("username") ?? ""),
-                name: String(formData.get("name") ?? ""),
-                password: String(formData.get("password") ?? ""),
-            },
+            body: parsed.data,
             headers: await headers(),
         });
     } catch (error) {

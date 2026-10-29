@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import type { Prisma } from "@/prisma/generated/client";
+import { idSchema } from "@/lib/action-input";
 import { prisma } from "@/prisma/db";
 import { getFollowingIds } from "@/features/follows/lib/queries";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
@@ -56,13 +57,11 @@ function toFeedPost({ likes, mentions, ...post }: PostRow): FeedPost {
     };
 }
 
-const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
-
 // One post, for its own page, or null if there's no such post. The id comes
 // from the URL, so it's checked first: Postgres rejects malformed UUIDs with
 // an error. cache() shares the lookup between generateMetadata and the page.
 export const getPost = cache(async (id: string, viewerId: string) => {
-    if (!UUID_PATTERN.test(id)) {
+    if (!idSchema.safeParse(id).success) {
         return null;
     }
     const post = await prisma.post.findUnique({

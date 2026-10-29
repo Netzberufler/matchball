@@ -11,7 +11,16 @@ import {
     TextField,
 } from "@heroui/react";
 import { signIn } from "@/features/auth/actions/sign-in";
+import {
+    loginSchema,
+    signInPasswordSchema,
+} from "@/features/auth/utils/auth-rules";
 import { REDIRECT_PARAM } from "@/features/auth/utils/redirect";
+import { validator } from "@/lib/form-validation";
+
+// The same checks signIn runs on the server
+const validateLogin = validator(loginSchema);
+const validatePassword = validator(signInPasswordSchema);
 
 export function SignInForm() {
     const [isPending, startTransition] = useTransition();
@@ -53,9 +62,7 @@ export function SignInForm() {
                 isRequired
                 name="login"
                 autoComplete="username"
-                validate={(value) =>
-                    value.trim() ? null : "Enter your email or username"
-                }
+                validate={validateLogin}
             >
                 <Label>Email or username</Label>
                 <Input placeholder="you@example.com" />
@@ -68,7 +75,7 @@ export function SignInForm() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                validate={(value) => (value ? null : "Enter your password")}
+                validate={validatePassword}
             >
                 <Label>Password</Label>
                 <Input />

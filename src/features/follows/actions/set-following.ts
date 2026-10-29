@@ -1,27 +1,22 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
+import { idSchema, parseActionInput } from "@/lib/action-input";
 import { prisma } from "@/prisma/db";
-
-const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 
 // Follows or unfollows a user. Setting the state rather than toggling it
 // makes repeated calls (double clicks, retries) harmless.
 export async function setFollowing(
-    userId: unknown,
-    follow: unknown,
+    userIdInput: unknown,
+    followInput: unknown,
 ): Promise<{ isFollowing: boolean }> {
     const { user } = await requireSession();
 
     // Checked here: actions can be called with anything
-    if (
-        typeof userId !== "string" ||
-        !UUID_PATTERN.test(userId) ||
-        typeof follow !== "boolean"
-    ) {
-        throw new Error("Invalid user or follow state");
-    }
+    const userId = parseActionInput(idSchema, userIdInput);
+    const follow = parseActionInput(z.boolean(), followInput);
     if (userId === user.id) {
         throw new Error("You can't follow yourself");
     }

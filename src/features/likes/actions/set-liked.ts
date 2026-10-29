@@ -1,27 +1,22 @@
 "use server";
 
+import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
+import { idSchema, parseActionInput } from "@/lib/action-input";
 import { prisma } from "@/prisma/db";
-
-const UUID_PATTERN = /^[0-9a-f-]{36}$/i;
 
 // Likes or unlikes a post and returns the new like count. Setting the state
 // rather than toggling it makes repeated calls (double clicks, retries)
 // harmless.
 export async function setLiked(
-    postId: unknown,
-    liked: unknown,
+    postIdInput: unknown,
+    likedInput: unknown,
 ): Promise<{ isLiked: boolean; likeCount: number }> {
     const { user } = await requireSession();
 
     // Checked here: actions can be called with anything
-    if (
-        typeof postId !== "string" ||
-        !UUID_PATTERN.test(postId) ||
-        typeof liked !== "boolean"
-    ) {
-        throw new Error("Invalid post or like state");
-    }
+    const postId = parseActionInput(idSchema, postIdInput);
+    const liked = parseActionInput(z.boolean(), likedInput);
 
     const key = { postId, userId: user.id };
     // The like row and Post.likeCount change together, and the count only
