@@ -130,80 +130,71 @@ export function AddMatchForm({ viewer }: { viewer: Viewer }) {
                         onChange={setOpponent}
                     />
 
-                    {/* The match and its result once the opponent is
-                        chosen. The scores are kept if they change it. */}
                     {opponent && (
-                        <>
-                            <section className="flex flex-col gap-2">
-                                {/* Styled like the fields' labels */}
-                                <h2 className="text-sm font-medium">Match</h2>
-                                <p className="flex min-w-0 items-center gap-2 text-sm">
-                                    <MatchPlayer user={viewer} />
-                                    <span className="shrink-0 text-muted">
-                                        versus
-                                    </span>
-                                    <MatchPlayer user={opponent} />
-                                </p>
-                            </section>
-
-                            <fieldset className="flex min-w-0 flex-col gap-2">
-                                {/* HeroUI's label style, with the same
-                                    required star as Date and Opponent */}
-                                <legend className="label label--required mb-2">
-                                    Result
-                                </legend>
-                                {/* All sets in one line, written like a
-                                    score: 6 : 4 / 3 : 6 / 10 : 8, with
-                                    buttons for the possible results below
-                                    the first two */}
-                                <div className="flex items-start gap-1 sm:gap-1.5">
-                                    {SET_NUMBERS.map((set) => (
-                                        <SetScore
-                                            key={set}
-                                            set={set}
-                                            scores={scores}
-                                            opponentName={opponent.name}
-                                            // Only played when the first two
-                                            // sets were split. Disabled
-                                            // fields aren't submitted.
-                                            isDisabled={
-                                                set === 3 && !needsThirdSet
-                                            }
-                                            // The marked fields block
-                                            // submitting until the score
-                                            // changes, which clears the error
-                                            isInvalid={scoreError?.set === set}
-                                            onChange={updateScores}
-                                        />
-                                    ))}
-                                </div>
-                                {scoreError && (
-                                    <p
-                                        className="text-sm text-danger"
-                                        role="alert"
-                                    >
-                                        {scoreError.message}
-                                    </p>
-                                )}
-                                {/* Once the score is a finished match,
-                                    styled like the versus line */}
-                                {winner && (
-                                    <p className="mt-2 flex min-w-0 items-center gap-2 text-sm">
-                                        <span className="shrink-0 text-muted">
-                                            And the winner is
-                                        </span>
-                                        <MatchPlayer
-                                            user={
-                                                winner === "player1"
-                                                    ? viewer
-                                                    : opponent
-                                            }
-                                        />
-                                    </p>
-                                )}
-                            </fieldset>
-                        </>
+                        <section className="flex flex-col gap-2">
+                            {/* Styled like the fields' labels */}
+                            <h2 className="text-sm font-medium">Match</h2>
+                            <p className="flex min-w-0 items-center gap-2 text-sm">
+                                <MatchPlayer user={viewer} />
+                                <span className="shrink-0 text-muted">
+                                    versus
+                                </span>
+                                <MatchPlayer user={opponent} />
+                            </p>
+                        </section>
                     )}
+
+                    <fieldset className="flex min-w-0 flex-col gap-2">
+                        {/* HeroUI's label style, with the same required star
+                            as Date and Opponent */}
+                        <legend className="label label--required mb-2">
+                            Result
+                        </legend>
+                        {/* All sets in one line, written like a score:
+                            6 : 4 / 3 : 6 / 10 : 8 */}
+                        <div className="flex items-center gap-1 sm:gap-1.5">
+                            {SET_NUMBERS.map((set) => (
+                                <SetScore
+                                    key={set}
+                                    set={set}
+                                    scores={scores}
+                                    opponentName={opponent?.name}
+                                    // Only played when the first two sets
+                                    // were split. Disabled fields aren't
+                                    // submitted.
+                                    isDisabled={set === 3 && !needsThirdSet}
+                                    // The marked fields block submitting
+                                    // until the score changes, which clears
+                                    // the error
+                                    isInvalid={scoreError?.set === set}
+                                    onChange={updateScores}
+                                />
+                            ))}
+                        </div>
+                        <SetResultButtons
+                            scores={scores}
+                            onChange={updateScores}
+                        />
+                        {scoreError && (
+                            <p className="text-sm text-danger" role="alert">
+                                {scoreError.message}
+                            </p>
+                        )}
+                        {/* Once the score is a finished match, styled like
+                            the versus line */}
+                        {winner && opponent && (
+                            <p className="mt-2 flex min-w-0 items-center gap-2 text-sm">
+                                <span className="shrink-0 text-muted">
+                                    And the winner is
+                                </span>
+                                <MatchPlayer
+                                    user={
+                                        winner === "player1" ? viewer : opponent
+                                    }
+                                />
+                            </p>
+                        )}
+                    </fieldset>
 
                     <div className="flex gap-3">
                         <Button type="submit" isPending={isPending}>
@@ -293,9 +284,7 @@ function PlayedAtPicker() {
 }
 
 // One set's score: the user's games and the opponent's, with a colon
-// between them and a slash before them from the second set on. Below the
-// first two sets, a button for each possible result in two columns as wide
-// as the fields together: wins on the left, losses on the right.
+// between them and a slash before them from the second set on
 function SetScore({
     set,
     scores,
@@ -311,98 +300,77 @@ function SetScore({
     isInvalid: boolean;
     onChange: (changes: Scores) => void;
 }) {
-    const ownName = scoreField(set, "own");
-    const opponentFieldName = scoreField(set, "opponent");
-    const own = scores[ownName] ?? null;
-    const opponentGames = scores[opponentFieldName] ?? null;
-    const field = (name: string, label: string, value: number | null) => (
-        <ScoreField
-            name={name}
-            label={label}
-            value={value}
-            maxValue={scoreMax(set)}
-            isDisabled={isDisabled}
-            isInvalid={isInvalid}
-            onChange={(changed) => onChange({ [name]: changed })}
-        />
-    );
-    const resultButton = ([setOwn, setOpponent]: readonly [number, number]) => (
-        <SetResultButton
-            key={`${setOwn}:${setOpponent}`}
-            set={set}
-            own={setOwn}
-            opponent={setOpponent}
-            isSelected={own === setOwn && opponentGames === setOpponent}
-            onPress={() =>
-                onChange({
-                    [ownName]: setOwn,
-                    [opponentFieldName]: setOpponent,
-                })
-            }
-        />
-    );
+    const field = (side: "own" | "opponent", label: string) => {
+        const name = scoreField(set, side);
+        return (
+            <ScoreField
+                name={name}
+                label={label}
+                value={scores[name] ?? null}
+                maxValue={scoreMax(set)}
+                isDisabled={isDisabled}
+                isInvalid={isInvalid}
+                onChange={(changed) => onChange({ [name]: changed })}
+            />
+        );
+    };
 
     return (
         <>
-            {set > 1 && (
-                // Lined up with the fields, above the buttons
-                <span className={`flex ${SCORE_FIELD_HEIGHT} items-center`}>
-                    <ScoreSeparator>/</ScoreSeparator>
-                </span>
-            )}
-            <div className="flex min-w-0 flex-[2] flex-col gap-2 sm:flex-none">
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                    {field(ownName, `Set ${set}, your games`, own)}
-                    <ScoreSeparator>:</ScoreSeparator>
-                    {field(
-                        opponentFieldName,
-                        `Set ${set}, ${opponentName ?? "opponent"}'s games`,
-                        opponentGames,
-                    )}
-                </div>
-                {set < 3 && (
-                    // Two equal columns across the set's width, 2px apart
-                    <div className="grid grid-cols-2 gap-0.5">
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                            {WON_SET_SCORES.map(resultButton)}
-                        </div>
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                            {WON_SET_SCORES.map(([winner, loser]) =>
-                                resultButton([loser, winner]),
-                            )}
-                        </div>
-                    </div>
+            {set > 1 && <ScoreSeparator>/</ScoreSeparator>}
+            <div className="flex min-w-0 flex-[2] items-center gap-1 sm:flex-none sm:gap-1.5">
+                {field("own", `Set ${set}, your games`)}
+                <ScoreSeparator>:</ScoreSeparator>
+                {field(
+                    "opponent",
+                    `Set ${set}, ${opponentName ?? "opponent"}'s games`,
                 )}
             </div>
         </>
     );
 }
 
-// Fills both fields of a set with one result, e.g. 6:4
-function SetResultButton({
-    set,
-    own,
-    opponent,
-    isSelected,
-    onPress,
+// A button for every possible set result: wins in the first row, losses in
+// the second. A press fills set 1 while both its fields are empty, and set 2
+// after that, also when set 1 was typed in.
+function SetResultButtons({
+    scores,
+    onChange,
 }: {
-    set: 1 | 2 | 3;
-    own: number;
-    opponent: number;
-    isSelected: boolean;
-    onPress: () => void;
+    scores: Scores;
+    onChange: (changes: Scores) => void;
 }) {
+    const set1 = enteredSets(scores)[0];
+    const set = set1.own === null && set1.opponent === null ? 1 : 2;
+    const rows = [
+        WON_SET_SCORES,
+        WON_SET_SCORES.map(([winner, loser]) => [loser, winner] as const),
+    ];
     return (
-        <Button
-            size="sm"
-            variant={isSelected ? "primary" : "outline"}
-            aria-label={`Set ${set}: ${own} to ${opponent}`}
-            aria-pressed={isSelected}
-            className="h-7 w-full min-w-0 px-0 tabular-nums"
-            onPress={onPress}
-        >
-            {own}:{opponent}
-        </Button>
+        // About as wide as the score fields on larger screens
+        <div className="flex flex-col gap-0.5 sm:max-w-sm">
+            {rows.map((row, index) => (
+                <div key={index} className="grid grid-cols-7 gap-0.5">
+                    {row.map(([own, opponent]) => (
+                        <Button
+                            key={`${own}:${opponent}`}
+                            size="sm"
+                            variant="outline"
+                            aria-label={`Set ${set}: ${own} to ${opponent}`}
+                            className="h-7 w-full min-w-0 px-0 tabular-nums"
+                            onPress={() =>
+                                onChange({
+                                    [scoreField(set, "own")]: own,
+                                    [scoreField(set, "opponent")]: opponent,
+                                })
+                            }
+                        >
+                            {own}:{opponent}
+                        </Button>
+                    ))}
+                </div>
+            ))}
+        </div>
     );
 }
 
@@ -419,8 +387,6 @@ function ScoreSeparator({ children }: { children: string }) {
 // The width of a score field: room for two digits; on phones the fields
 // share the line evenly
 const SCORE_COLUMN = "min-w-0 flex-1 sm:w-12 sm:flex-none";
-// The height of a score field, to line the "/" up with them
-const SCORE_FIELD_HEIGHT = "h-9";
 
 // A whole number from 0 to maxValue: 0 to 7 games in the first two sets,
 // up to 99 in the third. Other characters, and numbers above maxValue,
