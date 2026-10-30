@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { cacheLife } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/features/auth/lib/auth";
@@ -18,6 +19,16 @@ export const requireSession = cache(async () => {
     }
     return session;
 });
+
+// The signed-in user's name, for greeting them. Cached in the browser for
+// five minutes, so it's prefetched with the page and shows instantly on
+// navigations. Changing the name refreshes it (refresh() in the action).
+export async function getViewerName() {
+    "use cache: private";
+    cacheLife("minutes");
+    const { user } = await requireSession();
+    return user.name;
+}
 
 // Only works where cookies can be changed: server actions and route handlers
 export async function deleteSessionCookies() {

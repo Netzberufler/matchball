@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { ViewerAvatar } from "@/features/auth/components/viewer-avatar";
+import { getViewerName } from "@/features/auth/lib/session";
 import { HomeFeed } from "@/features/posts/components/feeds";
 import { PostForm } from "@/features/posts/components/post-form";
 import { PostListFallback } from "@/features/posts/components/post-list";
@@ -9,7 +10,15 @@ import { RefreshFeedButton } from "@/features/posts/components/refresh-feed-butt
 export default function Home() {
     return (
         <>
-            <h1 className="sr-only">Home</h1>
+            <h1 className="text-xl mb-4 font-semibold">
+                {/* Reads the session. Holds the line height until then, so
+                    the greeting appears at once instead of in two steps. */}
+                <Suspense
+                    fallback={<span className="invisible">Welcome!</span>}
+                >
+                    <Welcome />
+                </Suspense>
+            </h1>
             <div className="flex flex-col gap-6">
                 <PostForm
                     // Reads the session; the form itself shows right away
@@ -36,4 +45,8 @@ export default function Home() {
             </div>
         </>
     );
+}
+
+async function Welcome() {
+    return `Welcome, ${await getViewerName()}!`;
 }
