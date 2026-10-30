@@ -11,7 +11,7 @@ import { profilePath } from "@/features/profile/utils/profile-path";
 export function MatchDetail({ match }: { match: MatchDetailData }) {
     return (
         <Card className="items-center gap-8 px-4 py-8 sm:px-8 sm:py-10">
-            <p className="text-sm text-muted">
+            <p className="text-xs text-muted">
                 <time dateTime={match.playedAt.toISOString().slice(0, 10)}>
                     {formatPlayedAt(match.playedAt)}
                 </time>
@@ -34,7 +34,7 @@ function Versus() {
     return (
         <span
             aria-hidden
-            className="flex h-24 items-center text-3xl font-black italic tracking-tight text-muted sm:h-35 sm:text-6xl"
+            className="flex h-24 items-center text-2xl font-semibold italic tracking-tight sm:h-35 sm:text-5xl"
         >
             vs
         </span>
@@ -42,7 +42,7 @@ function Versus() {
 }
 
 // A large avatar with the name and username below, linking to the
-// profile. The winner gets a green ring and a badge.
+// profile. The winner gets a green ring and badge, the loser a red badge.
 function Player({
     user,
     isWinner,
@@ -64,19 +64,23 @@ function Player({
                     <UserAvatar name={user.name} image={user.image} size="xl" />
                 </span>
                 <span className="flex max-w-full flex-col">
-                    <span className="break-words text-lg font-semibold leading-tight group-hover:underline sm:text-2xl">
+                    <span className="break-words text-base font-semibold leading-tight group-hover:underline sm:text-xl">
                         {user.name}
                     </span>
                     {/* Spaces the link text for screen readers */}{" "}
-                    <span className="truncate text-sm text-muted sm:text-base">
+                    <span className="truncate text-xs text-muted sm:text-sm">
                         @{user.username}
                     </span>
                 </span>
             </Link>
-            {isWinner && (
-                <Chip color="success" variant="soft" size="lg">
-                    <Trophy className="size-4" aria-hidden />
+            {isWinner ? (
+                <Chip color="success" variant="soft">
+                    <Trophy className="size-3.5" aria-hidden />
                     <Chip.Label>Winner</Chip.Label>
+                </Chip>
+            ) : (
+                <Chip color="danger" variant="soft">
+                    <Chip.Label>Loser</Chip.Label>
                 </Chip>
             )}
         </div>
@@ -87,7 +91,7 @@ function Player({
 // The games of whoever won the set stand out.
 function Score({ match }: { match: MatchDetailData }) {
     return (
-        <dl className="flex justify-center gap-6 sm:gap-12">
+        <dl className="mt-4 flex justify-center gap-6 sm:gap-12">
             {match.sets.map((set, index) => (
                 <div
                     key={index}
@@ -96,7 +100,7 @@ function Score({ match }: { match: MatchDetailData }) {
                     <dt className="text-xs font-medium uppercase tracking-wide text-muted">
                         {set.isMatchTiebreak ? "Tiebreak" : `Set ${index + 1}`}
                     </dt>
-                    <dd className="flex items-baseline gap-1 text-4xl font-bold tabular-nums sm:gap-2 sm:text-6xl">
+                    <dd className="flex items-baseline gap-1 text-3xl font-semibold tabular-nums sm:gap-2 sm:text-5xl">
                         <span
                             className={
                                 set.own > set.opponent ? "" : "text-muted"
@@ -138,7 +142,7 @@ export function MatchDetailFallback() {
                     </div>
                 ))}
             </div>
-            <Skeleton className="h-14 w-56 rounded-lg" />
+            <Skeleton className="mt-4 h-12 w-48 rounded-lg" />
         </Card>
     );
 }
