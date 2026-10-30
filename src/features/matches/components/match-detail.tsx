@@ -32,11 +32,11 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
 // In a gray square, level with the avatars' middle
 function Versus() {
     return (
-        <span aria-hidden className="flex h-24 items-center sm:h-35">
+        <span aria-hidden className="flex h-20 items-center sm:h-30">
             {/* Lowercase italic letters sit low and lean right in their
                 box, so 0.2em of padding below and on the right moves them
                 to the square's middle. In em, so it holds at both sizes. */}
-            <span className="flex size-11 items-center justify-center bg-default pb-[0.2em] pr-[0.2em] text-lg leading-none font-semibold italic tracking-tight sm:size-16.5 sm:text-3xl">
+            <span className="flex size-11 items-center justify-center bg-default pb-[0.2em] pr-[0.2em] text-base leading-none font-semibold italic tracking-tight sm:size-16.5 sm:text-2xl">
                 vs
             </span>
         </span>
@@ -63,7 +63,7 @@ function Player({
                         isWinner ? "ring-4 ring-success" : ""
                     }`}
                 >
-                    <UserAvatar name={user.name} image={user.image} size="xl" />
+                    <UserAvatar name={user.name} image={user.image} size="lg" />
                 </span>
                 <span className="flex max-w-full flex-col">
                     <span className="break-words text-base font-semibold leading-tight group-hover:underline sm:text-xl">
@@ -102,7 +102,7 @@ function Score({ match }: { match: MatchDetailData }) {
                     <dt className="text-xs font-medium uppercase tracking-wide text-muted">
                         {set.isMatchTiebreak ? "Tiebreak" : `Set ${index + 1}`}
                     </dt>
-                    <dd className="flex items-baseline gap-1 text-3xl font-semibold tabular-nums sm:gap-2 sm:text-5xl">
+                    <dd className="flex items-baseline gap-1 text-2xl font-semibold tabular-nums sm:gap-2 sm:text-4xl">
                         <span
                             className={
                                 set.own > set.opponent ? "" : "text-muted"
@@ -138,13 +138,13 @@ export function MatchDetailFallback() {
                             player === 1 ? "col-start-3" : ""
                         }`}
                     >
-                        <Skeleton className="size-24 rounded-full sm:size-35" />
+                        <Skeleton className="size-20 rounded-full sm:size-30" />
                         <Skeleton className="h-6 w-28 rounded-lg" />
                         <Skeleton className="h-4 w-20 rounded-lg" />
                     </div>
                 ))}
             </div>
-            <Skeleton className="mt-4 h-12 w-48 rounded-lg" />
+            <Skeleton className="mt-4 h-10 w-44 rounded-lg" />
         </Card>
     );
 }

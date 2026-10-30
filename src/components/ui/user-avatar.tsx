@@ -6,7 +6,8 @@ import { Avatar } from "@heroui/react";
 // initials are hidden from screen readers because the name is always shown
 // or announced next to it.
 // size "md" is HeroUI's 40px; "sm" (32px) is for dense lists like the
-// matches table; "xl" is for the profile page header.
+// matches table; "lg" is for the players on a match's page; "xl" is for the
+// profile page header.
 export function UserAvatar({
     name,
     image,
@@ -14,7 +15,7 @@ export function UserAvatar({
 }: {
     name?: string;
     image?: string | null;
-    size?: "sm" | "md" | "xl";
+    size?: "sm" | "md" | "lg" | "xl";
 }) {
     const sizeClasses = AVATAR_SIZE_CLASSES[size];
     return (
@@ -43,6 +44,10 @@ export function UserAvatar({
 const AVATAR_SIZE_CLASSES = {
     sm: { avatar: "size-8", fallback: "text-xs" },
     md: { avatar: "", fallback: "" },
+    lg: {
+        avatar: "size-20 rounded-full sm:size-30",
+        fallback: "text-2xl sm:text-3xl",
+    },
     xl: {
         avatar: "size-24 rounded-full sm:size-35",
         fallback: "text-3xl sm:text-4xl",
