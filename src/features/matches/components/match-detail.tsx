@@ -11,7 +11,7 @@ import { profilePath } from "@/features/profile/utils/profile-path";
 export function MatchDetail({ match }: { match: MatchDetailData }) {
     return (
         <Card className="items-center gap-8 px-4 py-8 sm:px-8 sm:py-10">
-            <p className="text-xs text-muted">
+            <p className="text-sm text-muted">
                 <time dateTime={match.playedAt.toISOString().slice(0, 10)}>
                     {formatPlayedAt(match.playedAt)}
                 </time>
@@ -29,14 +29,16 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
     );
 }
 
-// Sits level with the avatars' middle
+// In a gray square, level with the avatars' middle
 function Versus() {
     return (
-        <span
-            aria-hidden
-            className="flex h-24 items-center text-2xl font-semibold italic tracking-tight sm:h-35 sm:text-5xl"
-        >
-            vs
+        <span aria-hidden className="flex h-24 items-center sm:h-35">
+            {/* Lowercase italic letters sit low and lean right in their
+                box, so 0.2em of padding below and on the right moves them
+                to the square's middle. In em, so it holds at both sizes. */}
+            <span className="flex size-11 items-center justify-center bg-default pb-[0.2em] pr-[0.2em] text-lg leading-none font-semibold italic tracking-tight sm:size-16.5 sm:text-3xl">
+                vs
+            </span>
         </span>
     );
 }
