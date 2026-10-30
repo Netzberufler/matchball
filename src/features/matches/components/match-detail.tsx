@@ -95,39 +95,29 @@ function Player({
     );
 }
 
-// The sets side by side, from the left player's side, each over its label.
-// The games of whoever won the set stand out.
+// The sets side by side, from the left player's side. The games of
+// whoever won the set stand out.
 function Score({ match }: { match: MatchDetailData }) {
     return (
-        <dl className="mt-4 flex w-full justify-center gap-6 rounded-2xl bg-surface-secondary/60 px-4 py-5 sm:gap-12 sm:py-6">
+        <p className="mt-4 flex w-full justify-center gap-6 rounded-2xl bg-surface-secondary/60 px-4 py-5 text-2xl font-semibold tabular-nums sm:gap-12 sm:py-6 sm:text-4xl">
+            <span className="sr-only">Score: </span>
             {match.sets.map((set, index) => (
-                <div
-                    key={index}
-                    className="flex flex-col-reverse items-center gap-1"
-                >
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                        {set.isMatchTiebreak ? "Tiebreak" : `Set ${index + 1}`}
-                    </dt>
-                    <dd className="flex items-baseline gap-1 text-2xl font-semibold tabular-nums sm:gap-2 sm:text-4xl">
-                        <span
-                            className={
-                                set.own > set.opponent ? "" : "text-muted"
-                            }
-                        >
-                            {set.own}
-                        </span>
-                        <span className="text-muted">:</span>
-                        <span
-                            className={
-                                set.opponent > set.own ? "" : "text-muted"
-                            }
-                        >
-                            {set.opponent}
-                        </span>
-                    </dd>
-                </div>
+                <span key={index} className="flex gap-1 sm:gap-2">
+                    <span
+                        className={set.own > set.opponent ? "" : "text-muted"}
+                    >
+                        {set.own}
+                    </span>
+                    <span className="text-muted">:</span>
+                    <span
+                        className={set.opponent > set.own ? "" : "text-muted"}
+                    >
+                        {set.opponent}
+                    </span>
+                    {/* Spaces the sets for screen readers */}{" "}
+                </span>
             ))}
-        </dl>
+        </p>
     );
 }
 
@@ -150,7 +140,7 @@ export function MatchDetailFallback() {
                     </div>
                 ))}
             </div>
-            <Skeleton className="mt-4 h-24 w-full rounded-2xl sm:h-28" />
+            <Skeleton className="mt-4 h-18 w-full rounded-2xl sm:h-22" />
         </Card>
     );
 }
