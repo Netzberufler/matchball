@@ -3,8 +3,9 @@
 
 import type { SetScore } from "@/features/matches/utils/match-score";
 
-// The fields of a match the statistics read
-type StatsMatch = { won: boolean; sets: SetScore[] };
+// A match from one player's side, as the statistics read it: when, for
+// the period, and the result and sets
+export type StatsMatch = { playedAt: Date; won: boolean; sets: SetScore[] };
 
 // Won and lost of something: matches, sets, games or match tiebreaks
 export type WinLoss = { won: number; lost: number };

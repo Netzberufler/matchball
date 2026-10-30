@@ -7,6 +7,7 @@ import {
     type MatchSide,
     type SetScore,
 } from "@/features/matches/utils/match-score";
+import type { StatsMatch } from "@/features/matches/utils/match-stats";
 import { FEED_PAGE_SIZE, type FeedPage } from "@/features/posts/utils/feed";
 import { idSchema } from "@/lib/action-input";
 import type { MatchStatus, Prisma } from "@/prisma/generated/client";
@@ -81,6 +82,36 @@ export async function getAllMatches(userId: string): Promise<UserMatch[]> {
         select: matchSelect,
     });
     return matches.map((match) => toUserMatch(match, userId));
+}
+
+// All of the user's confirmed matches, newest first, with only what the
+// statistics read (see getMatchStats): lighter than getAllMatches, for
+// the statistics on their profile. Uses the same indexes.
+export async function getStatsMatches(userId: string): Promise<StatsMatch[]> {
+    const matches = await prisma.match.findMany({
+        where: userMatchesWhere(userId, "CONFIRMED"),
+        orderBy: [{ playedAt: "desc" }, { id: "desc" }],
+        select: {
+            playedAt: true,
+            winnerId: true,
+            player1Id: true,
+            set1Player1: true,
+            set1Player2: true,
+            set2Player1: true,
+            set2Player2: true,
+            set3Player1: true,
+            set3Player2: true,
+            set3IsMatchTiebreak: true,
+        },
+    });
+    return matches.map((match) => ({
+        playedAt: match.playedAt,
+        won: match.winnerId === userId,
+        sets: getSets(
+            match,
+            match.player1Id === userId ? "player1" : "player2",
+        ),
+    }));
 }
 
 // One page of the user's confirmed matches, newest first, for their

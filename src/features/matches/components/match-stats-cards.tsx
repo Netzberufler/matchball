@@ -3,12 +3,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Calendar } from "lucide-react";
 import { Button, Card, Chip, Dropdown, Label, Skeleton } from "@heroui/react";
-import type { UserMatch } from "@/features/matches/lib/queries";
 import {
     getMatchStats,
     isInStatsPeriod,
     STATS_PERIODS,
     winPercentage,
+    type StatsMatch,
     type StatsPeriod,
     type WinLoss,
 } from "@/features/matches/utils/match-stats";
@@ -19,7 +19,7 @@ type ChipColor = "default" | "success" | "danger";
 // year (at first) or all time: matches, wins, losses, and sets, games and
 // match tiebreaks won. `matches` are all their
 // confirmed ones, newest first; the period is picked from them here.
-export function MatchStatsCards({ matches }: { matches: UserMatch[] }) {
+export function MatchStatsCards({ matches }: { matches: StatsMatch[] }) {
     const [period, setPeriod] = useState<StatsPeriod>("year");
     const stats = useMemo(() => {
         const now = new Date();

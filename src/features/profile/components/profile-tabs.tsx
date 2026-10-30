@@ -2,10 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
+import { loadMatchStats } from "@/features/matches/actions/load-match-stats";
 import { loadMatches } from "@/features/matches/actions/load-matches";
 import { MatchList } from "@/features/matches/components/match-list";
+import {
+    MatchStatsCards,
+    MatchStatsCardsFallback,
+} from "@/features/matches/components/match-stats-cards";
 import { MatchTable } from "@/features/matches/components/match-table";
 import type { MatchCursor, UserMatch } from "@/features/matches/lib/queries";
+import type { StatsMatch } from "@/features/matches/utils/match-stats";
 import type { FeedPage } from "@/features/posts/utils/feed";
 
 type ProfileTab = "posts" | "matches";
@@ -20,7 +26,8 @@ export type ProfileMatchesUser = {
 };
 
 // The profile's posts and matches, one tab each. "Posts" shows `posts`;
-// "Matches" loads its first page when it's first opened. Both keep what
+// "Matches" loads its first page, and all matches for the statistics above
+// it, when it's first opened. Both keep what
 // they loaded while switching tabs: the posts panel stays mounted (hidden),
 // and the matches page is kept here. Without `matchesUser` (while the page
 // loads), the tabs are disabled.
@@ -33,6 +40,7 @@ export function ProfileTabs({
 }) {
     const [selected, setSelected] = useState<ProfileTab>("posts");
     const [matchesPage, setMatchesPage] = useState<MatchesPage | null>(null);
+    const [statsMatches, setStatsMatches] = useState<StatsMatch[] | null>(null);
     const [matchesFailed, setMatchesFailed] = useState(false);
     const [, startTransition] = useTransition();
 
@@ -40,7 +48,12 @@ export function ProfileTabs({
         setMatchesFailed(false);
         startTransition(async () => {
             try {
-                setMatchesPage(await loadMatches(user.id, null));
+                const [page, stats] = await Promise.all([
+                    loadMatches(user.id, null),
+                    loadMatchStats(user.id),
+                ]);
+                setMatchesPage(page);
+                setStatsMatches(stats);
             } catch {
                 setMatchesFailed(true);
             }
@@ -89,18 +102,24 @@ export function ProfileTabs({
                 {posts}
             </Tabs.Panel>
             <Tabs.Panel id="matches" className="px-0 pt-4 pb-0">
-                {matchesUser && matchesPage ? (
-                    <MatchList
-                        userId={matchesUser.id}
-                        page={matchesPage}
-                        onPageChange={(update) =>
-                            setMatchesPage((current) =>
-                                update(current ?? matchesPage),
-                            )
-                        }
-                        label={matchesUser.label}
-                        emptyMessage={matchesUser.emptyMessage}
-                    />
+                {matchesUser && matchesPage && statsMatches ? (
+                    <div className="flex flex-col gap-6">
+                        {/* Like on /matches, none without matches */}
+                        {statsMatches.length > 0 && (
+                            <MatchStatsCards matches={statsMatches} />
+                        )}
+                        <MatchList
+                            userId={matchesUser.id}
+                            page={matchesPage}
+                            onPageChange={(update) =>
+                                setMatchesPage((current) =>
+                                    update(current ?? matchesPage),
+                                )
+                            }
+                            label={matchesUser.label}
+                            emptyMessage={matchesUser.emptyMessage}
+                        />
+                    </div>
                 ) : matchesUser && matchesFailed ? (
                     <Card>
                         <EmptyState className="flex flex-col items-center gap-3 text-center">
@@ -116,7 +135,10 @@ export function ProfileTabs({
                         </EmptyState>
                     </Card>
                 ) : (
-                    <MatchTable matches={null} />
+                    <div className="flex flex-col gap-6">
+                        <MatchStatsCardsFallback />
+                        <MatchTable matches={null} />
+                    </div>
                 )}
             </Tabs.Panel>
         </Tabs>
