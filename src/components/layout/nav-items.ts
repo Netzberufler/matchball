@@ -2,6 +2,10 @@ import {
     Bell,
     CalendarCheck,
     House,
+    Medal,
+    MessagesSquare,
+    Search,
+    Sword,
     Swords,
     Trophy,
     UserRound,
@@ -16,6 +20,27 @@ import { profilePath } from "@/features/profile/utils/profile-path";
 export function getNavItems(username: string | null) {
     return [
         { href: "/", label: "Home", shortLabel: "Home", icon: House },
+        {
+            href: "/messages",
+            label: "Messages",
+            shortLabel: "Messages",
+            icon: MessagesSquare,
+            desktopOnly: true,
+        },
+        {
+            href: "/search",
+            label: "Search",
+            shortLabel: "Search",
+            icon: Search,
+            desktopOnly: true,
+        },
+        {
+            href: "/challenges",
+            label: "Challenges",
+            shortLabel: "Challenges",
+            icon: Sword,
+            desktopOnly: true,
+        },
         {
             href: "/matches",
             label: "Matches",
@@ -33,6 +58,13 @@ export function getNavItems(username: string | null) {
             label: "Court Booking",
             shortLabel: "Courts",
             icon: CalendarCheck,
+        },
+        {
+            href: "/achievements",
+            label: "Achievements",
+            shortLabel: "Achievements",
+            icon: Medal,
+            desktopOnly: true,
         },
         {
             href: "/notifications",
