@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button, buttonVariants, Skeleton } from "@heroui/react";
+import { Sword } from "lucide-react";
 import { ACCOUNT_PROFILE_PATH } from "@/features/account/utils/account-path";
 import { requireSession } from "@/features/auth/lib/session";
 import { FollowButton } from "@/features/follows/components/follow-button";
@@ -50,7 +51,8 @@ export async function ProfileActions({ username }: { username: string }) {
                 )}
             />
             {/* TODO: challenge the user to a match */}
-            <Button variant="tertiary" fullWidth>
+            <Button variant="primary" fullWidth>
+                <Sword className="size-4" aria-hidden />
                 Challenge
             </Button>
         </ButtonLine>

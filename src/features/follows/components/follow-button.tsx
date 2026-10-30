@@ -2,6 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { Button } from "@heroui/react";
+import { UserPlus } from "lucide-react";
 import { setFollowing } from "@/features/follows/actions/set-following";
 
 // Switches between Follow and Unfollow right away and saves in the
@@ -52,7 +53,14 @@ export function FollowButton({
                 }
                 onPress={onPress}
             >
-                {optimisticIsFollowing ? "Unfollow" : "Follow"}
+                {optimisticIsFollowing ? (
+                    "Unfollow"
+                ) : (
+                    <>
+                        <UserPlus className="size-4" aria-hidden />
+                        Follow
+                    </>
+                )}
             </Button>
             {error && (
                 <p className="text-sm text-danger" role="alert">

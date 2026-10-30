@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
+import { Newspaper, Swords } from "lucide-react";
 import { loadMatches } from "@/features/matches/actions/load-matches";
 import {
     FilterableMatchTable,
@@ -72,13 +73,16 @@ export function ProfileTabs({
             {/* Only as wide as the tabs, at the start */}
             <Tabs.ListContainer className="w-fit max-w-full self-start">
                 <Tabs.List aria-label="Profile">
-                    <Tabs.Tab id="posts">
+                    <Tabs.Tab id="posts" className="gap-1.5">
+                        <Newspaper className="size-4" aria-hidden />
                         Posts
                         {/* Without the sliding animation, which can leave
                             it off its tab when the page appears */}
                         <Tabs.Indicator className="transition-none" />
                     </Tabs.Tab>
-                    <Tabs.Tab id="matches">
+                    <Tabs.Tab id="matches" className="gap-1.5">
+                        {/* The same icon as Matches in the main nav */}
+                        <Swords className="size-4" aria-hidden />
                         Matches
                         <Tabs.Indicator className="transition-none" />
                     </Tabs.Tab>
