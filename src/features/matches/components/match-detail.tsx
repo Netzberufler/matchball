@@ -10,8 +10,8 @@ import { profilePath } from "@/features/profile/utils/profile-path";
 // with a big "vs" between them, the winner marked, and the score below
 export function MatchDetail({ match }: { match: MatchDetailData }) {
     return (
-        <Card className="items-center gap-8 px-4 py-8 sm:px-8 sm:py-10">
-            <p className="text-sm text-muted">
+        <Card className="items-center gap-8 px-4 pb-4 pt-8 sm:px-6 sm:pb-6 sm:pt-10">
+            <p className="text-base text-muted">
                 <time dateTime={match.playedAt.toISOString().slice(0, 10)}>
                     {formatPlayedAt(match.playedAt)}
                 </time>
@@ -42,7 +42,7 @@ function Versus() {
         // the middle. In em, so it holds at both sizes.
         <span
             aria-hidden
-            className="col-start-2 row-start-1 flex h-9 w-12 -skew-x-12 items-center justify-center self-center bg-default pb-[0.2em] pr-[0.2em] text-base leading-none font-semibold italic tracking-tight sm:h-14 sm:w-18 sm:text-2xl"
+            className="col-start-2 row-start-1 flex h-9 w-12 -skew-x-12 items-center justify-center self-center bg-surface-secondary/60 pb-[0.2em] pr-[0.2em] text-base leading-none font-semibold italic tracking-tight sm:h-14 sm:w-18 sm:text-2xl"
         >
             <span className="skew-x-12">vs</span>
         </span>
@@ -99,7 +99,7 @@ function Player({
 // The games of whoever won the set stand out.
 function Score({ match }: { match: MatchDetailData }) {
     return (
-        <dl className="mt-4 flex justify-center gap-6 sm:gap-12">
+        <dl className="mt-4 flex w-full justify-center gap-6 rounded-2xl bg-surface-secondary/60 px-4 py-5 sm:gap-12 sm:py-6">
             {match.sets.map((set, index) => (
                 <div
                     key={index}
@@ -134,8 +134,8 @@ function Score({ match }: { match: MatchDetailData }) {
 // Shown while the match loads, in the same shape
 export function MatchDetailFallback() {
     return (
-        <Card className="items-center gap-8 px-4 py-8 sm:px-8 sm:py-10">
-            <Skeleton className="h-4 w-24 rounded-lg" />
+        <Card className="items-center gap-8 px-4 pb-4 pt-8 sm:px-6 sm:pb-6 sm:pt-10">
+            <Skeleton className="h-5 w-28 rounded-lg" />
             <div className="grid w-full grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-6">
                 {[0, 1].map((player) => (
                     <div
@@ -150,7 +150,7 @@ export function MatchDetailFallback() {
                     </div>
                 ))}
             </div>
-            <Skeleton className="mt-4 h-10 w-44 rounded-lg" />
+            <Skeleton className="mt-4 h-24 w-full rounded-2xl sm:h-28" />
         </Card>
     );
 }
