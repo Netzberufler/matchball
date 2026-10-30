@@ -12,10 +12,11 @@ export type Feed = { type: "home" } | { type: "user"; authorId: string };
 // Points at the last item of a page; the next page starts after it
 export type FeedCursor = { createdAt: Date; id: string };
 
-export type FeedPage<Item> = {
+// Matches page by when they were played instead (see matches/lib/queries.ts)
+export type FeedPage<Item, Cursor = FeedCursor> = {
     items: Item[];
     // null on the last page
-    nextCursor: FeedCursor | null;
+    nextCursor: Cursor | null;
 };
 
 type FeedItem = { id: string };
@@ -38,10 +39,10 @@ export function mergeLatestPage<Item extends FeedItem>(
 }
 
 // Adds the next page below the items already shown
-export function appendPage<Item extends FeedItem>(
-    current: FeedPage<Item>,
-    next: FeedPage<Item>,
-): FeedPage<Item> {
+export function appendPage<Item extends FeedItem, Cursor>(
+    current: FeedPage<Item, Cursor>,
+    next: FeedPage<Item, Cursor>,
+): FeedPage<Item, Cursor> {
     const shownIds = new Set(current.items.map((item) => item.id));
     return {
         items: [

@@ -18,18 +18,27 @@ import {
 } from "@/features/matches/utils/match-score";
 import { profilePath } from "@/features/profile/utils/profile-path";
 
-// The viewer's matches, newest first: when, both players (the viewer
-// first) and the score from the viewer's side. A green or red bar left of
-// the score shows whether they won. Each row leads to the match's page,
+// A player's matches, newest first: when, both players (theirs first) and
+// the score from their side. A green or red bar left of the score shows
+// whether they won. Each row leads to the match's page,
 // except clicks on the players, which lead to their profiles. Without `matches` (while they load), it
 // shows placeholder rows.
-export function MatchTable({ matches }: { matches: UserMatch[] | null }) {
+export function MatchTable({
+    matches,
+    label = "Your latest matches",
+    emptyMessage = "No matches yet.",
+}: {
+    matches: UserMatch[] | null;
+    // For screen readers
+    label?: string;
+    emptyMessage?: string;
+}) {
     const router = useRouter();
 
     if (matches?.length === 0) {
         return (
             <Card>
-                <EmptyState className="text-center">No matches yet.</EmptyState>
+                <EmptyState className="text-center">{emptyMessage}</EmptyState>
             </Card>
         );
     }
@@ -41,14 +50,14 @@ export function MatchTable({ matches }: { matches: UserMatch[] | null }) {
             <Table>
                 <Table.ScrollContainer>
                     <Table.Content
-                        aria-label="Your latest matches"
+                        aria-label={label}
                         className="text-sm sm:min-w-[32rem]"
                     >
                         <Table.Header>
                             <Table.Column className={CELL_CLASS}>
                                 Date
                             </Table.Column>
-                            {/* Always the viewer, so phones leave it out to
+                            {/* Always the same player, so phones leave it out to
                             fit the score without scrolling */}
                             <Table.Column className={WIDE_ONLY_CLASS}>
                                 Player

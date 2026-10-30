@@ -7,6 +7,7 @@ import {
     type MatchSide,
     type SetScore,
 } from "@/features/matches/utils/match-score";
+import { FEED_PAGE_SIZE, type FeedPage } from "@/features/posts/utils/feed";
 import { idSchema } from "@/lib/action-input";
 import type { MatchStatus, Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
@@ -32,6 +33,9 @@ const matchSelect = {
 } satisfies Prisma.MatchSelect;
 
 type MatchUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
+
+// Points at the last match of a page; the next page starts after it
+export type MatchCursor = { playedAt: Date; id: string };
 
 // A match from one player's point of view
 export type UserMatch = {
@@ -79,6 +83,48 @@ export async function getRecentMatches(userId: string): Promise<UserMatch[]> {
         select: matchSelect,
     });
     return matches.map((match) => toUserMatch(match, userId));
+}
+
+// One page of the user's confirmed matches, newest first, for their
+// profile. Without a cursor it's the first page; with one, the page after
+// the match it points to. Uses the same indexes as getRecentMatches.
+export async function getMatchesPage(
+    userId: string,
+    cursor?: MatchCursor,
+): Promise<FeedPage<UserMatch, MatchCursor>> {
+    const where = userMatchesWhere(userId, "CONFIRMED");
+    // One extra match tells whether there is another page
+    const rows = await prisma.match.findMany({
+        where: cursor
+            ? {
+                  AND: [
+                      where,
+                      {
+                          OR: [
+                              { playedAt: { lt: cursor.playedAt } },
+                              {
+                                  playedAt: cursor.playedAt,
+                                  id: { lt: cursor.id },
+                              },
+                          ],
+                      },
+                  ],
+              }
+            : where,
+        orderBy: [{ playedAt: "desc" }, { id: "desc" }],
+        take: FEED_PAGE_SIZE + 1,
+        select: matchSelect,
+    });
+    const hasMore = rows.length > FEED_PAGE_SIZE;
+    const items = rows
+        .slice(0, FEED_PAGE_SIZE)
+        .map((match) => toUserMatch(match, userId));
+    const last = items.at(-1);
+    return {
+        items,
+        nextCursor:
+            hasMore && last ? { playedAt: last.playedAt, id: last.id } : null,
+    };
 }
 
 // A pending match, and whose move it is

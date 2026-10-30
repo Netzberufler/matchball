@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { BackButton } from "@/components/ui/back-button";
+import { requireSession } from "@/features/auth/lib/session";
 import { ProfileFeed } from "@/features/posts/components/feeds";
 import { PostListFallback } from "@/features/posts/components/post-list";
 import {
@@ -11,6 +13,7 @@ import {
     ProfileHeader,
     ProfileHeaderFallback,
 } from "@/features/profile/components/profile-header";
+import { ProfileTabs } from "@/features/profile/components/profile-tabs";
 import { getProfileUser } from "@/features/profile/lib/queries";
 
 export async function generateMetadata({
@@ -24,7 +27,8 @@ export async function generateMetadata({
 }
 
 // The params are only known at request time, so everything that reads them
-// is inside <Suspense>. The header and the feed share one user lookup.
+// is inside <Suspense>. The header, the tabs and the feed share one user
+// lookup.
 export default function ProfilePage({
     params,
 }: PageProps<"/profile/[username]">) {
@@ -43,9 +47,10 @@ export default function ProfilePage({
                     <>
                         <ProfileHeaderFallback />
                         <ProfileActionsFallback />
-                        <LatestPosts>
-                            <PostListFallback />
-                        </LatestPosts>
+                        <ProfileTabs
+                            posts={<PostListFallback />}
+                            matchesUser={null}
+                        />
                     </>
                 }
             >
@@ -53,9 +58,7 @@ export default function ProfilePage({
                     <>
                         <ProfileHeader username={username} />
                         <ProfileActions username={username} />
-                        <LatestPosts>
-                            <ProfileFeed username={username} />
-                        </LatestPosts>
+                        <ProfileContent username={username} />
                     </>
                 ))}
             </Suspense>
@@ -63,17 +66,31 @@ export default function ProfilePage({
     );
 }
 
-// The posts below the header, with their heading
-function LatestPosts({ children }: { children: React.ReactNode }) {
+// The user's posts and matches below the header, in tabs; a 404 if there's
+// no such user
+async function ProfileContent({ username }: { username: string }) {
+    const [{ user: viewer }, user] = await Promise.all([
+        requireSession(),
+        getProfileUser(username),
+    ]);
+    if (!user) {
+        notFound();
+    }
+    const isOwn = user.id === viewer.id;
     return (
-        <section aria-labelledby="latest-posts-heading">
-            <h2
-                id="latest-posts-heading"
-                className="text-lg mb-3 font-semibold"
-            >
-                Latest posts
-            </h2>
-            {children}
-        </section>
+        <ProfileTabs
+            // Start over when going from one profile to another
+            key={user.id}
+            posts={<ProfileFeed username={username} />}
+            matchesUser={{
+                id: user.id,
+                label: isOwn
+                    ? "Your latest matches"
+                    : `@${user.username}'s latest matches`,
+                emptyMessage: isOwn
+                    ? "You haven't played any matches yet."
+                    : `@${user.username} hasn't played any matches yet.`,
+            }}
+        />
     );
 }
