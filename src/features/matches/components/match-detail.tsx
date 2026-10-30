@@ -16,7 +16,10 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
                     {formatPlayedAt(match.playedAt)}
                 </time>
             </p>
-            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-6">
+            {/* Two rows: avatar and name, then the badges. Each player
+                spans both through a subgrid, so the "vs" can center on the
+                first row only, whatever height the names wrap to. */}
+            <div className="grid w-full grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto] gap-x-2 gap-y-3 sm:gap-x-6">
                 <Player user={match.left} isWinner={match.winner === "left"} />
                 <Versus />
                 <Player
@@ -29,16 +32,19 @@ export function MatchDetail({ match }: { match: MatchDetailData }) {
     );
 }
 
-// In a gray square, level with the avatars' middle
+// On a gray parallelogram leaning like the italic letters, level with the
+// middle of the players' avatar and name
 function Versus() {
     return (
-        <span aria-hidden className="flex h-20 items-center sm:h-30">
-            {/* Lowercase italic letters sit low and lean right in their
-                box, so 0.2em of padding below and on the right moves them
-                to the square's middle. In em, so it holds at both sizes. */}
-            <span className="flex size-11 items-center justify-center bg-default pb-[0.2em] pr-[0.2em] text-base leading-none font-semibold italic tracking-tight sm:size-16.5 sm:text-2xl">
-                vs
-            </span>
+        // The box is skewed and the text skewed back, so only the
+        // background slants. Lowercase italic letters sit low and lean
+        // right, so 0.2em of padding below and on the right moves them to
+        // the middle. In em, so it holds at both sizes.
+        <span
+            aria-hidden
+            className="col-start-2 row-start-1 flex h-9 w-12 -skew-x-12 items-center justify-center self-center bg-default pb-[0.2em] pr-[0.2em] text-base leading-none font-semibold italic tracking-tight sm:h-14 sm:w-18 sm:text-2xl"
+        >
+            <span className="skew-x-12">vs</span>
         </span>
     );
 }
@@ -53,7 +59,7 @@ function Player({
     isWinner: boolean;
 }) {
     return (
-        <div className="flex min-w-0 flex-col items-center gap-3 text-center">
+        <div className="row-span-2 grid min-w-0 grid-rows-subgrid justify-items-center text-center">
             <Link
                 href={profilePath(user.username)}
                 className="group flex min-w-0 max-w-full flex-col items-center gap-3"
@@ -76,12 +82,12 @@ function Player({
                 </span>
             </Link>
             {isWinner ? (
-                <Chip color="success" variant="soft">
+                <Chip color="success" variant="soft" className="self-start">
                     <Trophy className="size-3.5" aria-hidden />
                     <Chip.Label>Winner</Chip.Label>
                 </Chip>
             ) : (
-                <Chip color="danger" variant="soft">
+                <Chip color="danger" variant="soft" className="self-start">
                     <Chip.Label>Loser</Chip.Label>
                 </Chip>
             )}
