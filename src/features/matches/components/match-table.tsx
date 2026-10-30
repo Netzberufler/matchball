@@ -95,7 +95,10 @@ function MatchRow({ match }: { match: UserMatch }) {
                 </span>
             </Table.Cell>
             <Table.Cell className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}>
-                <MatchScore match={match} />
+                {/* The score leads to the match's own page */}
+                <Link href={`/matches/${match.id}`} className="hover:underline">
+                    <MatchScore match={match} />
+                </Link>
             </Table.Cell>
         </Table.Row>
     );

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { scoreField, SET_NUMBERS } from "@/features/matches/utils/match-form";
 import {
     getSets,
@@ -150,3 +151,48 @@ export async function getEditableMatch(
         scores,
     };
 }
+
+// A confirmed match for its own page: both players, the one on the left
+// first, and the sets from the left player's side
+export type MatchDetail = {
+    id: string;
+    playedAt: Date;
+    left: MatchUser;
+    right: MatchUser;
+    winner: "left" | "right";
+    sets: SetScore[];
+};
+
+// A confirmed match, for its own page, or null if there's no such match or
+// it isn't confirmed: pending, declined and withdrawn matches have no page.
+// Anyone signed in can see it. The viewer is on the left if they played,
+// otherwise player 1. The id comes from the URL, so it's checked first.
+// cache() shares the lookup between generateMetadata and the page.
+export const getMatch = cache(
+    async (id: string, viewerId: string): Promise<MatchDetail | null> => {
+        if (!idSchema.safeParse(id).success) {
+            return null;
+        }
+        const match = await prisma.match.findFirst({
+            where: { id, status: "CONFIRMED" },
+            select: matchSelect,
+        });
+        if (!match) {
+            return null;
+        }
+        const side: MatchSide =
+            match.player2.id === viewerId ? "player2" : "player1";
+        const { player, opponent, won, sets } = toUserMatch(
+            match,
+            match[side].id,
+        );
+        return {
+            id: match.id,
+            playedAt: match.playedAt,
+            left: player,
+            right: opponent,
+            winner: won ? "left" : "right",
+            sets,
+        };
+    },
+);
