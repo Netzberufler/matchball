@@ -12,7 +12,8 @@ export default function NotificationsPage() {
     return (
         <>
             <div className="mb-4 flex items-center gap-2">
-                <BackButton />
+                {/* Always home, as this is a top-level section */}
+                <BackButton href="/" />
                 <h1 className="text-xl font-semibold">Notifications</h1>
             </div>
             {/* Reads the session at request time */}
