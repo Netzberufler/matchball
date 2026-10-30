@@ -3,7 +3,11 @@ import {
     getAllMatches,
     getPendingMatches,
 } from "@/features/matches/lib/queries";
-import { FilterableMatchTable, MatchesHeading } from "./filterable-match-table";
+import {
+    AddMatchLink,
+    FilterableMatchTable,
+    MatchesHeading,
+} from "./filterable-match-table";
 import { MatchTable } from "./match-table";
 import { PendingMatches } from "./pending-matches";
 
@@ -35,6 +39,9 @@ export function MatchesFallback() {
     return (
         <section className="flex flex-col gap-3">
             <MatchesHeading />
+            <div className="flex">
+                <AddMatchLink />
+            </div>
             <MatchTable matches={null} />
         </section>
     );

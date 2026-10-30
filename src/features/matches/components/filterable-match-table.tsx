@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownUp, Check, Trophy, Users } from "lucide-react";
-import { Button, Chip, Dropdown, Label } from "@heroui/react";
+import Link from "next/link";
+import { ArrowDownUp, Check, Plus, Trophy, Users } from "lucide-react";
+import { Button, buttonVariants, Chip, Dropdown, Label } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { UserMatch } from "@/features/matches/lib/queries";
 import {
@@ -18,8 +19,9 @@ import {
 } from "@/features/matches/utils/match-filters";
 import { MatchTable } from "./match-table";
 
-// All of a player's confirmed matches, with how many there are and buttons
-// to filter them by result and opponent and to sort them by date. The
+// All of a player's confirmed matches, with how many there are, buttons to
+// sort them by date and filter them by opponent and result, and a link to
+// add one. The
 // filters run here, on the matches already loaded.
 export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
     const [filters, setFilters] = useState<MatchFilters>(NO_MATCH_FILTERS);
@@ -40,33 +42,36 @@ export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
                         : matches.length
                 }
             />
-            {matches.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                    <SortMenu order={order} onChange={setOrder} />
-                    <OpponentMenu
-                        opponentIds={filters.opponentIds}
-                        onChange={(opponentIds) =>
-                            setFilters({ ...filters, opponentIds })
-                        }
-                        opponents={opponents}
-                    />
-                    <ResultMenu
-                        result={filters.result}
-                        onChange={(result) =>
-                            setFilters({ ...filters, result })
-                        }
-                    />
-                    {activeFilters > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onPress={() => setFilters(NO_MATCH_FILTERS)}
-                        >
-                            Clear filters
-                        </Button>
-                    )}
-                </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+                {matches.length > 0 && (
+                    <>
+                        <SortMenu order={order} onChange={setOrder} />
+                        <OpponentMenu
+                            opponentIds={filters.opponentIds}
+                            onChange={(opponentIds) =>
+                                setFilters({ ...filters, opponentIds })
+                            }
+                            opponents={opponents}
+                        />
+                        <ResultMenu
+                            result={filters.result}
+                            onChange={(result) =>
+                                setFilters({ ...filters, result })
+                            }
+                        />
+                        {activeFilters > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onPress={() => setFilters(NO_MATCH_FILTERS)}
+                            >
+                                Clear filters
+                            </Button>
+                        )}
+                    </>
+                )}
+                <AddMatchLink />
+            </div>
             <MatchTable
                 matches={shown}
                 emptyMessage={
@@ -76,6 +81,22 @@ export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
                 }
             />
         </section>
+    );
+}
+
+// To /matches/add, at the right end of the buttons above the table
+export function AddMatchLink() {
+    return (
+        // A link styled as a HeroUI button
+        <Link
+            href="/matches/add"
+            className={`ml-auto ${buttonVariants({ variant: "primary", size: "sm" })}`}
+        >
+            <Plus className="size-4" aria-hidden />
+            {/* Just the plus on phones, so it fits next to the other
+                buttons */}
+            <span className="max-sm:sr-only">Add new</span>
+        </Link>
     );
 }
 
