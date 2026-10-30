@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, Chip, Skeleton } from "@heroui/react";
-import { Trophy } from "lucide-react";
+import { Crown } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MatchDetail as MatchDetailData } from "@/features/matches/lib/queries";
 import { formatPlayedAt } from "@/features/matches/utils/match-score";
@@ -83,7 +83,7 @@ function Player({
             </Link>
             {isWinner ? (
                 <Chip color="success" variant="soft" className="self-start">
-                    <Trophy className="size-3.5" aria-hidden />
+                    <Crown className="size-3.5" aria-hidden />
                     <Chip.Label>Winner</Chip.Label>
                 </Chip>
             ) : (
