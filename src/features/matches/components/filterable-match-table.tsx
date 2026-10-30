@@ -17,12 +17,13 @@ import {
     type MatchResultFilter,
     type MatchSortOrder,
 } from "@/features/matches/utils/match-filters";
+import { MatchDateRangeMenu } from "./match-date-range-menu";
 import { MatchTable } from "./match-table";
 
 // All of a player's confirmed matches, with how many there are, buttons to
-// sort them by date and filter them by opponent and result, and a link to
-// add one. The
-// filters run here, on the matches already loaded.
+// sort them by date and filter them by days played, opponent and result,
+// and a link to add one. The filters run here, on the matches already
+// loaded.
 export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
     const [filters, setFilters] = useState<MatchFilters>(NO_MATCH_FILTERS);
     const [order, setOrder] = useState<MatchSortOrder>("newest");
@@ -46,6 +47,12 @@ export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
                 {matches.length > 0 && (
                     <>
                         <SortMenu order={order} onChange={setOrder} />
+                        <MatchDateRangeMenu
+                            range={filters.dateRange}
+                            onChange={(dateRange) =>
+                                setFilters({ ...filters, dateRange })
+                            }
+                        />
                         <OpponentMenu
                             opponentIds={filters.opponentIds}
                             onChange={(opponentIds) =>

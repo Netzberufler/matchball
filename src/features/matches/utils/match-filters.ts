@@ -5,15 +5,21 @@ export type MatchResultFilter = "all" | "won" | "lost";
 
 export type MatchSortOrder = "newest" | "oldest";
 
+// Days as the date picker gives them, e.g. "2026-10-28", both included
+export type MatchDateRange = { start: string; end: string };
+
 export type MatchFilters = {
     result: MatchResultFilter;
     // Opponent user ids; empty shows every opponent
     opponentIds: string[];
+    // Null shows every day
+    dateRange: MatchDateRange | null;
 };
 
 export const NO_MATCH_FILTERS: MatchFilters = {
     result: "all",
     opponentIds: [],
+    dateRange: null,
 };
 
 // The options of the result filter menu
@@ -38,9 +44,13 @@ type FilterableMatch = {
 };
 
 // How many filters are set, for the "5 of 32" count and Clear filters: the
-// result counts as one, and so does each opponent
+// result and the date range count as one each, and so does each opponent
 export function countActiveFilters(filters: MatchFilters) {
-    return (filters.result === "all" ? 0 : 1) + filters.opponentIds.length;
+    return (
+        (filters.result === "all" ? 0 : 1) +
+        (filters.dateRange ? 1 : 0) +
+        filters.opponentIds.length
+    );
 }
 
 // The matches that pass the filters, in `order`. Matches played on the same
@@ -52,13 +62,20 @@ export function filterAndSortMatches<T extends FilterableMatch>(
 ): T[] {
     const opponentIds = new Set(filters.opponentIds);
     const direction = order === "newest" ? -1 : 1;
+    const { dateRange } = filters;
     return matches
-        .filter(
-            (match) =>
+        .filter((match) => {
+            // playedAt is midnight UTC, so its ISO date is the day played,
+            // and days compare as strings
+            const day = match.playedAt.toISOString().slice(0, 10);
+            return (
                 (filters.result === "all" ||
                     match.won === (filters.result === "won")) &&
-                (opponentIds.size === 0 || opponentIds.has(match.opponent.id)),
-        )
+                (opponentIds.size === 0 ||
+                    opponentIds.has(match.opponent.id)) &&
+                (!dateRange || (day >= dateRange.start && day <= dateRange.end))
+            );
+        })
         .sort(
             (a, b) =>
                 direction *

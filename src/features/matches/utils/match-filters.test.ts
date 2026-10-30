@@ -47,12 +47,25 @@ describe("filterAndSortMatches", () => {
 
     it("keeps matches against the chosen opponents", () => {
         const filters = {
+            ...NO_MATCH_FILTERS,
             result: "won" as const,
             opponentIds: ["anna", "ben"],
         };
         expect(ids(filterAndSortMatches(matches, filters, "newest"))).toEqual([
             "m3",
             "m1",
+        ]);
+    });
+
+    it("keeps matches between two days, both included", () => {
+        const filters = {
+            ...NO_MATCH_FILTERS,
+            dateRange: { start: "2026-10-02", end: "2026-10-03" },
+        };
+        expect(ids(filterAndSortMatches(matches, filters, "oldest"))).toEqual([
+            "m3",
+            "m2",
+            "m4",
         ]);
     });
 
@@ -63,14 +76,15 @@ describe("filterAndSortMatches", () => {
 });
 
 describe("countActiveFilters", () => {
-    it("counts the result and each opponent", () => {
+    it("counts the result, the date range and each opponent", () => {
         expect(countActiveFilters(NO_MATCH_FILTERS)).toBe(0);
         expect(
             countActiveFilters({
                 result: "lost",
                 opponentIds: ["anna", "ben"],
+                dateRange: { start: "2026-10-01", end: "2026-10-31" },
             }),
-        ).toBe(3);
+        ).toBe(4);
     });
 });
 
