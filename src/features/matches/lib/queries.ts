@@ -7,8 +7,6 @@ import {
     type MatchSide,
     type SetScore,
 } from "@/features/matches/utils/match-score";
-import type { StatsMatch } from "@/features/matches/utils/match-stats";
-import { FEED_PAGE_SIZE, type FeedPage } from "@/features/posts/utils/feed";
 import { idSchema } from "@/lib/action-input";
 import type { MatchStatus, Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
@@ -31,9 +29,6 @@ const matchSelect = {
 } satisfies Prisma.MatchSelect;
 
 type MatchUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
-
-// Points at the last match of a page; the next page starts after it
-export type MatchCursor = { playedAt: Date; id: string };
 
 // A match from one player's point of view
 export type UserMatch = {
@@ -72,7 +67,7 @@ function toUserMatch(match: MatchRow, userId: string): UserMatch {
 }
 
 // All of the user's confirmed matches, newest first, whichever side they
-// played on, for /matches to filter and count. Not paged: a player logs a
+// played on, for /matches and their profile to filter and count. Not paged: a player logs a
 // few a week at most. Reads the two Match (player, status, playedAt, id)
 // indexes.
 export async function getAllMatches(userId: string): Promise<UserMatch[]> {
@@ -82,78 +77,6 @@ export async function getAllMatches(userId: string): Promise<UserMatch[]> {
         select: matchSelect,
     });
     return matches.map((match) => toUserMatch(match, userId));
-}
-
-// All of the user's confirmed matches, newest first, with only what the
-// statistics read (see getMatchStats): lighter than getAllMatches, for
-// the statistics on their profile. Uses the same indexes.
-export async function getStatsMatches(userId: string): Promise<StatsMatch[]> {
-    const matches = await prisma.match.findMany({
-        where: userMatchesWhere(userId, "CONFIRMED"),
-        orderBy: [{ playedAt: "desc" }, { id: "desc" }],
-        select: {
-            playedAt: true,
-            winnerId: true,
-            player1Id: true,
-            set1Player1: true,
-            set1Player2: true,
-            set2Player1: true,
-            set2Player2: true,
-            set3Player1: true,
-            set3Player2: true,
-            set3IsMatchTiebreak: true,
-        },
-    });
-    return matches.map((match) => ({
-        playedAt: match.playedAt,
-        won: match.winnerId === userId,
-        sets: getSets(
-            match,
-            match.player1Id === userId ? "player1" : "player2",
-        ),
-    }));
-}
-
-// One page of the user's confirmed matches, newest first, for their
-// profile. Without a cursor it's the first page; with one, the page after
-// the match it points to. Uses the same indexes as getAllMatches.
-export async function getMatchesPage(
-    userId: string,
-    cursor?: MatchCursor,
-): Promise<FeedPage<UserMatch, MatchCursor>> {
-    const where = userMatchesWhere(userId, "CONFIRMED");
-    // One extra match tells whether there is another page
-    const rows = await prisma.match.findMany({
-        where: cursor
-            ? {
-                  AND: [
-                      where,
-                      {
-                          OR: [
-                              { playedAt: { lt: cursor.playedAt } },
-                              {
-                                  playedAt: cursor.playedAt,
-                                  id: { lt: cursor.id },
-                              },
-                          ],
-                      },
-                  ],
-              }
-            : where,
-        orderBy: [{ playedAt: "desc" }, { id: "desc" }],
-        take: FEED_PAGE_SIZE + 1,
-        select: matchSelect,
-    });
-    const hasMore = rows.length > FEED_PAGE_SIZE;
-    const items = rows
-        .slice(0, FEED_PAGE_SIZE)
-        .map((match) => toUserMatch(match, userId));
-    const last = items.at(-1);
-    return {
-        items,
-        nextCursor:
-            hasMore && last ? { playedAt: last.playedAt, id: last.id } : null,
-    };
 }
 
 // A pending match, and whose move it is

@@ -13,16 +13,18 @@ const SEARCH_DELAY_MS = 150;
 
 // A search field for the opponent, suggesting users by name or username as
 // you type. Submits the chosen user's id as `name`; `onChange` gets them
-// (null when cleared).
+// (null when cleared). Starts with `defaultOpponent` chosen, if given.
 export function OpponentComboBox({
     name,
+    defaultOpponent = null,
     onChange,
 }: {
     name: string;
+    defaultOpponent?: Opponent | null;
     onChange: (opponent: Opponent | null) => void;
 }) {
-    const [inputValue, setInputValue] = useState("");
-    const [selected, setSelected] = useState<Opponent | null>(null);
+    const [inputValue, setInputValue] = useState(defaultOpponent?.name ?? "");
+    const [selected, setSelected] = useState<Opponent | null>(defaultOpponent);
     // The latest answer and what it was for. The suggestions stay while the
     // next search runs, so the list doesn't flicker between keystrokes.
     const [results, setResults] = useState<{

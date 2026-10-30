@@ -22,9 +22,19 @@ import { MatchTable } from "./match-table";
 
 // All of a player's confirmed matches, with how many there are, buttons to
 // sort them by date and filter them by days played, opponent and result,
-// and a link to add one. The filters run here, on the matches already
-// loaded.
-export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
+// and with `addMatchHref` a link to add one there. The filters run here,
+// on the matches already loaded. `label` and `emptyMessage` go to the table.
+export function FilterableMatchTable({
+    matches,
+    addMatchHref,
+    label,
+    emptyMessage,
+}: {
+    matches: UserMatch[];
+    addMatchHref?: string;
+    label?: string;
+    emptyMessage?: string;
+}) {
     const [filters, setFilters] = useState<MatchFilters>(NO_MATCH_FILTERS);
     const [order, setOrder] = useState<MatchSortOrder>("newest");
     const opponents = useMemo(() => getOpponents(matches), [matches]);
@@ -43,60 +53,64 @@ export function FilterableMatchTable({ matches }: { matches: UserMatch[] }) {
                         : matches.length
                 }
             />
-            <div className="flex flex-wrap items-center gap-2">
-                {matches.length > 0 && (
-                    <>
-                        <SortMenu order={order} onChange={setOrder} />
-                        <MatchDateRangeMenu
-                            range={filters.dateRange}
-                            onChange={(dateRange) =>
-                                setFilters({ ...filters, dateRange })
-                            }
-                        />
-                        <OpponentMenu
-                            opponentIds={filters.opponentIds}
-                            onChange={(opponentIds) =>
-                                setFilters({ ...filters, opponentIds })
-                            }
-                            opponents={opponents}
-                        />
-                        <ResultMenu
-                            result={filters.result}
-                            onChange={(result) =>
-                                setFilters({ ...filters, result })
-                            }
-                        />
-                        {activeFilters > 0 && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onPress={() => setFilters(NO_MATCH_FILTERS)}
-                            >
-                                Clear filters
-                            </Button>
-                        )}
-                    </>
-                )}
-                <AddMatchLink />
-            </div>
+            {(matches.length > 0 || addMatchHref) && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {matches.length > 0 && (
+                        <>
+                            <SortMenu order={order} onChange={setOrder} />
+                            <MatchDateRangeMenu
+                                range={filters.dateRange}
+                                onChange={(dateRange) =>
+                                    setFilters({ ...filters, dateRange })
+                                }
+                            />
+                            <OpponentMenu
+                                opponentIds={filters.opponentIds}
+                                onChange={(opponentIds) =>
+                                    setFilters({ ...filters, opponentIds })
+                                }
+                                opponents={opponents}
+                            />
+                            <ResultMenu
+                                result={filters.result}
+                                onChange={(result) =>
+                                    setFilters({ ...filters, result })
+                                }
+                            />
+                            {activeFilters > 0 && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onPress={() => setFilters(NO_MATCH_FILTERS)}
+                                >
+                                    Clear filters
+                                </Button>
+                            )}
+                        </>
+                    )}
+                    {addMatchHref && <AddMatchLink href={addMatchHref} />}
+                </div>
+            )}
             <MatchTable
                 matches={shown}
+                label={label}
                 emptyMessage={
                     matches.length > 0
                         ? "No matches fit these filters."
-                        : undefined
+                        : emptyMessage
                 }
             />
         </section>
     );
 }
 
-// To /matches/add, at the right end of the buttons above the table
-export function AddMatchLink() {
+// To the add match form at `href` (see addMatchPath), at the right end of
+// the buttons above the table
+export function AddMatchLink({ href }: { href: string }) {
     return (
         // A link styled as a HeroUI button
         <Link
-            href="/matches/add"
+            href={href}
             className={`ml-auto ${buttonVariants({ variant: "primary", size: "sm" })}`}
         >
             <Plus className="size-4" aria-hidden />

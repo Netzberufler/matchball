@@ -13,6 +13,7 @@ import {
     ProfileHeader,
     ProfileHeaderFallback,
 } from "@/features/profile/components/profile-header";
+import { addMatchPath } from "@/features/matches/utils/match-path";
 import { ProfileTabs } from "@/features/profile/components/profile-tabs";
 import { getProfileUser } from "@/features/profile/lib/queries";
 
@@ -84,9 +85,10 @@ async function ProfileContent({ username }: { username: string }) {
             posts={<ProfileFeed username={username} />}
             matchesUser={{
                 id: user.id,
-                label: isOwn
-                    ? "Your latest matches"
-                    : `@${user.username}'s latest matches`,
+                addMatchHref: isOwn
+                    ? addMatchPath()
+                    : addMatchPath(user.username),
+                label: isOwn ? "Your matches" : `@${user.username}'s matches`,
                 emptyMessage: isOwn
                     ? "You haven't played any matches yet."
                     : `@${user.username} hasn't played any matches yet.`,

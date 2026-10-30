@@ -69,15 +69,20 @@ function enteredWinner(scores: Scores) {
 // Adds a match the signed-in user (`viewer`) played: the day, the opponent
 // and the games of each set from the user's side. With `match`, edits that
 // pending match instead: it starts out filled in, and the opponent can't be
-// changed. Saving goes to /matches.
+// changed. A new match can start with `initialOpponent` chosen, who can
+// still be changed. Saving goes to /matches.
 export function MatchForm({
     viewer,
     match,
+    initialOpponent = null,
 }: {
     viewer: Viewer;
     match?: EditableMatch;
+    initialOpponent?: Opponent | null;
 }) {
-    const [pickedOpponent, setOpponent] = useState<Opponent | null>(null);
+    const [pickedOpponent, setOpponent] = useState<Opponent | null>(
+        initialOpponent,
+    );
     const opponent = match?.opponent ?? pickedOpponent;
     const [isPending, startTransition] = useTransition();
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -158,6 +163,7 @@ export function MatchForm({
                     {!match && (
                         <OpponentComboBox
                             name={OPPONENT_FIELD}
+                            defaultOpponent={initialOpponent}
                             onChange={setOpponent}
                         />
                     )}

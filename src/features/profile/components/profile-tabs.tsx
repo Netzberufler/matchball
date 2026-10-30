@@ -2,34 +2,33 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
-import { loadMatchStats } from "@/features/matches/actions/load-match-stats";
 import { loadMatches } from "@/features/matches/actions/load-matches";
-import { MatchList } from "@/features/matches/components/match-list";
+import {
+    FilterableMatchTable,
+    MatchesHeading,
+} from "@/features/matches/components/filterable-match-table";
 import {
     MatchStatsCards,
     MatchStatsCardsFallback,
 } from "@/features/matches/components/match-stats-cards";
 import { MatchTable } from "@/features/matches/components/match-table";
-import type { MatchCursor, UserMatch } from "@/features/matches/lib/queries";
-import type { StatsMatch } from "@/features/matches/utils/match-stats";
-import type { FeedPage } from "@/features/posts/utils/feed";
+import type { UserMatch } from "@/features/matches/lib/queries";
 
 type ProfileTab = "posts" | "matches";
 
-type MatchesPage = FeedPage<UserMatch, MatchCursor>;
-
-// Whose matches the "Matches" tab shows, and how it's worded
+// Whose matches the "Matches" tab shows, how it's worded, and where its
+// "Add new" link goes (with them as the opponent, unless it's the viewer)
 export type ProfileMatchesUser = {
     id: string;
+    addMatchHref: string;
     label: string;
     emptyMessage: string;
 };
 
 // The profile's posts and matches, one tab each. "Posts" shows `posts`;
-// "Matches" loads its first page, and all matches for the statistics above
-// it, when it's first opened. Both keep what
-// they loaded while switching tabs: the posts panel stays mounted (hidden),
-// and the matches page is kept here. Without `matchesUser` (while the page
+// "Matches" loads all the player's matches when it's first opened, and
+// shows their statistics and the matches to filter, like /matches. Both keep what they loaded while switching tabs: the posts
+// panel stays mounted (hidden), and the matches are kept here. Without `matchesUser` (while the page
 // loads), the tabs are disabled.
 export function ProfileTabs({
     posts,
@@ -39,21 +38,15 @@ export function ProfileTabs({
     matchesUser: ProfileMatchesUser | null;
 }) {
     const [selected, setSelected] = useState<ProfileTab>("posts");
-    const [matchesPage, setMatchesPage] = useState<MatchesPage | null>(null);
-    const [statsMatches, setStatsMatches] = useState<StatsMatch[] | null>(null);
+    const [matches, setMatches] = useState<UserMatch[] | null>(null);
     const [matchesFailed, setMatchesFailed] = useState(false);
     const [, startTransition] = useTransition();
 
-    function loadFirstMatchesPage(user: ProfileMatchesUser) {
+    function loadAllMatches(user: ProfileMatchesUser) {
         setMatchesFailed(false);
         startTransition(async () => {
             try {
-                const [page, stats] = await Promise.all([
-                    loadMatches(user.id, null),
-                    loadMatchStats(user.id),
-                ]);
-                setMatchesPage(page);
-                setStatsMatches(stats);
+                setMatches(await loadMatches(user.id));
             } catch {
                 setMatchesFailed(true);
             }
@@ -65,8 +58,8 @@ export function ProfileTabs({
             return;
         }
         setSelected(key);
-        if (key === "matches" && matchesUser && !matchesPage) {
-            loadFirstMatchesPage(matchesUser);
+        if (key === "matches" && matchesUser && !matches) {
+            loadAllMatches(matchesUser);
         }
     }
 
@@ -102,20 +95,15 @@ export function ProfileTabs({
                 {posts}
             </Tabs.Panel>
             <Tabs.Panel id="matches" className="px-0 pt-4 pb-0">
-                {matchesUser && matchesPage && statsMatches ? (
+                {matchesUser && matches ? (
                     <div className="flex flex-col gap-6">
                         {/* Like on /matches, none without matches */}
-                        {statsMatches.length > 0 && (
-                            <MatchStatsCards matches={statsMatches} />
+                        {matches.length > 0 && (
+                            <MatchStatsCards matches={matches} />
                         )}
-                        <MatchList
-                            userId={matchesUser.id}
-                            page={matchesPage}
-                            onPageChange={(update) =>
-                                setMatchesPage((current) =>
-                                    update(current ?? matchesPage),
-                                )
-                            }
+                        <FilterableMatchTable
+                            matches={matches}
+                            addMatchHref={matchesUser.addMatchHref}
                             label={matchesUser.label}
                             emptyMessage={matchesUser.emptyMessage}
                         />
@@ -126,9 +114,7 @@ export function ProfileTabs({
                             <p role="alert">Couldn&apos;t load the matches.</p>
                             <Button
                                 variant="tertiary"
-                                onPress={() =>
-                                    loadFirstMatchesPage(matchesUser)
-                                }
+                                onPress={() => loadAllMatches(matchesUser)}
                             >
                                 Try again
                             </Button>
@@ -137,7 +123,10 @@ export function ProfileTabs({
                 ) : (
                     <div className="flex flex-col gap-6">
                         <MatchStatsCardsFallback />
-                        <MatchTable matches={null} />
+                        <section className="flex flex-col gap-3">
+                            <MatchesHeading />
+                            <MatchTable matches={null} />
+                        </section>
                     </div>
                 )}
             </Tabs.Panel>

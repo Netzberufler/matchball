@@ -18,12 +18,6 @@ export const feedCursorSchema = z.object({
     id: idSchema,
 });
 
-// A cursor into a player's matches (see src/features/matches/lib/queries.ts)
-export const matchCursorSchema = z.object({
-    playedAt: z.date(),
-    id: idSchema,
-});
-
 // `input` checked against `schema`. A mismatch means the call didn't come
 // from the app, so it fails with an error that tells nothing about the
 // checks.

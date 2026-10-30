@@ -9,6 +9,7 @@ import {
     MatchesHeading,
 } from "./filterable-match-table";
 import { MatchStatsCards, MatchStatsCardsFallback } from "./match-stats-cards";
+import { addMatchPath } from "@/features/matches/utils/match-path";
 import { MatchTable } from "./match-table";
 import { PendingMatches } from "./pending-matches";
 
@@ -31,7 +32,10 @@ export async function Matches() {
                     <PendingMatches matches={pending} />
                 </section>
             )}
-            <FilterableMatchTable matches={confirmed} />
+            <FilterableMatchTable
+                matches={confirmed}
+                addMatchHref={addMatchPath()}
+            />
         </div>
     );
 }
@@ -45,7 +49,7 @@ export function MatchesFallback() {
             <section className="flex flex-col gap-3">
                 <MatchesHeading />
                 <div className="flex">
-                    <AddMatchLink />
+                    <AddMatchLink href={addMatchPath()} />
                 </div>
                 <MatchTable matches={null} />
             </section>
