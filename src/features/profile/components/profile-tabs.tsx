@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
-import { Newspaper, Swords } from "lucide-react";
+import { Medal, Newspaper, Swords } from "lucide-react";
 import { loadMatches } from "@/features/matches/actions/load-matches";
 import {
     FilterableMatchTable,
@@ -15,7 +15,7 @@ import {
 import { MatchTable } from "@/features/matches/components/match-table";
 import type { UserMatch } from "@/features/matches/lib/queries";
 
-type ProfileTab = "posts" | "matches";
+type ProfileTab = "posts" | "matches" | "achievements";
 
 // Whose matches the "Matches" tab shows, how it's worded, and where its
 // "Add new" link goes (with them as the opponent, unless it's the viewer)
@@ -30,7 +30,8 @@ export type ProfileMatchesUser = {
 // "Matches" loads all the player's matches when it's first opened, and
 // shows their statistics and the matches to filter, like /matches. Both keep what they loaded while switching tabs: the posts
 // panel stays mounted (hidden), and the matches are kept here. Without `matchesUser` (while the page
-// loads), the tabs are disabled.
+// loads), the tabs are disabled. "Achievements" is a placeholder for now,
+// with an empty panel.
 export function ProfileTabs({
     posts,
     matchesUser,
@@ -55,7 +56,7 @@ export function ProfileTabs({
     }
 
     function select(key: unknown) {
-        if (key !== "posts" && key !== "matches") {
+        if (key !== "posts" && key !== "matches" && key !== "achievements") {
             return;
         }
         setSelected(key);
@@ -84,6 +85,12 @@ export function ProfileTabs({
                         {/* The same icon as Matches in the main nav */}
                         <Swords className="size-4" aria-hidden />
                         Matches
+                        <Tabs.Indicator className="transition-none" />
+                    </Tabs.Tab>
+                    <Tabs.Tab id="achievements" className="gap-1.5">
+                        {/* The same icon as Achievements in the main nav */}
+                        <Medal className="size-4" aria-hidden />
+                        Achievements
                         <Tabs.Indicator className="transition-none" />
                     </Tabs.Tab>
                 </Tabs.List>
@@ -133,6 +140,10 @@ export function ProfileTabs({
                         </section>
                     </div>
                 )}
+            </Tabs.Panel>
+            {/* Placeholder until achievements are implemented */}
+            <Tabs.Panel id="achievements" className="px-0 pt-4 pb-0">
+                {null}
             </Tabs.Panel>
         </Tabs>
     );

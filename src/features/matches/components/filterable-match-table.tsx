@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDownUp, Check, Plus, Trophy, Users } from "lucide-react";
+import { ArrowDownUp, Check, Crown, Plus, Users } from "lucide-react";
 import { Button, buttonVariants, Chip, Dropdown, Label } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { UserMatch } from "@/features/matches/lib/queries";
@@ -237,7 +237,7 @@ function ResultMenu({
     return (
         <Dropdown>
             <Button variant="tertiary" size="sm">
-                <Trophy className="size-4" aria-hidden />
+                <Crown className="size-4" aria-hidden />
                 Result
                 {result !== "all" && (
                     <Chip size="sm" color="accent" variant="primary">
