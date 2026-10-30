@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Card, EmptyState, Skeleton, Table } from "@heroui/react";
+import { useRouter } from "next/navigation";
+import {
+    Card,
+    EmptyState,
+    RouterProvider,
+    Skeleton,
+    Table,
+} from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { UserMatch } from "@/features/matches/lib/queries";
 import {
@@ -13,9 +20,12 @@ import { profilePath } from "@/features/profile/utils/profile-path";
 
 // The viewer's matches, newest first: when, both players (the viewer
 // first) and the score from the viewer's side. A green or red bar left of
-// the score shows whether they won. Without `matches` (while they load), it
+// the score shows whether they won. Each row leads to the match's page,
+// except clicks on the players, which lead to their profiles. Without `matches` (while they load), it
 // shows placeholder rows.
 export function MatchTable({ matches }: { matches: UserMatch[] | null }) {
+    const router = useRouter();
+
     if (matches?.length === 0) {
         return (
             <Card>
@@ -24,62 +34,72 @@ export function MatchTable({ matches }: { matches: UserMatch[] | null }) {
         );
     }
 
+    // Rows with an href navigate through React Aria, which this hands to
+    // the Next.js router instead of a full page load
     return (
-        <Table>
-            <Table.ScrollContainer>
-                <Table.Content
-                    aria-label="Your latest matches"
-                    className="text-sm sm:min-w-[32rem]"
-                >
-                    <Table.Header>
-                        <Table.Column className={CELL_CLASS}>Date</Table.Column>
-                        {/* Always the viewer, so phones leave it out to
+        <RouterProvider navigate={router.push}>
+            <Table>
+                <Table.ScrollContainer>
+                    <Table.Content
+                        aria-label="Your latest matches"
+                        className="text-sm sm:min-w-[32rem]"
+                    >
+                        <Table.Header>
+                            <Table.Column className={CELL_CLASS}>
+                                Date
+                            </Table.Column>
+                            {/* Always the viewer, so phones leave it out to
                             fit the score without scrolling */}
-                        <Table.Column className={WIDE_ONLY_CLASS}>
-                            Player
-                        </Table.Column>
-                        <Table.Column isRowHeader className={CELL_CLASS}>
-                            Opponent
-                        </Table.Column>
-                        <Table.Column
-                            className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}
-                        >
-                            Score
-                        </Table.Column>
-                    </Table.Header>
-                    {matches ? (
-                        <Table.Body items={matches}>
-                            {(match) => <MatchRow match={match} />}
-                        </Table.Body>
-                    ) : (
-                        <Table.Body items={PLACEHOLDER_ROWS}>
-                            {(row) => (
-                                <Table.Row id={row.id}>
-                                    {[0, 1, 2, 3].map((column) => (
-                                        <Table.Cell
-                                            key={column}
-                                            className={
-                                                column === 1
-                                                    ? WIDE_ONLY_CLASS
-                                                    : CELL_CLASS
-                                            }
-                                        >
-                                            <Skeleton className="h-4 w-20 rounded-lg" />
-                                        </Table.Cell>
-                                    ))}
-                                </Table.Row>
-                            )}
-                        </Table.Body>
-                    )}
-                </Table.Content>
-            </Table.ScrollContainer>
-        </Table>
+                            <Table.Column className={WIDE_ONLY_CLASS}>
+                                Player
+                            </Table.Column>
+                            <Table.Column isRowHeader className={CELL_CLASS}>
+                                Opponent
+                            </Table.Column>
+                            <Table.Column
+                                className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}
+                            >
+                                Score
+                            </Table.Column>
+                        </Table.Header>
+                        {matches ? (
+                            <Table.Body items={matches}>
+                                {(match) => <MatchRow match={match} />}
+                            </Table.Body>
+                        ) : (
+                            <Table.Body items={PLACEHOLDER_ROWS}>
+                                {(row) => (
+                                    <Table.Row id={row.id}>
+                                        {[0, 1, 2, 3].map((column) => (
+                                            <Table.Cell
+                                                key={column}
+                                                className={
+                                                    column === 1
+                                                        ? WIDE_ONLY_CLASS
+                                                        : CELL_CLASS
+                                                }
+                                            >
+                                                <Skeleton className="h-4 w-20 rounded-lg" />
+                                            </Table.Cell>
+                                        ))}
+                                    </Table.Row>
+                                )}
+                            </Table.Body>
+                        )}
+                    </Table.Content>
+                </Table.ScrollContainer>
+            </Table>
+        </RouterProvider>
     );
 }
 
 function MatchRow({ match }: { match: UserMatch }) {
     return (
-        <Table.Row id={match.id}>
+        <Table.Row
+            id={match.id}
+            href={`/matches/${match.id}`}
+            className="cursor-pointer"
+        >
             <Table.Cell
                 className={`whitespace-nowrap text-muted ${CELL_CLASS}`}
             >
@@ -95,10 +115,7 @@ function MatchRow({ match }: { match: UserMatch }) {
                 </span>
             </Table.Cell>
             <Table.Cell className={`${SCORE_COLUMN_CLASS} ${CELL_CLASS}`}>
-                {/* The score leads to the match's own page */}
-                <Link href={`/matches/${match.id}`} className="hover:underline">
-                    <MatchScore match={match} />
-                </Link>
+                <MatchScore match={match} />
             </Table.Cell>
         </Table.Row>
     );
@@ -163,6 +180,10 @@ export function PlayerLink({ user }: { user: UserMatch["player"] }) {
         <Link
             href={profilePath(user.username)}
             className="flex min-w-0 items-center gap-2 hover:underline"
+            // Inside a row that links to the match, React Aria would take
+            // the press (and Enter) for the row, so keep them to this link
+            onPointerDown={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
         >
             {/* Both players' avatars only fit next to a three-set score
                 on wide screens */}
