@@ -12,9 +12,6 @@ import { idSchema } from "@/lib/action-input";
 import type { MatchStatus, Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 
-// How many of a user's latest matches /matches shows
-const RECENT_MATCHES_LIMIT = 50;
-
 const userSelect = { id: true, username: true, name: true, image: true };
 
 const matchSelect = {
@@ -73,13 +70,14 @@ function toUserMatch(match: MatchRow, userId: string): UserMatch {
     };
 }
 
-// The user's latest confirmed matches, newest first, whichever side they
-// played on. Reads the two Match (player, status, playedAt, id) indexes.
-export async function getRecentMatches(userId: string): Promise<UserMatch[]> {
+// All of the user's confirmed matches, newest first, whichever side they
+// played on, for /matches to filter and count. Not paged: a player logs a
+// few a week at most. Reads the two Match (player, status, playedAt, id)
+// indexes.
+export async function getAllMatches(userId: string): Promise<UserMatch[]> {
     const matches = await prisma.match.findMany({
         where: userMatchesWhere(userId, "CONFIRMED"),
         orderBy: [{ playedAt: "desc" }, { id: "desc" }],
-        take: RECENT_MATCHES_LIMIT,
         select: matchSelect,
     });
     return matches.map((match) => toUserMatch(match, userId));
@@ -87,7 +85,7 @@ export async function getRecentMatches(userId: string): Promise<UserMatch[]> {
 
 // One page of the user's confirmed matches, newest first, for their
 // profile. Without a cursor it's the first page; with one, the page after
-// the match it points to. Uses the same indexes as getRecentMatches.
+// the match it points to. Uses the same indexes as getAllMatches.
 export async function getMatchesPage(
     userId: string,
     cursor?: MatchCursor,
