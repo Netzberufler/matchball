@@ -7,7 +7,7 @@ import {
     useState,
     useTransition,
 } from "react";
-import { Card, EmptyState, Skeleton } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
 import {
     loadNewMessages,
@@ -176,14 +176,8 @@ export function ConversationView({
                     loadingLabel="Loading older messages"
                 />
             )}
-            {messages.length === 0 ? (
-                <Card>
-                    <EmptyState className="text-center">
-                        Say hi to {partner.name}. Only the two of you can see
-                        your messages.
-                    </EmptyState>
-                </Card>
-            ) : (
+            {/* A new conversation shows just the form */}
+            {messages.length > 0 && (
                 <ol
                     className="flex flex-col"
                     aria-label={`Messages with ${partner.name}`}
