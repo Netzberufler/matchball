@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, EmptyState } from "@heroui/react";
+import { EmptyCard } from "@/components/ui/list-card";
 import { LoadMore } from "@/components/ui/load-more";
 import { loadMoreFollows } from "@/features/follows/actions/load-more-follows";
 import type { FollowListUser } from "@/features/follows/lib/queries";
@@ -33,11 +33,7 @@ export function FollowList({
     });
 
     if (page.items.length === 0) {
-        return (
-            <Card>
-                <EmptyState className="text-center">{emptyMessage}</EmptyState>
-            </Card>
-        );
+        return <EmptyCard>{emptyMessage}</EmptyCard>;
     }
 
     return (

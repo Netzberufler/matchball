@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@heroui/react";
-import { LoadMore } from "@/components/ui/load-more";
+import { LoadMoreOrEnd } from "@/components/ui/load-more";
 import { loadMoreComments } from "@/features/comments/actions/load-more-comments";
 import { createdComments } from "@/features/comments/lib/created-comments-store";
 import type { CommentPage, PostComment } from "@/features/comments/lib/queries";
@@ -86,20 +86,15 @@ export function PostComments({
                     </ul>
                 )}
             </Card>
-            {page.nextCursor ? (
-                <LoadMore
-                    isPending={isPending}
-                    onPress={loadMore}
-                    error={error}
-                    loadingLabel="Loading more replies"
-                />
-            ) : (
-                comments.length > 0 && (
-                    <p className="text-center text-sm text-muted">
-                        You&apos;ve reached the end. No more replies to show.
-                    </p>
-                )
-            )}
+            <LoadMoreOrEnd
+                hasMore={page.nextCursor !== null}
+                hasItems={comments.length > 0}
+                itemsLabel="replies"
+                isPending={isPending}
+                onPress={loadMore}
+                error={error}
+                loadingLabel="Loading more replies"
+            />
         </section>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { UserAvatar } from "@/components/ui/user-avatar";
-import type { MentionUser } from "@/features/mentions/actions/search-mention-users";
+import { UserIdentity } from "@/components/ui/user-identity";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 
 // The users suggested for an @mention, in a list below the text area.
 // Focus stays in the text area: it moves through the list with the arrow
@@ -14,10 +14,10 @@ export function MentionSuggestions({
     onChoose,
 }: {
     listId: string;
-    users: MentionUser[];
+    users: PublicUser[];
     activeIndex: number;
     optionId: (index: number) => string;
-    onChoose: (user: MentionUser) => void;
+    onChoose: (user: PublicUser) => void;
 }) {
     return (
         <ul
@@ -42,16 +42,7 @@ export function MentionSuggestions({
                         onChoose(user);
                     }}
                 >
-                    <UserAvatar name={user.name} image={user.image} />
-                    <span className="flex min-w-0 flex-col">
-                        <span className="truncate font-semibold">
-                            {user.name}
-                        </span>
-                        {/* Spaces the option text for screen readers */}{" "}
-                        <span className="truncate text-sm text-muted">
-                            @{user.username}
-                        </span>
-                    </span>
+                    <UserIdentity user={user} />
                 </li>
             ))}
         </ul>

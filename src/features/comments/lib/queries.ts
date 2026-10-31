@@ -11,6 +11,7 @@ import {
     newerThan,
     toPage,
 } from "@/features/posts/utils/feed";
+import { publicUserSelect } from "@/features/profile/utils/public-user";
 
 // Only what a comment shows, as seen by the viewer. `likes` holds the
 // viewer's like, if any: Prisma loads them for a whole page in one query,
@@ -24,9 +25,7 @@ export function commentSelect(viewerId: string) {
         parentId: true,
         rootId: true,
         replyCount: true,
-        author: {
-            select: { id: true, username: true, name: true, image: true },
-        },
+        author: { select: publicUserSelect },
         mentions: mentionsSelect,
         likes: {
             where: { userId: viewerId },

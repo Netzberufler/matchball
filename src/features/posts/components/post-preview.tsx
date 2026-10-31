@@ -1,8 +1,5 @@
+import { RelativeTime } from "@/components/ui/relative-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import {
-    formatFullPostDate,
-    formatPostDate,
-} from "@/features/posts/utils/format-post-date";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 
 // What a preview shows; posts and comments both have it
@@ -35,14 +32,10 @@ export function PostPreview({ post }: { post: PreviewItem }) {
                     </span>
                     {/* The relative time can differ between the server and
                         the browser, e.g. "4m" and "5m" */}
-                    <time
-                        suppressHydrationWarning
+                    <RelativeTime
+                        date={post.createdAt}
                         className="shrink-0 text-muted"
-                        dateTime={post.createdAt.toISOString()}
-                        title={formatFullPostDate(post.createdAt)}
-                    >
-                        {formatPostDate(post.createdAt)}
-                    </time>
+                    />
                 </p>
                 <p className="mt-1 whitespace-pre-wrap break-words">
                     {/* Read-only: mentions are highlighted, not links */}

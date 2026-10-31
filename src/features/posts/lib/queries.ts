@@ -15,6 +15,7 @@ import {
     type PostCursor,
     toPage,
 } from "@/features/posts/utils/feed";
+import { publicUserSelect } from "@/features/profile/utils/public-user";
 
 // The popular feed's posts are this recent, and liked at least once
 const POPULAR_POSTS_MAX_AGE_DAYS = 30;
@@ -31,9 +32,7 @@ function postSelect(viewerId: string) {
         createdAt: true,
         likeCount: true,
         commentCount: true,
-        author: {
-            select: { id: true, username: true, name: true, image: true },
-        },
+        author: { select: publicUserSelect },
         likes: {
             where: { userId: viewerId },
             select: { userId: true },

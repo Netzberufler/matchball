@@ -11,13 +11,13 @@ import {
     olderThan,
     toPage,
 } from "@/features/posts/utils/feed";
+import {
+    type PublicUser,
+    publicUserSelect,
+} from "@/features/profile/utils/public-user";
 
 // Conversations are private: every query here takes the signed-in user's
 // id and only finds conversations they're one of the two users of.
-
-const userSelect = { id: true, username: true, name: true, image: true };
-
-export type ChatUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 
 // Conversations shown per page on /messages
 const CONVERSATION_PAGE_SIZE = 20;
@@ -31,11 +31,11 @@ const CHAT_SUGGESTIONS_COUNT = 5;
 // The user a conversation page is with, or null if there's no such user.
 // cache() shares the lookup between generateMetadata and the page.
 export const getChatPartner = cache(
-    async (username: string): Promise<ChatUser | null> => {
+    async (username: string): Promise<PublicUser | null> => {
         return prisma.user.findUnique({
             // Usernames are stored in lowercase
             where: { username: username.toLowerCase() },
-            select: userSelect,
+            select: publicUserSelect,
         });
     },
 );
@@ -54,7 +54,7 @@ export async function findConversationId(userId: string, otherUserId: string) {
 // message was sent and how many of the other user's messages are unread
 export type ConversationListItem = {
     id: string;
-    partner: ChatUser;
+    partner: PublicUser;
     lastMessageAt: Date;
     unreadCount: number;
 };
@@ -88,8 +88,8 @@ export async function getConversationsPage(
             id: true,
             lastMessageAt: true,
             user1Id: true,
-            user1: { select: userSelect },
-            user2: { select: userSelect },
+            user1: { select: publicUserSelect },
+            user2: { select: publicUserSelect },
         },
         orderBy: [{ lastMessageAt: "desc" }, { id: "desc" }],
         // One extra conversation tells whether there is another page
@@ -220,10 +220,12 @@ export async function markMessagesRead(conversationId: string, userId: string) {
 // People the user follows, the latest follows first, to suggest in the
 // New chat popup. Reads the Follow (followerId, createdAt, followingId)
 // index.
-export async function getChatSuggestions(userId: string): Promise<ChatUser[]> {
+export async function getChatSuggestions(
+    userId: string,
+): Promise<PublicUser[]> {
     const follows = await prisma.follow.findMany({
         where: { followerId: userId },
-        select: { following: { select: userSelect } },
+        select: { following: { select: publicUserSelect } },
         orderBy: [{ createdAt: "desc" }, { followingId: "desc" }],
         take: CHAT_SUGGESTIONS_COUNT,
     });

@@ -1,17 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Card, EmptyState, Skeleton } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
+import { EmptyCard, ListCard } from "@/components/ui/list-card";
 import { LoadMore } from "@/components/ui/load-more";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { RelativeTime } from "@/components/ui/relative-time";
+import { UserIdentity } from "@/components/ui/user-identity";
 import { loadConversations } from "@/features/messages/actions/load-conversations";
 import type { ConversationListItem } from "@/features/messages/lib/queries";
 import { conversationPath } from "@/features/messages/utils/messages-path";
 import type { FeedPage } from "@/features/posts/utils/feed";
-import {
-    formatFullPostDate,
-    formatPostDate,
-} from "@/features/posts/utils/format-post-date";
 import { usePagedList } from "@/lib/use-paged-list";
 import { useOnShownAgain } from "@/lib/use-polling";
 
@@ -56,69 +54,49 @@ export function ConversationList({
 
     if (page.items.length === 0) {
         return (
-            <Card>
-                <EmptyState className="text-center">
-                    No conversations yet. Start one with New chat.
-                </EmptyState>
-            </Card>
+            <EmptyCard>
+                No conversations yet. Start one with New chat.
+            </EmptyCard>
         );
     }
 
     return (
         <div className="flex flex-col gap-4">
-            <Card className="gap-0 overflow-hidden p-0">
-                <ul className="divide-y divide-separator">
-                    {page.items.map(
-                        ({ id, partner, lastMessageAt, unreadCount }) => (
-                            <li key={id}>
-                                <Link
-                                    href={conversationPath(partner.username)}
-                                    // Same hover colour as posts in the feeds
-                                    className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-secondary/60"
-                                >
-                                    <UserAvatar
-                                        name={partner.name}
-                                        image={partner.image}
+            <ListCard>
+                {page.items.map(
+                    ({ id, partner, lastMessageAt, unreadCount }) => (
+                        <li key={id}>
+                            <Link
+                                href={conversationPath(partner.username)}
+                                // Same hover colour as posts in the feeds
+                                className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-secondary/60"
+                            >
+                                <UserIdentity
+                                    user={partner}
+                                    className="flex-1"
+                                />
+                                <span className="flex shrink-0 flex-col items-end gap-1">
+                                    <RelativeTime
+                                        date={lastMessageAt}
+                                        className="text-sm text-muted"
                                     />
-                                    <span className="flex min-w-0 flex-1 flex-col">
-                                        <span className="truncate font-semibold text-foreground">
-                                            {partner.name}
-                                        </span>
-                                        {/* Spaces the link text for screen
-                                        readers */}{" "}
-                                        <span className="truncate text-sm text-muted">
-                                            @{partner.username}
-                                        </span>
-                                    </span>
-                                    <span className="flex shrink-0 flex-col items-end gap-1">
-                                        <time
-                                            dateTime={lastMessageAt.toISOString()}
-                                            title={formatFullPostDate(
-                                                lastMessageAt,
-                                            )}
-                                            className="text-sm text-muted"
-                                            suppressHydrationWarning
-                                        >
-                                            {formatPostDate(lastMessageAt)}
-                                        </time>
-                                        {unreadCount > 0 && (
-                                            <span className={countClassName}>
-                                                {unreadCount > 99
-                                                    ? "99+"
-                                                    : unreadCount}
-                                                <span className="sr-only">
-                                                    {" "}
-                                                    unread
-                                                </span>
+                                    {unreadCount > 0 && (
+                                        <span className={countClassName}>
+                                            {unreadCount > 99
+                                                ? "99+"
+                                                : unreadCount}
+                                            <span className="sr-only">
+                                                {" "}
+                                                unread
                                             </span>
-                                        )}
-                                    </span>
-                                </Link>
-                            </li>
-                        ),
-                    )}
-                </ul>
-            </Card>
+                                        </span>
+                                    )}
+                                </span>
+                            </Link>
+                        </li>
+                    ),
+                )}
+            </ListCard>
             {page.nextCursor && (
                 <LoadMore
                     isPending={isPending}
@@ -134,20 +112,18 @@ export function ConversationList({
 // Shown while the conversations load; the shape of their rows
 export function ConversationListFallback() {
     return (
-        <Card className="gap-0 p-0" aria-hidden>
-            <ul className="divide-y divide-separator">
-                {[0, 1, 2].map((index) => (
-                    <li key={index} className="flex items-center gap-3 p-4">
-                        <Skeleton className="size-10 shrink-0 rounded-full" />
-                        <div className="flex flex-1 flex-col gap-2">
-                            <Skeleton className="h-3.5 w-36 rounded-full" />
-                            <Skeleton className="h-3 w-24 rounded-full" />
-                        </div>
-                        <Skeleton className="h-3 w-8 rounded-full" />
-                    </li>
-                ))}
-            </ul>
-        </Card>
+        <ListCard aria-hidden>
+            {[0, 1, 2].map((index) => (
+                <li key={index} className="flex items-center gap-3 p-4">
+                    <Skeleton className="size-10 shrink-0 rounded-full" />
+                    <div className="flex flex-1 flex-col gap-2">
+                        <Skeleton className="h-3.5 w-36 rounded-full" />
+                        <Skeleton className="h-3 w-24 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3 w-8 rounded-full" />
+                </li>
+            ))}
+        </ListCard>
     );
 }
 

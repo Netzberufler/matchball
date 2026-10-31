@@ -1,4 +1,5 @@
-import { Card, EmptyState, Skeleton } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
+import { EmptyCard } from "@/components/ui/list-card";
 import { ViewerProvider } from "@/features/auth/components/viewer-provider";
 import { requireSession } from "@/features/auth/lib/session";
 import { PostFeed } from "@/features/posts/components/post-feed";
@@ -23,11 +24,9 @@ export async function SearchResults({ query }: { query: string }) {
 
     if (users.items.length === 0 && posts.items.length === 0) {
         return (
-            <Card>
-                <EmptyState className="text-center">
-                    No people or posts match &ldquo;{query}&rdquo;.
-                </EmptyState>
-            </Card>
+            <EmptyCard>
+                No people or posts match &ldquo;{query}&rdquo;.
+            </EmptyCard>
         );
     }
 

@@ -8,6 +8,7 @@ import {
     parseEditMatchForm,
     toMatchFormError,
 } from "@/features/matches/utils/match-form";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import {
     getScoreWinner,
     isSameScore,
@@ -108,7 +109,7 @@ export async function updateMatch(
     // Also the edit pages the browser keeps: without this, editing again
     // would start from the old date and score
     revalidateAllPages();
-    redirect("/matches");
+    redirect(MATCHES_PATH);
 }
 
 const GONE_ERROR: MatchFormError = {

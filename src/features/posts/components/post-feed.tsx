@@ -1,6 +1,6 @@
 "use client";
 
-import { LoadMore } from "@/components/ui/load-more";
+import { LoadMoreOrEnd } from "@/components/ui/load-more";
 import { loadMorePosts } from "@/features/posts/actions/load-more-posts";
 import type { FeedPost } from "@/features/posts/lib/queries";
 import {
@@ -36,20 +36,15 @@ export function PostFeed({
         <div className="flex flex-col gap-4">
             <PostList posts={page.items} emptyMessage={emptyMessage} />
 
-            {page.nextCursor ? (
-                <LoadMore
-                    isPending={isPending}
-                    onPress={loadMore}
-                    error={error}
-                    loadingLabel="Loading more posts"
-                />
-            ) : (
-                page.items.length > 0 && (
-                    <p className="text-center text-sm text-muted">
-                        You&apos;ve reached the end. No more posts to show.
-                    </p>
-                )
-            )}
+            <LoadMoreOrEnd
+                hasMore={page.nextCursor !== null}
+                hasItems={page.items.length > 0}
+                itemsLabel="posts"
+                isPending={isPending}
+                onPress={loadMore}
+                error={error}
+                loadingLabel="Loading more posts"
+            />
         </div>
     );
 }

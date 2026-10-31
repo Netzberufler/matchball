@@ -10,15 +10,17 @@ import {
 import { idSchema } from "@/lib/action-input";
 import type { MatchStatus, Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
-
-const userSelect = { id: true, username: true, name: true, image: true };
+import {
+    type PublicUser,
+    publicUserSelect,
+} from "@/features/profile/utils/public-user";
 
 const matchSelect = {
     id: true,
     playedAt: true,
     winnerId: true,
-    player1: { select: userSelect },
-    player2: { select: userSelect },
+    player1: { select: publicUserSelect },
+    player2: { select: publicUserSelect },
     set1Player1: true,
     set1Player2: true,
     set2Player1: true,
@@ -28,15 +30,13 @@ const matchSelect = {
     set3IsMatchTiebreak: true,
 } satisfies Prisma.MatchSelect;
 
-type MatchUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
-
 // A match from one player's point of view
 export type UserMatch = {
     id: string;
     playedAt: Date;
     // The user whose matches these are
-    player: MatchUser;
-    opponent: MatchUser;
+    player: PublicUser;
+    opponent: PublicUser;
     won: boolean;
     // The player's games first
     sets: SetScore[];
@@ -112,7 +112,7 @@ export async function getPendingMatches(
 export type EditableMatch = {
     id: string;
     version: Date;
-    opponent: MatchUser;
+    opponent: PublicUser;
     // As the date picker takes it, e.g. "2026-10-28"
     playedAt: string;
     scores: Record<string, number | null>;
@@ -155,8 +155,8 @@ export async function getEditableMatch(
 export type MatchDetail = {
     id: string;
     playedAt: Date;
-    left: MatchUser;
-    right: MatchUser;
+    left: PublicUser;
+    right: PublicUser;
     winner: "left" | "right";
     sets: SetScore[];
 };

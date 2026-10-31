@@ -5,6 +5,7 @@ import { BackButton } from "@/components/ui/back-button";
 import { requireSession } from "@/features/auth/lib/session";
 import { AddMatchForm } from "@/features/matches/components/add-match-form";
 import { OPPONENT_PARAM } from "@/features/matches/utils/match-path";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import { getProfileUser } from "@/features/profile/lib/queries";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function AddMatchPage({
     return (
         <>
             <div className="mb-4 flex items-center gap-2">
-                <BackButton fallbackHref="/matches" />
+                <BackButton fallbackHref={MATCHES_PATH} />
                 <h1 className="text-xl font-semibold">Add match</h1>
             </div>
             {/* Reads the session at request time */}

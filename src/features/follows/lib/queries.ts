@@ -10,6 +10,10 @@ import {
     type FeedPage,
     toPage,
 } from "@/features/posts/utils/feed";
+import {
+    type PublicUser,
+    publicUserSelect,
+} from "@/features/profile/utils/public-user";
 
 // The ids of everyone the user follows. Reads only the Follow primary key
 // index. cache() runs it once per request.
@@ -29,27 +33,21 @@ export async function isFollowing(followerId: string, followingId: string) {
     return follow !== null;
 }
 
-const userSelect = { id: true, username: true, name: true, image: true };
-
 // People suggested to the viewer on the Explore page
 const SUGGESTED_USERS_COUNT = 5;
-
-export type SuggestedUser = Prisma.UserGetPayload<{
-    select: typeof userSelect;
-}>;
 
 // The people with the most followers whom the viewer doesn't follow yet,
 // leaving out the viewer. Counting followers reads the Follow
 // (followingId, createdAt, followerId) index.
 export async function getSuggestedUsers(
     viewerId: string,
-): Promise<SuggestedUser[]> {
+): Promise<PublicUser[]> {
     return prisma.user.findMany({
         where: {
             id: { not: viewerId },
             followers: { none: { followerId: viewerId } },
         },
-        select: userSelect,
+        select: publicUserSelect,
         orderBy: [{ followers: { _count: "desc" } }, { username: "asc" }],
         take: SUGGESTED_USERS_COUNT,
     });
@@ -57,9 +55,7 @@ export async function getSuggestedUsers(
 
 // A user in a follow list. createdAt is when the follow happened: the
 // lists are sorted by it, newest first, and page by (createdAt, id).
-export type FollowListUser = Prisma.UserGetPayload<{
-    select: typeof userSelect;
-}> & { createdAt: Date };
+export type FollowListUser = PublicUser & { createdAt: Date };
 
 // One page of a user's followers or of whom they follow. Each reads one of
 // the Follow (user, createdAt, other user) indexes, in order.
@@ -101,7 +97,7 @@ export async function getFollowListPage(
                       ...args,
                       select: {
                           createdAt: true,
-                          follower: { select: userSelect },
+                          follower: { select: publicUserSelect },
                       },
                   })
               ).map(({ createdAt, follower }) => ({ ...follower, createdAt }))
@@ -110,7 +106,7 @@ export async function getFollowListPage(
                       ...args,
                       select: {
                           createdAt: true,
-                          following: { select: userSelect },
+                          following: { select: publicUserSelect },
                       },
                   })
               ).map(({ createdAt, following }) => ({

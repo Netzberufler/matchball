@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { buttonVariants } from "@heroui/react";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 
 export default function MatchNotFound() {
     return (
@@ -13,7 +14,7 @@ export default function MatchNotFound() {
                 have been declined or withdrawn.
             </p>
             {/* A link styled as a HeroUI button */}
-            <Link href="/matches" className={`mt-4 ${buttonVariants()}`}>
+            <Link href={MATCHES_PATH} className={`mt-4 ${buttonVariants()}`}>
                 Back to Matches
             </Link>
         </div>

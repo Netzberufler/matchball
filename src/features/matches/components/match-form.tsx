@@ -18,7 +18,6 @@ import {
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { Viewer } from "@/features/auth/components/viewer-provider";
 import { createMatch } from "@/features/matches/actions/create-match";
-import type { Opponent } from "@/features/matches/actions/search-opponents";
 import { updateMatch } from "@/features/matches/actions/update-match";
 import type { EditableMatch } from "@/features/matches/lib/queries";
 import {
@@ -31,6 +30,7 @@ import {
     SET_NUMBERS,
     toMatchFormError,
 } from "@/features/matches/utils/match-form";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import {
     areFirstSetsSplit,
     getScoreWinner,
@@ -39,6 +39,7 @@ import {
     WON_SET_SCORES,
 } from "@/features/matches/utils/match-score";
 import { OpponentComboBox } from "./opponent-combo-box";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 
 type ScoreFormError = Extract<MatchFormError, { field: "score" }>;
 
@@ -78,9 +79,9 @@ export function MatchForm({
 }: {
     viewer: Viewer;
     match?: EditableMatch;
-    initialOpponent?: Opponent | null;
+    initialOpponent?: PublicUser | null;
 }) {
-    const [pickedOpponent, setOpponent] = useState<Opponent | null>(
+    const [pickedOpponent, setOpponent] = useState<PublicUser | null>(
         initialOpponent,
     );
     const opponent = match?.opponent ?? pickedOpponent;
@@ -246,7 +247,7 @@ export function MatchForm({
                         </Button>
                         {/* A link styled as a HeroUI button */}
                         <Link
-                            href="/matches"
+                            href={MATCHES_PATH}
                             className={buttonVariants({ variant: "tertiary" })}
                         >
                             Cancel

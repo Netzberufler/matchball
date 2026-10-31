@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-    Card,
-    EmptyState,
-    RouterProvider,
-    Skeleton,
-    Table,
-} from "@heroui/react";
+import { RouterProvider, Skeleton, Table } from "@heroui/react";
+import { EmptyCard } from "@/components/ui/list-card";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { UserMatch } from "@/features/matches/lib/queries";
+import { matchPath } from "@/features/matches/utils/match-path";
 import {
     formatPlayedAt,
     formatPlayedAtParts,
@@ -36,11 +32,7 @@ export function MatchTable({
     const router = useRouter();
 
     if (matches?.length === 0) {
-        return (
-            <Card>
-                <EmptyState className="text-center">{emptyMessage}</EmptyState>
-            </Card>
-        );
+        return <EmptyCard>{emptyMessage}</EmptyCard>;
     }
 
     // Rows with an href navigate through React Aria, which this hands to
@@ -106,7 +98,7 @@ function MatchRow({ match }: { match: UserMatch }) {
     return (
         <Table.Row
             id={match.id}
-            href={`/matches/${match.id}`}
+            href={matchPath(match.id)}
             className="cursor-pointer"
         >
             <Table.Cell

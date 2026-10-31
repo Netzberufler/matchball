@@ -8,6 +8,7 @@ import {
     MatchDetailFallback,
 } from "@/features/matches/components/match-detail";
 import { getMatch } from "@/features/matches/lib/queries";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 
 export async function generateMetadata({
     params,
@@ -28,7 +29,7 @@ export default function MatchPage({ params }: PageProps<"/matches/[id]">) {
     return (
         <>
             <div className="mb-4 flex items-center gap-2">
-                <BackButton fallbackHref="/matches" />
+                <BackButton fallbackHref={MATCHES_PATH} />
                 <h1 className="text-xl font-semibold">Match</h1>
             </div>
             <Suspense fallback={<MatchDetailFallback />}>

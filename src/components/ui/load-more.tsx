@@ -36,3 +36,30 @@ export function LoadMore({
         </div>
     );
 }
+
+// Below a list that loads more pages: the "Load more" button while there
+// are more (see LoadMore), then a note that the list ends, e.g. "posts",
+// unless nothing is shown
+export function LoadMoreOrEnd({
+    hasMore,
+    hasItems,
+    itemsLabel,
+    ...loadMore
+}: React.ComponentProps<typeof LoadMore> & {
+    hasMore: boolean;
+    hasItems: boolean;
+    // What's listed, e.g. "posts"
+    itemsLabel: string;
+}) {
+    if (hasMore) {
+        return <LoadMore {...loadMore} />;
+    }
+    if (!hasItems) {
+        return null;
+    }
+    return (
+        <p className="text-center text-sm text-muted">
+            You&apos;ve reached the end. No more {itemsLabel} to show.
+        </p>
+    );
+}

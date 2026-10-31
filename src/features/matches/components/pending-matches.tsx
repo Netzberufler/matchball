@@ -10,6 +10,7 @@ import {
     withdrawMatch,
 } from "@/features/matches/actions/pending-match";
 import type { PendingMatch } from "@/features/matches/lib/queries";
+import { editMatchPath } from "@/features/matches/utils/match-path";
 import { formatPlayedAt } from "@/features/matches/utils/match-score";
 import { MatchScore, PlayerLink } from "./match-table";
 
@@ -87,7 +88,7 @@ function PendingMatchCard({ match }: { match: PendingMatch }) {
                     {/* A link styled as a grey HeroUI button. Saving the
                         edit makes the viewer the one who waits. */}
                     <Link
-                        href={`/matches/${match.id}/edit`}
+                        href={editMatchPath(match.id)}
                         aria-disabled={isBusy}
                         className={`${buttonVariants({
                             size: "sm",

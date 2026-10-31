@@ -6,6 +6,7 @@ import { BackButton } from "@/components/ui/back-button";
 import { requireSession } from "@/features/auth/lib/session";
 import { MatchForm } from "@/features/matches/components/match-form";
 import { getEditableMatch } from "@/features/matches/lib/queries";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 
 export const metadata: Metadata = {
     title: "Edit Match",
@@ -19,7 +20,7 @@ export default function EditMatchPage({
     return (
         <>
             <div className="mb-4 flex items-center gap-2">
-                <BackButton fallbackHref="/matches" />
+                <BackButton fallbackHref={MATCHES_PATH} />
                 <h1 className="text-xl font-semibold">Edit match</h1>
             </div>
             <Suspense fallback={<Skeleton className="h-96 rounded-3xl" />}>

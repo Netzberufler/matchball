@@ -3,13 +3,16 @@
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { USERNAME_MAX_LENGTH } from "@/features/auth/utils/auth-rules";
+import {
+    CANDIDATES_COUNT,
+    MAX_RESULTS,
+    nameOrUsernameWhere,
+} from "@/features/search/lib/find-users";
 import { prisma } from "@/prisma/db";
-
-// Shown in the dropdown at most
-const MAX_RESULTS = 6;
-// Names are searched from this many characters on: shorter patterns can't
-// use the trigram index on User.name
-const NAME_SEARCH_MIN_LENGTH = 3;
+import {
+    type PublicUser,
+    publicUserSelect,
+} from "@/features/profile/utils/public-user";
 
 // What follows the @: only username characters, so it's also safe to use
 // in a LIKE pattern
@@ -17,20 +20,13 @@ const mentionQuerySchema = z
     .string()
     .regex(new RegExp(`^[a-z0-9_]{1,${USERNAME_MAX_LENGTH}}$`));
 
-export type MentionUser = {
-    id: string;
-    username: string;
-    name: string;
-    image: string | null;
-};
-
 // Users to suggest for "@query" in the mention autocomplete. Usernames
 // starting with the query (on their unique index), and from a few
 // characters on, names with a word starting with it (on the trigram
 // index). Exact username first, then other usernames, then names.
 export async function searchMentionUsers(
     input: unknown,
-): Promise<MentionUser[]> {
+): Promise<PublicUser[]> {
     await requireSession();
 
     // Checked here: actions can be called with anything
@@ -41,34 +37,13 @@ export async function searchMentionUsers(
     const query = parsed.data;
 
     const users = await prisma.user.findMany({
-        where: {
-            OR: [
-                { username: { startsWith: query } },
-                ...(query.length >= NAME_SEARCH_MIN_LENGTH
-                    ? [
-                          {
-                              name: {
-                                  startsWith: query,
-                                  mode: "insensitive" as const,
-                              },
-                          },
-                          {
-                              name: {
-                                  contains: ` ${query}`,
-                                  mode: "insensitive" as const,
-                              },
-                          },
-                      ]
-                    : []),
-            ],
-        },
-        select: { id: true, username: true, name: true, image: true },
+        where: nameOrUsernameWhere(query, query),
+        select: publicUserSelect,
         orderBy: { username: "asc" },
-        // A few extra, so ranking can still put the best ones first
-        take: MAX_RESULTS * 3,
+        take: CANDIDATES_COUNT,
     });
 
-    const rank = (user: MentionUser) =>
+    const rank = (user: PublicUser) =>
         user.username === query ? 0 : user.username.startsWith(query) ? 1 : 2;
     return users.sort((a, b) => rank(a) - rank(b)).slice(0, MAX_RESULTS);
 }

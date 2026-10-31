@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Chip } from "@heroui/react";
 import { AtSign, Heart, MessageCircle, Swords, UserPlus } from "lucide-react";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import {
     formatPlayedAt,
     formatSet,
@@ -12,10 +14,6 @@ import {
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 import type { UserNotification } from "@/features/notifications/lib/queries";
 import { ClickablePost } from "@/features/posts/components/clickable-post";
-import {
-    formatFullPostDate,
-    formatPostDate,
-} from "@/features/posts/utils/format-post-date";
 import { postPath } from "@/features/posts/utils/post-path";
 import { profilePath } from "@/features/profile/utils/profile-path";
 
@@ -40,9 +38,6 @@ const MATCH_STATUS_LABELS = {
     DECLINED: "Declined",
     WITHDRAWN: "Withdrawn",
 };
-
-// Where the pending and confirmed matches are
-const MATCHES_PATH = "/matches";
 
 // What the actor did, after their name
 function describeAction(notification: UserNotification) {
@@ -230,15 +225,7 @@ export function NotificationItem({
                         {" · "}
                     </span>
                     <Link href={href} className="text-muted hover:underline">
-                        {/* The relative time can differ between the server
-                            and the browser, e.g. "4m" and "5m" */}
-                        <time
-                            suppressHydrationWarning
-                            dateTime={notification.createdAt.toISOString()}
-                            title={formatFullPostDate(notification.createdAt)}
-                        >
-                            {formatPostDate(notification.createdAt)}
-                        </time>
+                        <RelativeTime date={notification.createdAt} />
                     </Link>
                 </p>
                 <NotificationText notification={notification} />

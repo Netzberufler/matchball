@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { ComboBox, FieldError, Input, Label, ListBox } from "@heroui/react";
-import { UserAvatar } from "@/components/ui/user-avatar";
-import {
-    type Opponent,
-    searchOpponents,
-} from "@/features/matches/actions/search-opponents";
+import { UserIdentity } from "@/components/ui/user-identity";
+import { searchOpponents } from "@/features/matches/actions/search-opponents";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
 // A search field for the opponent, suggesting users by name or username as
@@ -18,11 +16,13 @@ export function OpponentComboBox({
     onChange,
 }: {
     name: string;
-    defaultOpponent?: Opponent | null;
-    onChange: (opponent: Opponent | null) => void;
+    defaultOpponent?: PublicUser | null;
+    onChange: (opponent: PublicUser | null) => void;
 }) {
     const [inputValue, setInputValue] = useState(defaultOpponent?.name ?? "");
-    const [selected, setSelected] = useState<Opponent | null>(defaultOpponent);
+    const [selected, setSelected] = useState<PublicUser | null>(
+        defaultOpponent,
+    );
 
     // Choosing a user puts their name in the field, which isn't a search
     const query =
@@ -72,17 +72,9 @@ export function OpponentComboBox({
                         </p>
                     )}
                 >
-                    {(user: Opponent) => (
+                    {(user: PublicUser) => (
                         <ListBox.Item id={user.id} textValue={user.name}>
-                            <UserAvatar name={user.name} image={user.image} />
-                            <span className="flex min-w-0 flex-1 flex-col">
-                                <span className="truncate font-semibold">
-                                    {user.name}
-                                </span>
-                                <span className="truncate text-sm text-muted">
-                                    @{user.username}
-                                </span>
-                            </span>
+                            <UserIdentity user={user} className="flex-1" />
                             <ListBox.ItemIndicator />
                         </ListBox.Item>
                     )}

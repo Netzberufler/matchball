@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SquarePen } from "lucide-react";
 import { Button, Modal, SearchField, Spinner } from "@heroui/react";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { UserIdentity } from "@/components/ui/user-identity";
 import {
     loadChatSuggestions,
     searchChatUsers,
 } from "@/features/messages/actions/search-chat-users";
-import type { ChatUser } from "@/features/messages/lib/queries";
 import { conversationPath } from "@/features/messages/utils/messages-path";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
 // The New chat button on /messages. It opens a popup to search for a user
@@ -49,7 +49,7 @@ export function NewChatButton() {
 function UserPicker({ onChoose }: { onChoose: () => void }) {
     const [value, setValue] = useState("");
     // null until loaded, and if they couldn't be
-    const [suggestions, setSuggestions] = useState<ChatUser[] | null>(null);
+    const [suggestions, setSuggestions] = useState<PublicUser[] | null>(null);
 
     useEffect(() => {
         loadChatSuggestions().then(setSuggestions, () => setSuggestions([]));
@@ -118,7 +118,7 @@ function UserChoices({
     onChoose,
 }: {
     label: string;
-    users: ChatUser[];
+    users: PublicUser[];
     emptyMessage: string;
     onChoose: () => void;
 }) {
@@ -136,17 +136,7 @@ function UserChoices({
                             onClick={onChoose}
                             className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-default"
                         >
-                            <UserAvatar name={user.name} image={user.image} />
-                            <span className="flex min-w-0 flex-col">
-                                <span className="truncate font-semibold text-foreground">
-                                    {user.name}
-                                </span>
-                                {/* Spaces the link text for screen
-                                    readers */}{" "}
-                                <span className="truncate text-sm text-muted">
-                                    @{user.username}
-                                </span>
-                            </span>
+                            <UserIdentity user={user} />
                         </Link>
                     </li>
                 ))}

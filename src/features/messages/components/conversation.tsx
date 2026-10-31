@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Skeleton } from "@heroui/react";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { UserIdentity } from "@/components/ui/user-identity";
 import { requireSession } from "@/features/auth/lib/session";
 import {
     findConversationId,
@@ -37,15 +37,7 @@ export async function Conversation({ username }: { username: string }) {
                 href={profilePath(partner.username)}
                 className="mb-4 flex min-w-0 items-center gap-3 rounded-full p-1 pr-4 transition-colors hover:bg-default md:mb-6"
             >
-                <UserAvatar name={partner.name} image={partner.image} />
-                <span className="flex min-w-0 flex-col">
-                    <span className="truncate font-semibold text-foreground">
-                        {partner.name}
-                    </span>{" "}
-                    <span className="truncate text-sm text-muted">
-                        @{partner.username}
-                    </span>
-                </span>
+                <UserIdentity user={partner} />
             </Link>
             <ConversationView
                 // Start over when going to another conversation

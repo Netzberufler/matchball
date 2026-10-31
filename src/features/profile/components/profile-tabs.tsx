@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, EmptyState, Tabs } from "@heroui/react";
+import { Tabs } from "@heroui/react";
 import { Medal, Newspaper, Swords } from "lucide-react";
+import { RetryCard } from "@/components/ui/list-card";
 import { loadMatches } from "@/features/matches/actions/load-matches";
 import {
     FilterableMatchTable,
@@ -118,17 +119,10 @@ export function ProfileTabs({
                         />
                     </div>
                 ) : matchesUser && onDemand.failed("matches") ? (
-                    <Card>
-                        <EmptyState className="flex flex-col items-center gap-3 text-center">
-                            <p role="alert">Couldn&apos;t load the matches.</p>
-                            <Button
-                                variant="tertiary"
-                                onPress={() => onDemand.open("matches")}
-                            >
-                                Try again
-                            </Button>
-                        </EmptyState>
-                    </Card>
+                    <RetryCard
+                        message="Couldn't load the matches."
+                        onRetry={() => onDemand.open("matches")}
+                    />
                 ) : (
                     <div className="flex flex-col gap-6">
                         <MatchStatsCardsFallback />

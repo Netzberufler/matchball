@@ -3,11 +3,9 @@
 import { LoadMore } from "@/components/ui/load-more";
 import { type FeedPage, mergeLatestPage } from "@/features/posts/utils/feed";
 import { UserList } from "@/features/profile/components/user-list";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 import { loadMoreUsers } from "@/features/search/actions/load-more-users";
-import type {
-    SearchUser,
-    UserSearchCursor,
-} from "@/features/search/lib/queries";
+import type { UserSearchCursor } from "@/features/search/lib/queries";
 import { usePagedList } from "@/lib/use-paged-list";
 
 // The people found for `query`, starting with the first page from the
@@ -17,7 +15,7 @@ export function UserSearchResults({
     firstPage,
 }: {
     query: string;
-    firstPage: FeedPage<SearchUser, UserSearchCursor>;
+    firstPage: FeedPage<PublicUser, UserSearchCursor>;
 }) {
     const { page, loadMore, isPending, error } = usePagedList({
         firstPage,

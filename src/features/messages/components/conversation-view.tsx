@@ -3,20 +3,21 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
+import { RelativeTime } from "@/components/ui/relative-time";
 import {
     loadNewMessages,
     loadOlderMessages,
     markConversationRead,
 } from "@/features/messages/actions/load-messages";
 import { sendMessage } from "@/features/messages/actions/send-message";
-import type { ChatMessage, ChatUser } from "@/features/messages/lib/queries";
+import type { ChatMessage } from "@/features/messages/lib/queries";
 import {
     endsGroup,
     formatMessageTime,
     mergeMessages,
 } from "@/features/messages/utils/chat-thread";
 import type { FeedPage } from "@/features/posts/utils/feed";
-import { formatFullPostDate } from "@/features/posts/utils/format-post-date";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 import { useLoadMore } from "@/lib/use-paged-list";
 import { usePolling } from "@/lib/use-polling";
 import { MessageForm } from "./message-form";
@@ -50,7 +51,7 @@ export function ConversationView({
     firstPage,
     hasReceived,
 }: {
-    partner: ChatUser;
+    partner: PublicUser;
     firstPage: FeedPage<ChatMessage>;
     hasReceived: boolean;
 }) {
@@ -198,16 +199,11 @@ function MessageBubble({
                 {message.content}
             </p>
             {showTime && (
-                // The time can differ between the server and the browser,
-                // which may be in another time zone
-                <time
-                    suppressHydrationWarning
-                    dateTime={message.createdAt.toISOString()}
-                    title={formatFullPostDate(message.createdAt)}
+                <RelativeTime
+                    date={message.createdAt}
+                    format={formatMessageTime}
                     className="mt-1 px-2 text-xs text-muted"
-                >
-                    {formatMessageTime(message.createdAt)}
-                </time>
+                />
             )}
         </li>
     );

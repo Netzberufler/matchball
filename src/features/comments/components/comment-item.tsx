@@ -1,10 +1,7 @@
 import Link from "next/link";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { PostComment } from "@/features/comments/lib/queries";
-import {
-    formatFullPostDate,
-    formatPostDate,
-} from "@/features/posts/utils/format-post-date";
 import { profilePath } from "@/features/profile/utils/profile-path";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
 
@@ -54,14 +51,10 @@ export function CommentItem({
                     </span>
                     {/* The relative time can differ between the server and
                         the browser, e.g. "4m" and "5m" */}
-                    <time
-                        suppressHydrationWarning
+                    <RelativeTime
+                        date={comment.createdAt}
                         className="shrink-0 text-muted"
-                        dateTime={comment.createdAt.toISOString()}
-                        title={formatFullPostDate(comment.createdAt)}
-                    >
-                        {formatPostDate(comment.createdAt)}
-                    </time>
+                    />
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words">
                     <TextWithMentions

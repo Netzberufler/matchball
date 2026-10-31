@@ -1,11 +1,9 @@
 "use client";
 
 import { useId, useState } from "react";
-import {
-    type MentionUser,
-    searchMentionUsers,
-} from "@/features/mentions/actions/search-mention-users";
+import { searchMentionUsers } from "@/features/mentions/actions/search-mention-users";
 import { findMentionBeforeCaret } from "@/features/mentions/utils/mentions";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
 type Mention = { start: number; query: string };
@@ -28,7 +26,7 @@ export function useMentionAutocomplete({
 
     const query = mention?.query ?? "";
     // New suggestions start with the first one highlighted
-    const { results: users, reset } = useDebouncedSearch<MentionUser>(
+    const { results: users, reset } = useDebouncedSearch<PublicUser>(
         query,
         searchMentionUsers,
         () => setActiveIndex(0),
@@ -58,7 +56,7 @@ export function useMentionAutocomplete({
     }
 
     // Replaces "@query" with "@username " and puts the caret after it
-    function choose(user: MentionUser) {
+    function choose(user: PublicUser) {
         const textArea = textAreaRef.current;
         if (!textArea || !mention) {
             return;

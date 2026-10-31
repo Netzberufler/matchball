@@ -4,14 +4,14 @@ import type { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 import type { FeedPage } from "@/features/posts/utils/feed";
 import { escapeLike, searchTerms } from "@/features/search/utils/search-query";
+import {
+    type PublicUser,
+    publicUserSelect,
+} from "@/features/profile/utils/public-user";
 
 // People shown per page. Fewer than posts, so the posts below still show
 // on the first screen.
 export const USER_SEARCH_PAGE_SIZE = 5;
-
-const userSelect = { id: true, username: true, name: true, image: true };
-
-export type SearchUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 
 // People are listed by username, which is unique, so the last username of a
 // page is the cursor for the next one
@@ -36,7 +36,7 @@ function userTermWhere(term: string): Prisma.UserWhereInput {
 export async function searchUsers(
     query: string,
     cursor?: UserSearchCursor,
-): Promise<FeedPage<SearchUser, UserSearchCursor>> {
+): Promise<FeedPage<PublicUser, UserSearchCursor>> {
     const terms = searchTerms(query)
         .map((term) => term.replace(/^@/, ""))
         .filter((term) => term !== "");
@@ -49,7 +49,7 @@ export async function searchUsers(
         exactUsername && !cursor
             ? prisma.user.findUnique({
                   where: { username: exactUsername },
-                  select: userSelect,
+                  select: publicUserSelect,
               })
             : null,
         prisma.user.findMany({
@@ -63,7 +63,7 @@ export async function searchUsers(
                     ...(cursor ? [{ username: { gt: cursor } }] : []),
                 ],
             },
-            select: userSelect,
+            select: publicUserSelect,
             orderBy: { username: "asc" },
             // One extra user tells whether there is another page
             take: USER_SEARCH_PAGE_SIZE + 1,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, EmptyState, Tabs } from "@heroui/react";
+import { Tabs } from "@heroui/react";
 import {
     AtSign,
     Bell,
@@ -10,6 +10,7 @@ import {
     Swords,
     UserPlus,
 } from "lucide-react";
+import { RetryCard } from "@/components/ui/list-card";
 import { loadNotifications } from "@/features/notifications/actions/load-notifications";
 import type { UserNotification } from "@/features/notifications/lib/queries";
 import {
@@ -135,19 +136,10 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
                                 }
                             />
                         ) : pages.failed(key) ? (
-                            <Card>
-                                <EmptyState className="flex flex-col items-center gap-3 text-center">
-                                    <p role="alert">
-                                        Couldn&apos;t load these notifications.
-                                    </p>
-                                    <Button
-                                        variant="tertiary"
-                                        onPress={() => pages.open(key)}
-                                    >
-                                        Try again
-                                    </Button>
-                                </EmptyState>
-                            </Card>
+                            <RetryCard
+                                message="Couldn't load these notifications."
+                                onRetry={() => pages.open(key)}
+                            />
                         ) : (
                             <NotificationListFallback />
                         )}

@@ -8,6 +8,7 @@ import {
     parseMatchForm,
     toMatchFormError,
 } from "@/features/matches/utils/match-form";
+import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import { getScoreWinner } from "@/features/matches/utils/match-score";
 import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
@@ -82,5 +83,5 @@ export async function createMatch(
 
     // Shows in the match list and on both players' profiles
     revalidateAllPages();
-    redirect("/matches");
+    redirect(MATCHES_PATH);
 }

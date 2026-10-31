@@ -1,10 +1,7 @@
 import Link from "next/link";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { FeedPost } from "@/features/posts/lib/queries";
-import {
-    formatFullPostDate,
-    formatPostDate,
-} from "@/features/posts/utils/format-post-date";
 import { postPath } from "@/features/posts/utils/post-path";
 import { profilePath } from "@/features/profile/utils/profile-path";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
@@ -60,15 +57,7 @@ export function PostItem({ post }: { post: FeedPost }) {
                         href={href}
                         className="shrink-0 text-muted hover:underline"
                     >
-                        {/* The relative time can differ between the server
-                            and the browser, e.g. "4m" and "5m" */}
-                        <time
-                            suppressHydrationWarning
-                            dateTime={post.createdAt.toISOString()}
-                            title={formatFullPostDate(post.createdAt)}
-                        >
-                            {formatPostDate(post.createdAt)}
-                        </time>
+                        <RelativeTime date={post.createdAt} />
                     </Link>
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words">

@@ -1,4 +1,4 @@
-import { Card, EmptyState } from "@heroui/react";
+import { EmptyCard } from "@/components/ui/list-card";
 import { requireSession } from "@/features/auth/lib/session";
 import { FollowButton } from "@/features/follows/components/follow-button";
 import { getSuggestedUsers } from "@/features/follows/lib/queries";
@@ -15,11 +15,9 @@ export async function WhoToFollow() {
 
     if (users.length === 0) {
         return (
-            <Card>
-                <EmptyState className="text-center">
-                    No suggestions right now. You already follow everyone.
-                </EmptyState>
-            </Card>
+            <EmptyCard>
+                No suggestions right now. You already follow everyone.
+            </EmptyCard>
         );
     }
 
