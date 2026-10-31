@@ -2,6 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
+import {
+    AtSign,
+    Bell,
+    Heart,
+    MessageCircle,
+    Swords,
+    UserPlus,
+} from "lucide-react";
 import { loadNotifications } from "@/features/notifications/actions/load-notifications";
 import type { UserNotification } from "@/features/notifications/lib/queries";
 import {
@@ -16,6 +24,17 @@ import {
 } from "./notification-list";
 
 type Page = FeedPage<UserNotification>;
+
+// The icons of the notifications each tab shows; "All" has the icon of
+// Notifications in the main nav
+const FILTER_ICONS = {
+    all: Bell,
+    followers: UserPlus,
+    mentions: AtSign,
+    replies: MessageCircle,
+    likes: Heart,
+    matches: Swords,
+} satisfies Record<NotificationFilter, unknown>;
 
 // The notifications, filtered by the selected tab. "All" starts with
 // `firstPage`; the other tabs load their first page when they're first
@@ -65,15 +84,19 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
                 screen is narrower */}
             <Tabs.ListContainer className="w-fit max-w-full self-start">
                 <Tabs.List aria-label="Filter notifications">
-                    {NOTIFICATION_FILTERS.map(({ key, label }) => (
-                        <Tabs.Tab key={key} id={key}>
-                            {label}
-                            {/* Without the sliding animation, which can
-                                leave it off its tab when the page appears,
-                                like in the old auth tabs */}
-                            <Tabs.Indicator className="transition-none" />
-                        </Tabs.Tab>
-                    ))}
+                    {NOTIFICATION_FILTERS.map(({ key, label }) => {
+                        const Icon = FILTER_ICONS[key];
+                        return (
+                            <Tabs.Tab key={key} id={key} className="gap-1.5">
+                                <Icon className="size-4" aria-hidden />
+                                {label}
+                                {/* Without the sliding animation, which can
+                                    leave it off its tab when the page
+                                    appears, like in the old auth tabs */}
+                                <Tabs.Indicator className="transition-none" />
+                            </Tabs.Tab>
+                        );
+                    })}
                 </Tabs.List>
             </Tabs.ListContainer>
             {NOTIFICATION_FILTERS.map(({ key }) => {

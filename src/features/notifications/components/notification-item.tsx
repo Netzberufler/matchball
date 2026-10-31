@@ -1,15 +1,5 @@
 import Link from "next/link";
-import {
-    AtSign,
-    CircleCheck,
-    CircleX,
-    Undo2,
-    Heart,
-    MessageCircle,
-    Pencil,
-    Trophy,
-    UserPlus,
-} from "lucide-react";
+import { AtSign, Heart, MessageCircle, Swords, UserPlus } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import {
     formatPlayedAt,
@@ -26,16 +16,17 @@ import { postPath } from "@/features/posts/utils/post-path";
 import { profilePath } from "@/features/profile/utils/profile-path";
 
 const TYPE_ICONS = {
-    REPLY: { icon: MessageCircle, className: "text-accent" },
+    REPLY: { icon: MessageCircle, className: "text-foreground" },
     // Like a liked post's heart
     LIKE: { icon: Heart, className: "fill-current text-danger" },
-    MENTION: { icon: AtSign, className: "text-accent" },
-    FOLLOW: { icon: UserPlus, className: "text-accent" },
-    MATCH_REQUEST: { icon: Trophy, className: "text-accent" },
-    MATCH_CONFIRMED: { icon: CircleCheck, className: "text-success" },
-    MATCH_DECLINED: { icon: CircleX, className: "text-danger" },
-    MATCH_WITHDRAWN: { icon: Undo2, className: "text-muted" },
-    MATCH_UPDATED: { icon: Pencil, className: "text-accent" },
+    MENTION: { icon: AtSign, className: "text-foreground" },
+    FOLLOW: { icon: UserPlus, className: "text-foreground" },
+    // The icon of Matches in the nav; the text says what happened
+    MATCH_REQUEST: { icon: Swords, className: "text-foreground" },
+    MATCH_CONFIRMED: { icon: Swords, className: "text-foreground" },
+    MATCH_DECLINED: { icon: Swords, className: "text-foreground" },
+    MATCH_WITHDRAWN: { icon: Swords, className: "text-foreground" },
+    MATCH_UPDATED: { icon: Swords, className: "text-foreground" },
 };
 
 // How a match the user was asked to confirm was answered, after its score
