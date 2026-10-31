@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { ViewerAvatar } from "@/features/auth/components/viewer-avatar";
-import { getViewerName } from "@/features/auth/lib/session";
+import { getViewerName, requireSession } from "@/features/auth/lib/session";
 import { HomeFeed } from "@/features/posts/components/feeds";
 import { PostForm } from "@/features/posts/components/post-form";
 import { PostListFallback } from "@/features/posts/components/post-list";
 import { RefreshFeedButton } from "@/features/posts/components/refresh-feed-button";
+import { hasPostsByFollowedAuthors } from "@/features/posts/lib/queries";
+import { DiscoverSections } from "@/features/search/components/discover-sections";
 
 export default function Home() {
     return (
@@ -28,13 +30,13 @@ export default function Home() {
                         </Suspense>
                     }
                 />
-                <section aria-labelledby="following-heading">
+                <section aria-labelledby="feed-heading">
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <h2
-                            id="following-heading"
+                            id="feed-heading"
                             className="text-lg font-semibold"
                         >
-                            Following
+                            Your feed
                         </h2>
                         <RefreshFeedButton />
                     </div>
@@ -42,6 +44,11 @@ export default function Home() {
                         <HomeFeed />
                     </Suspense>
                 </section>
+                {/* Below the feed, so nothing above it moves when it
+                    appears */}
+                <Suspense>
+                    <HomeDiscover />
+                </Suspense>
             </div>
         </>
     );
@@ -49,4 +56,14 @@ export default function Home() {
 
 async function Welcome() {
     return `Welcome, ${await getViewerName()}!`;
+}
+
+// People to follow and popular posts, while nobody the viewer follows has
+// posted (or they follow nobody yet), so their feed holds nothing to read
+async function HomeDiscover() {
+    const { user } = await requireSession();
+    if (await hasPostsByFollowedAuthors(user.id)) {
+        return null;
+    }
+    return <DiscoverSections />;
 }

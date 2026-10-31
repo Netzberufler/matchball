@@ -119,6 +119,21 @@ async function feedWhere(
     }
 }
 
+// Whether anyone the viewer follows has posted: if not, their home feed has
+// nothing but their own posts. One lookup per followed author on the
+// (authorId, createdAt, id) index, stopping at the first post.
+export async function hasPostsByFollowedAuthors(viewerId: string) {
+    const followingIds = await getFollowingIds(viewerId);
+    if (followingIds.length === 0) {
+        return false;
+    }
+    const post = await prisma.post.findFirst({
+        where: { authorId: { in: followingIds } },
+        select: { id: true },
+    });
+    return post !== null;
+}
+
 // Posts after the cursor in the popular feed's order: fewer likes, or just
 // as many and older
 function lessPopularThan(cursor: PostCursor): Prisma.PostWhereInput {

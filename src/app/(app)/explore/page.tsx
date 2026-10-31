@@ -1,10 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
-import { WhoToFollow } from "@/features/follows/components/who-to-follow";
-import { PopularFeed } from "@/features/posts/components/feeds";
-import { PostListFallback } from "@/features/posts/components/post-list";
-import { UserListFallback } from "@/features/profile/components/user-list";
+import { DiscoverSections } from "@/features/search/components/discover-sections";
 import {
     ExploreSearchField,
     ExploreSearchFieldFallback,
@@ -52,39 +49,12 @@ export default function ExplorePage({ searchParams }: PageProps<"/explore">) {
 
 function ExploreResults({ query }: { query: string }) {
     if (!query) {
-        return <ExploreHome />;
+        return <DiscoverSections />;
     }
     return (
         // A new query starts over, with its own loading state
         <Suspense key={query} fallback={<SearchResultsFallback />}>
             <SearchResults query={query} />
         </Suspense>
-    );
-}
-
-// What the page shows before a search. Each section loads on its own.
-function ExploreHome() {
-    return (
-        <>
-            <section aria-labelledby="who-to-follow-heading">
-                <h2
-                    id="who-to-follow-heading"
-                    className="mb-3 text-lg font-semibold"
-                >
-                    Who to Follow
-                </h2>
-                <Suspense fallback={<UserListFallback />}>
-                    <WhoToFollow />
-                </Suspense>
-            </section>
-            <section aria-labelledby="popular-heading">
-                <h2 id="popular-heading" className="mb-3 text-lg font-semibold">
-                    Popular Posts
-                </h2>
-                <Suspense fallback={<PostListFallback />}>
-                    <PopularFeed />
-                </Suspense>
-            </section>
-        </>
     );
 }
