@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Button, buttonVariants, Skeleton } from "@heroui/react";
-import { Sword } from "lucide-react";
+import { MessagesSquare, Sword } from "lucide-react";
 import { ACCOUNT_PROFILE_PATH } from "@/features/account/utils/account-path";
 import { requireSession } from "@/features/auth/lib/session";
 import { FollowButton } from "@/features/follows/components/follow-button";
 import { isFollowing } from "@/features/follows/lib/queries";
+import { conversationPath } from "@/features/messages/utils/messages-path";
 import { getProfileUser } from "@/features/profile/lib/queries";
 
 // The buttons below a profile header, in one line that shares the full width
@@ -55,6 +56,18 @@ export async function ProfileActions({ username }: { username: string }) {
                 <Sword className="size-4" aria-hidden />
                 Challenge
             </Button>
+            {/* The conversation with them, new if they haven't talked yet;
+                a link styled as a HeroUI button */}
+            <Link
+                href={conversationPath(profileUser.username)}
+                className={buttonVariants({
+                    variant: "primary",
+                    fullWidth: true,
+                })}
+            >
+                <MessagesSquare className="size-4" aria-hidden />
+                Message
+            </Link>
         </ButtonLine>
     );
 }
@@ -73,6 +86,7 @@ export function ProfileActionsFallback() {
     return (
         <div aria-hidden>
             <ButtonLine>
+                <Skeleton className="h-10 rounded-full md:h-9" />
                 <Skeleton className="h-10 rounded-full md:h-9" />
                 <Skeleton className="h-10 rounded-full md:h-9" />
             </ButtonLine>

@@ -28,8 +28,9 @@ export default function ConversationPage({
     return (
         <>
             <div className="mb-4 flex items-center gap-2">
-                {/* Always the list, which is where conversations open from */}
-                <BackButton href={MESSAGES_PATH} />
+                {/* Where the conversation was opened from, e.g. the list or
+                    a profile; the list if that wasn't in the app */}
+                <BackButton fallbackHref={MESSAGES_PATH} />
                 <h1 className="text-xl font-semibold">Messages</h1>
             </div>
             <Suspense fallback={<ConversationFallback />}>
