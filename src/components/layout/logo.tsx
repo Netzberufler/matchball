@@ -53,7 +53,7 @@ export function Logo({
                     compact ? "hidden lg:inline" : ""
                 }`}
             >
-                myMatchball
+                Matchball
             </span>
         </Link>
     );
