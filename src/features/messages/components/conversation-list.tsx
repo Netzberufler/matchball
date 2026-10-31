@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Card, EmptyState, Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
@@ -19,7 +19,10 @@ const countClassName =
     "flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums text-accent-foreground";
 
 // The signed-in user's conversations, each showing whom it's with and
-// linking to it, with more loaded on request
+// linking to it, with more loaded on request. Next.js keeps the page
+// mounted but hidden while a conversation is open, and Back shows it again
+// as it was, so the list loads the latest conversations whenever it's
+// shown again: one just started, new messages and what's been read since.
 export function ConversationList({
     firstPage,
 }: {
@@ -28,6 +31,31 @@ export function ConversationList({
     const [page, setPage] = useState(firstPage);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+    // Shown before, so showing it now is coming back to it
+    const wasShown = useRef(false);
+
+    // Effects run again when a hidden page is shown again
+    useEffect(() => {
+        if (!wasShown.current) {
+            wasShown.current = true;
+            return;
+        }
+        let isCurrent = true;
+        loadConversations(null).then(
+            (latest) => {
+                // Starts over from the latest: conversations move to the
+                // top when they get new messages
+                if (isCurrent) {
+                    setPage(latest);
+                }
+            },
+            // Keep what's shown; the next visit tries again
+            () => {},
+        );
+        return () => {
+            isCurrent = false;
+        };
+    }, []);
 
     function loadMore() {
         const cursor = page.nextCursor;
