@@ -1,5 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
+import { Conversations } from "@/features/messages/components/conversations";
+import { ConversationListFallback } from "@/features/messages/components/conversation-list";
+import { NewChatButton } from "@/features/messages/components/new-chat-button";
 
 export const metadata: Metadata = {
     title: "Messages",
@@ -12,8 +16,14 @@ export default function MessagesPage() {
                 {/* Always home, as this is a top-level section */}
                 <BackButton href="/" />
                 <h1 className="text-xl font-semibold">Messages</h1>
+                <div className="ml-auto">
+                    <NewChatButton />
+                </div>
             </div>
-            <p className="text-muted">Chat with other players.</p>
+            {/* Reads the session at request time */}
+            <Suspense fallback={<ConversationListFallback />}>
+                <Conversations />
+            </Suspense>
         </>
     );
 }

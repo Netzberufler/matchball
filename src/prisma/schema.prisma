@@ -15,42 +15,47 @@ datasource db {
 // (src/lib/auth.ts), which leaves id generation to Prisma.
 
 model User {
-  id                  String           @id @default(uuid(7)) @db.Uuid
-  email               String           @unique
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  email                String           @unique
   // Used for sign-in and in profile URLs: only a-z, 0-9 and _ (validated in src/lib/auth.ts)
-  username            String           @unique @db.VarChar(30)
+  username             String           @unique @db.VarChar(30)
   // Display name
-  name                String           @db.VarChar(50)
+  name                 String           @db.VarChar(50)
   // Shown on the profile; null when the user hasn't written one
-  bio                 String?          @db.VarChar(160)
+  bio                  String?          @db.VarChar(160)
   // Optional; null means "Prefer not to say" in the profile form
-  gender              Gender?
-  emailVerified       Boolean          @default(false)
-  image               String?
-  createdAt           DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime         @updatedAt @db.Timestamptz(6)
-  sessions            Session[]
-  accounts            Account[]
-  posts               Post[]
+  gender               Gender?
+  emailVerified        Boolean          @default(false)
+  image                String?
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(6)
+  sessions             Session[]
+  accounts             Account[]
+  posts                Post[]
   // Follows where this user is the follower, i.e. whom they follow
-  following           Follow[]         @relation("FollowFollower")
+  following            Follow[]         @relation("FollowFollower")
   // Follows where this user is followed, i.e. their followers
-  followers           Follow[]         @relation("FollowFollowing")
-  likes               Like[]
-  comments            Comment[]
+  followers            Follow[]         @relation("FollowFollowing")
+  likes                Like[]
+  comments             Comment[]
   // Where this user is @mentioned
-  postMentions        PostMention[]
-  commentMentions     CommentMention[]
-  commentLikes        CommentLike[]
+  postMentions         PostMention[]
+  commentMentions      CommentMention[]
+  commentLikes         CommentLike[]
   // What happened to this user's posts and replies, for /notifications
-  notifications       Notification[]   @relation("NotificationRecipient")
+  notifications        Notification[]   @relation("NotificationRecipient")
   // Notifications this user caused by replying, liking, mentioning or
   // following
-  causedNotifications Notification[]   @relation("NotificationActor")
+  causedNotifications  Notification[]   @relation("NotificationActor")
   // Matches this user played, on either side
-  matchesAsPlayer1    Match[]          @relation("MatchPlayer1")
-  matchesAsPlayer2    Match[]          @relation("MatchPlayer2")
-  matchesWon          Match[]          @relation("MatchWinner")
+  matchesAsPlayer1     Match[]          @relation("MatchPlayer1")
+  matchesAsPlayer2     Match[]          @relation("MatchPlayer2")
+  matchesWon           Match[]          @relation("MatchWinner")
+  // Private 1:1 chats on /messages, on either side
+  conversationsAsUser1 Conversation[]   @relation("ConversationUser1")
+  conversationsAsUser2 Conversation[]   @relation("ConversationUser2")
+  sentMessages         Message[]        @relation("MessageSender")
+  receivedMessages     Message[]        @relation("MessageRecipient")
 
   // The mention search: case-insensitive matches anywhere in the name
   // (ILIKE). Usernames are searched by prefix through their unique index,
@@ -405,4 +410,57 @@ model Match {
   @@index([player2Id, status, playedAt(sort: Desc), id(sort: Desc)])
   // Matches a user won, and deleting them with the user
   @@index([winnerId])
+}
+
+// A private chat between two users on /messages. There are no group chats.
+// It's created with its first message
+// (src/features/messages/actions/send-message.ts), so every conversation
+// has messages. user1Id is the smaller of the two ids, which makes the
+// unique pair the same whoever writes first.
+model Conversation {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  user1Id       String    @db.Uuid
+  user1         User      @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id       String    @db.Uuid
+  user2         User      @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages      Message[]
+  // When its latest message was sent, kept in step by sendMessage, so the
+  // list is sorted without looking at the messages. Milliseconds, like
+  // Post.createdAt, for (lastMessageAt, id) cursors.
+  lastMessageAt DateTime  @default(now()) @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  // One conversation per pair, and the lookup of it
+  @@unique([user1Id, user2Id])
+  // A user's conversations, most recent first, from both columns: Postgres
+  // combines the two indexes for "user1Id = X OR user2Id = X"
+  @@index([user1Id, lastMessageAt(sort: Desc), id(sort: Desc)])
+  @@index([user2Id, lastMessageAt(sort: Desc), id(sort: Desc)])
+}
+
+// A message in a conversation, only readable by its two users
+model Message {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @db.Uuid
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  // The other user of the conversation. Stored, so counting a user's
+  // unread messages is one index read.
+  recipientId    String       @db.Uuid
+  recipient      User         @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  // Plain text only; the limit is MESSAGE_MAX_LENGTH in
+  // src/features/messages/utils/message-rules.ts
+  content        String       @db.VarChar(1000)
+  // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  // When the recipient first saw it; null while it's unread
+  readAt         DateTime?    @db.Timestamptz(3)
+
+  // A conversation's messages, newest first, paged by (createdAt, id)
+  @@index([conversationId, createdAt(sort: Desc), id(sort: Desc)])
+  // Counting a user's unread messages, for the nav and the list
+  @@index([recipientId, readAt])
+  // Deleting them with the sender
+  @@index([senderId])
 }

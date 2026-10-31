@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { requireSession } from "@/features/auth/lib/session";
+import { countUnreadMessages } from "@/features/messages/lib/queries";
 import { countNewNotifications } from "@/features/notifications/lib/queries";
 import {
     UserMenu,
@@ -42,16 +43,21 @@ export function SidebarContent({ expanded = false }: { expanded?: boolean }) {
 }
 
 // Seeing notifications on /notifications refreshes the page, which updates
-// their count here (see markNotificationsSeen)
+// their count here (see markNotificationsSeen). So does reading messages
+// (see markConversationRead).
 async function SessionNavLinks({ expanded }: { expanded: boolean }) {
     const { user } = await requireSession();
-    const newNotifications = await countNewNotifications(user.id);
+    const [newNotifications, unreadMessages] = await Promise.all([
+        countNewNotifications(user.id),
+        countUnreadMessages(user.id),
+    ]);
     return (
         <NavLinks
             // username is required in the database; Better Auth types it as
             // optional
             username={user.username ?? ""}
             newNotifications={newNotifications}
+            unreadMessages={unreadMessages}
             expanded={expanded}
         />
     );

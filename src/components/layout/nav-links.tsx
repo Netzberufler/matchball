@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUnreadMessageCount } from "@/features/messages/components/use-unread-message-count";
+import { MESSAGES_PATH } from "@/features/messages/utils/messages-path";
 import { getNavSections, isActivePath } from "./nav-items";
 
 // Compact below lg, for the narrow tablet sidebar
@@ -13,7 +15,7 @@ const expandedLinkClassName =
 const compactHeadingClassName =
     "sr-only lg:not-sr-only lg:block lg:mb-2 lg:px-4 lg:text-sm lg:font-medium lg:text-muted";
 const expandedHeadingClassName = "mb-2 px-4 text-sm font-medium text-muted";
-// The count of new notifications
+// The count of new notifications or unread messages
 const countClassName =
     "h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums tracking-normal text-accent-foreground";
 
@@ -28,13 +30,20 @@ function NavLinkList({
     pathname,
     username,
     newNotifications,
+    unreadMessages,
     expanded,
 }: {
     pathname: string | null;
     username: string | null;
     newNotifications: number;
+    unreadMessages: number;
     expanded: boolean;
 }) {
+    // The new things each link has, shown as a count on it
+    const newCounts: Record<string, number> = {
+        [NOTIFICATIONS_PATH]: newNotifications,
+        [MESSAGES_PATH]: unreadMessages,
+    };
     const linkClassName = expanded
         ? expandedLinkClassName
         : compactLinkClassName;
@@ -63,11 +72,10 @@ function NavLinkList({
                         {section.items.map(
                             ({ href, label, shortLabel, icon: Icon }) => {
                                 const isActive = isActivePath(href, pathname);
+                                const newCount =
+                                    href === null ? 0 : (newCounts[href] ?? 0);
                                 const count =
-                                    href === NOTIFICATIONS_PATH &&
-                                    newNotifications > 0
-                                        ? formatCount(newNotifications)
-                                        : null;
+                                    newCount > 0 ? formatCount(newCount) : null;
                                 const content = (
                                     <>
                                         <span className="relative shrink-0">
@@ -113,7 +121,7 @@ function NavLinkList({
                                         )}
                                         {count && (
                                             <span className="sr-only">
-                                                , {newNotifications} new
+                                                , {newCount} new
                                             </span>
                                         )}
                                     </>
@@ -156,14 +164,19 @@ function NavLinkList({
 // username is the signed-in user's, for the Profile link.
 // newNotifications: how many of their notifications are new, shown by
 // Notifications when there are any.
+// unreadMessages: how many messages to them are unread, shown by Messages
+// when there are any. Checked again every so often, as messages don't
+// notify.
 // expanded: always show the full labels, e.g. in the mobile menu drawer.
 export function NavLinks({
     username,
     newNotifications,
+    unreadMessages,
     expanded = false,
 }: {
     username: string;
     newNotifications: number;
+    unreadMessages: number;
     expanded?: boolean;
 }) {
     return (
@@ -171,6 +184,7 @@ export function NavLinks({
             pathname={usePathname()}
             username={username}
             newNotifications={newNotifications}
+            unreadMessages={useUnreadMessageCount(unreadMessages)}
             expanded={expanded}
         />
     );
@@ -184,6 +198,7 @@ export function NavLinksFallback({ expanded = false }: { expanded?: boolean }) {
             pathname={null}
             username={null}
             newNotifications={0}
+            unreadMessages={0}
             expanded={expanded}
         />
     );
