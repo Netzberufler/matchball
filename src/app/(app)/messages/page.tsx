@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
+import { ResetWhenHidden } from "@/components/ui/reset-when-hidden";
 import { Conversations } from "@/features/messages/components/conversations";
 import { ConversationListFallback } from "@/features/messages/components/conversation-list";
 import { NewChatButton } from "@/features/messages/components/new-chat-button";
@@ -17,7 +18,11 @@ export default function MessagesPage() {
                 <BackButton href="/" />
                 <h1 className="text-xl font-semibold">Messages</h1>
                 <div className="ml-auto">
-                    <NewChatButton />
+                    {/* Choosing someone leaves the page while the popup
+                        closes, which would stay half closed */}
+                    <ResetWhenHidden>
+                        <NewChatButton />
+                    </ResetWhenHidden>
                 </div>
             </div>
             {/* Reads the session at request time */}
