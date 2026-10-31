@@ -9,6 +9,7 @@ import {
     type Feed,
     type FeedPage,
     mergeLatestPage,
+    type PostCursor,
 } from "@/features/posts/utils/feed";
 import { PostList } from "./post-list";
 
@@ -21,7 +22,7 @@ export function PostFeed({
     emptyMessage,
 }: {
     feed: Feed;
-    firstPage: FeedPage<FeedPost>;
+    firstPage: FeedPage<FeedPost, PostCursor>;
     emptyMessage: string;
 }) {
     const [page, setPage] = useState(firstPage);

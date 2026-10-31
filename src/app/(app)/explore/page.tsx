@@ -1,6 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
+import { WhoToFollow } from "@/features/follows/components/who-to-follow";
+import { PopularFeed } from "@/features/posts/components/feeds";
+import { PostListFallback } from "@/features/posts/components/post-list";
+import { UserListFallback } from "@/features/profile/components/user-list";
 import {
     ExploreSearchField,
     ExploreSearchFieldFallback,
@@ -19,8 +23,9 @@ export const metadata: Metadata = {
 };
 
 // The search field and, for the query in the URL (?q=), the people and
-// posts found. Both read the URL, which is only known at request time, so
-// they're inside <Suspense>.
+// posts found; without a query, popular posts and people to follow. Both
+// read the URL, which is only known at request time, so they're inside
+// <Suspense>.
 export default function ExplorePage({ searchParams }: PageProps<"/explore">) {
     return (
         <>
@@ -47,16 +52,39 @@ export default function ExplorePage({ searchParams }: PageProps<"/explore">) {
 
 function ExploreResults({ query }: { query: string }) {
     if (!query) {
-        return (
-            <p className="text-muted">
-                Find players by name or username, and posts by what they say.
-            </p>
-        );
+        return <ExploreHome />;
     }
     return (
         // A new query starts over, with its own loading state
         <Suspense key={query} fallback={<SearchResultsFallback />}>
             <SearchResults query={query} />
         </Suspense>
+    );
+}
+
+// What the page shows before a search. Each section loads on its own.
+function ExploreHome() {
+    return (
+        <>
+            <section aria-labelledby="who-to-follow-heading">
+                <h2
+                    id="who-to-follow-heading"
+                    className="mb-3 text-lg font-semibold"
+                >
+                    Who to Follow
+                </h2>
+                <Suspense fallback={<UserListFallback />}>
+                    <WhoToFollow />
+                </Suspense>
+            </section>
+            <section aria-labelledby="popular-heading">
+                <h2 id="popular-heading" className="mb-3 text-lg font-semibold">
+                    Popular Posts
+                </h2>
+                <Suspense fallback={<PostListFallback />}>
+                    <PopularFeed />
+                </Suspense>
+            </section>
+        </>
     );
 }

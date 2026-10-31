@@ -53,3 +53,19 @@ export async function ProfileFeed({ username }: { username: string }) {
         </ViewerProvider>
     );
 }
+
+// The most liked recent posts, for the Explore page
+export async function PopularFeed() {
+    const { user } = await requireSession();
+    const feed = { type: "popular" } as const;
+    const firstPage = await getFeedPage(feed, user.id);
+    return (
+        <ViewerProvider viewer={{ name: user.name, image: user.image }}>
+            <PostFeed
+                feed={feed}
+                firstPage={firstPage}
+                emptyMessage="No popular posts right now. Like the posts you enjoy to see them here."
+            />
+        </ViewerProvider>
+    );
+}

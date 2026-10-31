@@ -7,15 +7,20 @@ export const FEED_PAGE_SIZE = 10;
 
 // "home": posts by the authors the viewer follows, and the viewer's own;
 // "user": one author's posts, for their profile page; "search": posts with
-// every word of a normalized query (see search/utils/search-query.ts), for
-// the Explore page
+// every word of a normalized query (see search/utils/search-query.ts), and
+// "popular": the most liked recent posts, both for the Explore page
 export type Feed =
     | { type: "home" }
     | { type: "user"; authorId: string }
-    | { type: "search"; query: string };
+    | { type: "search"; query: string }
+    | { type: "popular" };
 
 // Points at the last item of a page; the next page starts after it
 export type FeedCursor = { createdAt: Date; id: string };
+
+// The post feeds' cursor. The popular feed is sorted by likes first, so it
+// also needs the last post's like count; the others ignore it.
+export type PostCursor = FeedCursor & { likeCount: number };
 
 // Matches page by when they were played instead (see matches/lib/queries.ts)
 export type FeedPage<Item, Cursor = FeedCursor> = {
@@ -31,10 +36,10 @@ type FeedItem = { id: string };
 // place, so the pages loaded further down stay. If the fresh page doesn't
 // reach the shown items, there could be a gap between them, so the list
 // starts over from the fresh page.
-export function mergeLatestPage<Item extends FeedItem>(
-    current: FeedPage<Item>,
-    latest: FeedPage<Item>,
-): FeedPage<Item> {
+export function mergeLatestPage<Item extends FeedItem, Cursor>(
+    current: FeedPage<Item, Cursor>,
+    latest: FeedPage<Item, Cursor>,
+): FeedPage<Item, Cursor> {
     const shownIds = new Set(current.items.map((item) => item.id));
     if (!latest.items.some((item) => shownIds.has(item.id))) {
         return latest;
@@ -84,9 +89,10 @@ export function newerThan(cursor: FeedCursor) {
 // another page) and the cursor for the next one
 export function toPage<Item extends FeedItem & { createdAt: Date }>(
     rows: Item[],
+    pageSize = FEED_PAGE_SIZE,
 ): FeedPage<Item> {
-    const hasMore = rows.length > FEED_PAGE_SIZE;
-    const items = hasMore ? rows.slice(0, FEED_PAGE_SIZE) : rows;
+    const hasMore = rows.length > pageSize;
+    const items = hasMore ? rows.slice(0, pageSize) : rows;
     const last = items.at(-1);
     return {
         items,

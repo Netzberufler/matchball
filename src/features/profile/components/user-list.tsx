@@ -11,17 +11,28 @@ type ListedUser = {
 };
 
 // People in a card, each linking to their profile. For the follow lists
-// and the people found on the Explore page.
-export function UserList({ users }: { users: ListedUser[] }) {
+// and the people on the Explore page. `action` puts something next to each
+// person, e.g. a Follow button; it's outside the link, as links can't
+// contain buttons.
+export function UserList<User extends ListedUser>({
+    users,
+    action,
+}: {
+    users: User[];
+    action?: (user: User) => React.ReactNode;
+}) {
     return (
         <Card className="gap-0 overflow-hidden p-0">
             <ul className="divide-y divide-separator">
                 {users.map((user) => (
-                    <li key={user.id}>
+                    <li
+                        key={user.id}
+                        // Same hover colour as posts in the feeds
+                        className="flex items-center transition-colors hover:bg-surface-secondary/60"
+                    >
                         <Link
                             href={profilePath(user.username)}
-                            // Same hover colour as posts in the feeds
-                            className="flex items-center gap-3 p-4 transition-colors hover:bg-surface-secondary/60"
+                            className="flex min-w-0 flex-1 items-center gap-3 p-4"
                         >
                             <UserAvatar name={user.name} image={user.image} />
                             <span className="flex min-w-0 flex-col">
@@ -35,6 +46,9 @@ export function UserList({ users }: { users: ListedUser[] }) {
                                 </span>
                             </span>
                         </Link>
+                        {action && (
+                            <div className="shrink-0 pr-4">{action(user)}</div>
+                        )}
                     </li>
                 ))}
             </ul>

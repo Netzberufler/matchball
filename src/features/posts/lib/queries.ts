@@ -10,11 +10,16 @@ import { escapeLike, searchTerms } from "@/features/search/utils/search-query";
 import {
     FEED_PAGE_SIZE,
     type Feed,
-    type FeedCursor,
     type FeedPage,
     olderThan,
+    type PostCursor,
     toPage,
 } from "@/features/posts/utils/feed";
+
+// The popular feed's posts are this recent, and liked at least once
+const POPULAR_POSTS_MAX_AGE_DAYS = 30;
+// Popular posts shown per page, a few at a time
+export const POPULAR_PAGE_SIZE = 5;
 
 // Only what a post shows, as seen by the viewer. `likes` holds the viewer's
 // like, if any: Prisma loads them for a whole page in one query, which the
@@ -101,23 +106,66 @@ async function feedWhere(
                     },
                 })),
             };
+        case "popular":
+            return {
+                likeCount: { gt: 0 },
+                createdAt: {
+                    gte: new Date(
+                        Date.now() -
+                            POPULAR_POSTS_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+                    ),
+                },
+            };
     }
 }
 
-// One page of a feed, newest first with id breaking ties. Without a cursor
-// it's the first page; with one, the page after the post it points to.
+// Posts after the cursor in the popular feed's order: fewer likes, or just
+// as many and older
+function lessPopularThan(cursor: PostCursor): Prisma.PostWhereInput {
+    return {
+        OR: [
+            { likeCount: { lt: cursor.likeCount } },
+            { likeCount: cursor.likeCount, ...olderThan(cursor) },
+        ],
+    };
+}
+
+// One page of a feed, newest first with id breaking ties; the popular feed
+// is sorted by likes before that. Without a cursor it's the first page;
+// with one, the page after the post it points to.
 export async function getFeedPage(
     feed: Feed,
     viewerId: string,
-    cursor?: FeedCursor,
-): Promise<FeedPage<FeedPost>> {
+    cursor?: PostCursor,
+): Promise<FeedPage<FeedPost, PostCursor>> {
+    const isPopular = feed.type === "popular";
+    const pageSize = isPopular ? POPULAR_PAGE_SIZE : FEED_PAGE_SIZE;
     const where = await feedWhere(feed, viewerId);
-    // One extra post tells whether there is another page
     const posts = await prisma.post.findMany({
-        where: cursor ? { AND: [where, olderThan(cursor)] } : where,
+        where: cursor
+            ? {
+                  AND: [
+                      where,
+                      isPopular ? lessPopularThan(cursor) : olderThan(cursor),
+                  ],
+              }
+            : where,
         select: postSelect(viewerId),
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: FEED_PAGE_SIZE + 1,
+        orderBy: [
+            ...(isPopular ? [{ likeCount: "desc" as const }] : []),
+            { createdAt: "desc" },
+            { id: "desc" },
+        ],
+        // One extra post tells whether there is another page
+        take: pageSize + 1,
     });
-    return toPage(posts.map(toFeedPost));
+    const page = toPage(posts.map(toFeedPost), pageSize);
+    const last = page.items.at(-1);
+    return {
+        items: page.items,
+        nextCursor:
+            page.nextCursor && last
+                ? { ...page.nextCursor, likeCount: last.likeCount }
+                : null,
+    };
 }

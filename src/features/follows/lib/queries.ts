@@ -31,6 +31,30 @@ export async function isFollowing(followerId: string, followingId: string) {
 
 const userSelect = { id: true, username: true, name: true, image: true };
 
+// People suggested to the viewer on the Explore page
+const SUGGESTED_USERS_COUNT = 5;
+
+export type SuggestedUser = Prisma.UserGetPayload<{
+    select: typeof userSelect;
+}>;
+
+// The people with the most followers whom the viewer doesn't follow yet,
+// leaving out the viewer. Counting followers reads the Follow
+// (followingId, createdAt, followerId) index.
+export async function getSuggestedUsers(
+    viewerId: string,
+): Promise<SuggestedUser[]> {
+    return prisma.user.findMany({
+        where: {
+            id: { not: viewerId },
+            followers: { none: { followerId: viewerId } },
+        },
+        select: userSelect,
+        orderBy: [{ followers: { _count: "desc" } }, { username: "asc" }],
+        take: SUGGESTED_USERS_COUNT,
+    });
+}
+
 // A user in a follow list. createdAt is when the follow happened: the
 // lists are sorted by it, newest first, and page by (createdAt, id).
 export type FollowListUser = Prisma.UserGetPayload<{
