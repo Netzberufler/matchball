@@ -32,10 +32,7 @@ export default function Home() {
                 />
                 <section aria-labelledby="feed-heading">
                     <div className="mb-3 flex items-center justify-between gap-3">
-                        <h2
-                            id="feed-heading"
-                            className="text-lg font-semibold"
-                        >
+                        <h2 id="feed-heading" className="text-lg font-semibold">
                             Your feed
                         </h2>
                         <RefreshFeedButton />
