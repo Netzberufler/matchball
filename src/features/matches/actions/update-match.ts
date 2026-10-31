@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
@@ -15,6 +14,7 @@ import {
     type MatchSide,
 } from "@/features/matches/utils/match-score";
 import { idSchema, parseActionInput } from "@/lib/action-input";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 // Changes the date or score of a pending match the signed-in user plays
@@ -105,10 +105,9 @@ export async function updateMatch(
         return { error };
     }
 
-    revalidatePath("/matches");
-    // The browser keeps the data of edit pages it showed; without this,
-    // editing again would start from the old date and score
-    revalidatePath("/matches/[id]/edit", "page");
+    // Also the edit pages the browser keeps: without this, editing again
+    // would start from the old date and score
+    revalidateAllPages();
     redirect("/matches");
 }
 

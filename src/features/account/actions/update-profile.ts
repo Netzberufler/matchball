@@ -1,12 +1,12 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
 import {
     PROFILE_FIELDS,
     profileFormSchema,
 } from "@/features/account/utils/profile-rules";
 import { firstError, formFields } from "@/lib/form-validation";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 export type ProfileFormError = {
@@ -39,7 +39,7 @@ export async function updateProfile(
         data: { name, bio, gender },
     });
 
-    // Reload the page's server data, e.g. the name in the sidebar
-    refresh();
+    // The name shows on most pages: the sidebar, posts, matches
+    revalidateAllPages();
     return { error: null };
 }

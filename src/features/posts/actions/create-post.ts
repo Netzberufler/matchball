@@ -1,11 +1,11 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
 import { findMentionedUsers } from "@/features/mentions/lib/queries";
 import { mentionNotifications } from "@/features/notifications/lib/notify";
 import { postContentSchema } from "@/features/posts/utils/post-rules";
 import { formText } from "@/lib/form-validation";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 export async function createPost(
@@ -41,7 +41,7 @@ export async function createPost(
         },
     });
 
-    // Reload the feeds on the current page so the new post shows up
-    refresh();
+    // The new post shows in the feeds and on the viewer's profile
+    revalidateAllPages();
     return { error: null };
 }

@@ -42,14 +42,9 @@ export async function ProfileActions({ username }: { username: string }) {
     return (
         <ButtonLine>
             <FollowButton
-                // Start from the server's state when going to another profile
-                key={profileUser.id}
                 userId={profileUser.id}
                 name={profileUser.name}
-                initialIsFollowing={await isFollowing(
-                    viewer.id,
-                    profileUser.id,
-                )}
+                isFollowing={await isFollowing(viewer.id, profileUser.id)}
             />
             {/* TODO: challenge the user to a match */}
             <Button variant="primary" fullWidth>

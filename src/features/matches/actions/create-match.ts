@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/features/auth/lib/session";
 import {
@@ -10,6 +9,7 @@ import {
     toMatchFormError,
 } from "@/features/matches/utils/match-form";
 import { getScoreWinner } from "@/features/matches/utils/match-score";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 // Saves a match the signed-in user played, with them as player 1, as
@@ -80,6 +80,7 @@ export async function createMatch(
         },
     });
 
-    revalidatePath("/matches");
+    // Shows in the match list and on both players' profiles
+    revalidateAllPages();
     redirect("/matches");
 }

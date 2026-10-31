@@ -84,7 +84,14 @@ export function AccountMenu({
                         } else if (key === "settings") {
                             router.push(ACCOUNT_SETTINGS_PATH);
                         } else if (key === "sign-out") {
-                            startTransition(() => signOut());
+                            startTransition(async () => {
+                                await signOut();
+                                // A full page load, not a navigation: the
+                                // pages Next.js keeps hidden hold the user's
+                                // data and drafts, which mustn't stay
+                                // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- on purpose, see above
+                                window.location.href = "/sign-in";
+                            });
                         }
                     }}
                 >

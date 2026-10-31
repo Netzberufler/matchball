@@ -1,11 +1,11 @@
 "use server";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
 import { auth } from "@/features/auth/lib/auth";
 import { deleteSessionCookies } from "@/features/auth/lib/session";
 
+// Signs out; the caller then loads /sign-in, see UserMenuDropdown
 export async function signOut() {
     try {
         // Deletes the session; the nextCookies plugin removes the cookie
@@ -17,6 +17,4 @@ export async function signOut() {
         // The session was already gone: still remove the cookie
         await deleteSessionCookies();
     }
-
-    redirect("/sign-in");
 }

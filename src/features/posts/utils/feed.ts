@@ -33,9 +33,10 @@ type FeedItem = { id: string };
 
 // Puts a freshly loaded first page on top of the items already shown, e.g.
 // after a refresh or a new post. Items that are already shown keep their
-// place, so the pages loaded further down stay. If the fresh page doesn't
-// reach the shown items, there could be a gap between them, so the list
-// starts over from the fresh page.
+// place, so the pages loaded further down stay, but take the fresh page's
+// version, e.g. with the author's new name. If the fresh page doesn't reach
+// the shown items, there could be a gap between them, so the list starts
+// over from the fresh page.
 export function mergeLatestPage<Item extends FeedItem, Cursor>(
     current: FeedPage<Item, Cursor>,
     latest: FeedPage<Item, Cursor>,
@@ -45,7 +46,20 @@ export function mergeLatestPage<Item extends FeedItem, Cursor>(
         return latest;
     }
     const newItems = latest.items.filter((item) => !shownIds.has(item.id));
-    return { ...current, items: [...newItems, ...current.items] };
+    return {
+        ...current,
+        items: [...newItems, ...replaceItems(current.items, latest.items)],
+    };
+}
+
+// `items` with the ones `fresh` has too replaced by the fresh version, in
+// the same order
+export function replaceItems<Item extends FeedItem>(
+    items: Item[],
+    fresh: Item[],
+): Item[] {
+    const freshById = new Map(fresh.map((item) => [item.id, item]));
+    return items.map((item) => freshById.get(item.id) ?? item);
 }
 
 // Adds the next page below the items already shown

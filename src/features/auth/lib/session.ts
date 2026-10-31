@@ -28,7 +28,7 @@ export const requireSession = cache(async () => {
 
 // The signed-in user's name, for greeting them. Cached in the browser for
 // five minutes, so it's prefetched with the page and shows instantly on
-// navigations. Changing the name refreshes it (refresh() in the action).
+// navigations. Changing the name refreshes it (revalidateAllPages() in the action).
 export async function getViewerName() {
     "use cache: private";
     cacheLife("minutes");

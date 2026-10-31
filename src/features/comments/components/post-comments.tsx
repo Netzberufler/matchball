@@ -6,7 +6,9 @@ import { LoadMore } from "@/components/ui/load-more";
 import { loadMoreComments } from "@/features/comments/actions/load-more-comments";
 import { createdComments } from "@/features/comments/lib/created-comments-store";
 import type { CommentPage, PostComment } from "@/features/comments/lib/queries";
+import { mergeLatestComments } from "@/features/comments/utils/comment-page";
 import { appendPage } from "@/features/posts/utils/feed";
+import { useFeedPage } from "@/features/posts/utils/use-feed-page";
 import { CommentForm } from "./comment-form";
 import { CommentThread } from "./comment-thread";
 
@@ -24,7 +26,7 @@ export function PostComments({
     postId: string;
     firstPage: CommentPage;
 }) {
-    const [page, setPage] = useState(firstPage);
+    const [page, setPage] = useFeedPage(firstPage, mergeLatestComments);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 

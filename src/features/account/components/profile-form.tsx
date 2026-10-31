@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useLayoutEffect, useState, useTransition } from "react";
 import {
     Alert,
     Button,
@@ -52,6 +52,17 @@ export function ProfileForm({
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formError, setFormError] = useState<string | null>(null);
     const [isSaved, setIsSaved] = useState(false);
+
+    // Next.js keeps the page mounted but hidden after leaving it, so the
+    // messages would still be there when coming back. The cleanup runs when
+    // the page is hidden; unsaved changes stay.
+    useLayoutEffect(
+        () => () => {
+            setIsSaved(false);
+            setFormError(null);
+        },
+        [],
+    );
 
     function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();

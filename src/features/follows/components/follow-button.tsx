@@ -10,13 +10,14 @@ import { setFollowing } from "@/features/follows/actions/set-following";
 export function FollowButton({
     userId,
     name,
-    initialIsFollowing,
+    isFollowing,
 }: {
     userId: string;
     name: string;
-    initialIsFollowing: boolean;
+    isFollowing: boolean;
 }) {
-    const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
+    // Saving refreshes the page, which brings the saved state as
+    // isFollowing; until then, the optimistic one is shown
     const [optimisticIsFollowing, setOptimisticIsFollowing] =
         useOptimistic(isFollowing);
     const [error, setError] = useState<string | null>(null);
@@ -28,8 +29,7 @@ export function FollowButton({
         startTransition(async () => {
             setOptimisticIsFollowing(follow);
             try {
-                const result = await setFollowing(userId, follow);
-                setIsFollowing(result.isFollowing);
+                await setFollowing(userId, follow);
             } catch {
                 setError(
                     follow

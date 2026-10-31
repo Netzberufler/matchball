@@ -36,6 +36,23 @@ describe("mergeLatestPage", () => {
         expect(merged.nextCursor).toBe(CURSOR);
     });
 
+    it("shows the fresh version of items that are already shown", () => {
+        const merged = mergeLatestPage(
+            {
+                items: [
+                    { id: "b", name: "Old" },
+                    { id: "a", name: "Old" },
+                ],
+                nextCursor: CURSOR,
+            },
+            { items: [{ id: "b", name: "New" }], nextCursor: null },
+        );
+        expect(merged.items).toEqual([
+            { id: "b", name: "New" },
+            { id: "a", name: "Old" },
+        ]);
+    });
+
     it("keeps the list when nothing is new", () => {
         const current = page(["c", "b", "a"], CURSOR);
         expect(mergeLatestPage(current, page(["c", "b"]))).toEqual(current);

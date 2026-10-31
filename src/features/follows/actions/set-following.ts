@@ -1,9 +1,9 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { idSchema, parseActionInput } from "@/lib/action-input";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 // Follows or unfollows a user. Setting the state rather than toggling it
@@ -49,7 +49,7 @@ export async function setFollowing(
             }
         }
     });
-    // Reload the page's server data, e.g. the follower count on the profile
-    refresh();
+    // Changes the home feed, follower counts and follow lists
+    revalidateAllPages();
     return { isFollowing: follow };
 }

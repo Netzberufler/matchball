@@ -1,6 +1,5 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { requireSession } from "@/features/auth/lib/session";
 import {
     deleteAvatarFile,
@@ -9,6 +8,7 @@ import {
     saveAvatar,
 } from "@/features/account/lib/avatar-storage";
 import { avatarUploadSchema } from "@/features/account/utils/avatar-rules";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 // Sets the signed-in user's profile photo from an uploaded image. The image
@@ -50,8 +50,8 @@ export async function uploadAvatar(
     // The previous photo, if it was an upload
     await deleteAvatarFile(user.image);
 
-    // Reload the page's server data, e.g. the avatar in the sidebar
-    refresh();
+    // The photo shows on most pages: the sidebar, posts, matches
+    revalidateAllPages();
     return { error: null };
 }
 
@@ -65,5 +65,5 @@ export async function removeAvatar(): Promise<void> {
     });
     await deleteAvatarFile(user.image);
 
-    refresh();
+    revalidateAllPages();
 }

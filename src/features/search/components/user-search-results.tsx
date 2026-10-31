@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { LoadMore } from "@/components/ui/load-more";
-import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
+import {
+    appendPage,
+    type FeedPage,
+    mergeLatestPage,
+} from "@/features/posts/utils/feed";
+import { useFeedPage } from "@/features/posts/utils/use-feed-page";
 import { UserList } from "@/features/profile/components/user-list";
 import { loadMoreUsers } from "@/features/search/actions/load-more-users";
 import type {
@@ -19,7 +24,7 @@ export function UserSearchResults({
     query: string;
     firstPage: FeedPage<SearchUser, UserSearchCursor>;
 }) {
-    const [page, setPage] = useState(firstPage);
+    const [page, setPage] = useFeedPage(firstPage, mergeLatestPage);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 

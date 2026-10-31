@@ -9,6 +9,7 @@ import { loadConversations } from "@/features/messages/actions/load-conversation
 import type { ConversationListItem } from "@/features/messages/lib/queries";
 import { conversationPath } from "@/features/messages/utils/messages-path";
 import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
+import { useFeedPage } from "@/features/posts/utils/use-feed-page";
 import {
     formatFullPostDate,
     formatPostDate,
@@ -28,7 +29,7 @@ export function ConversationList({
 }: {
     firstPage: FeedPage<ConversationListItem>;
 }) {
-    const [page, setPage] = useState(firstPage);
+    const [page, setPage] = useFeedPage(firstPage, startOver);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
     // Shown before, so showing it now is coming back to it
@@ -55,7 +56,7 @@ export function ConversationList({
         return () => {
             isCurrent = false;
         };
-    }, []);
+    }, [setPage]);
 
     function loadMore() {
         const cursor = page.nextCursor;
@@ -168,4 +169,10 @@ export function ConversationListFallback() {
             </ul>
         </Card>
     );
+}
+
+// A refreshed page's conversations replace the shown ones, like the latest
+// ones when the list is shown again: their order changes with new messages
+function startOver<Page>(_current: Page, latest: Page) {
+    return latest;
 }

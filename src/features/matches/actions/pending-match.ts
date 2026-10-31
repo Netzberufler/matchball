@@ -1,10 +1,10 @@
 "use server";
 
-import { refresh, revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { idSchema, parseActionInput } from "@/lib/action-input";
 import type { MatchStatus, NotificationType } from "@/prisma/generated/client";
+import { revalidateAllPages } from "@/lib/revalidate";
 import { prisma } from "@/prisma/db";
 
 // What happens to a pending match: its opponent (player 2) accepts or
@@ -107,8 +107,7 @@ async function answerMatch(
         }
         return match !== undefined;
     });
-    refresh();
-    // A kept edit page would show it as still pending (see update-match.ts)
-    revalidatePath("/matches/[id]/edit", "page");
+    // The match list, stats and the match's own and edit pages change
+    revalidateAllPages();
     return { error: answered ? null : GONE_ERROR };
 }

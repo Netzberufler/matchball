@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
 import { Medal, Newspaper, Swords } from "lucide-react";
 import { loadMatches } from "@/features/matches/actions/load-matches";
@@ -43,9 +43,19 @@ export function ProfileTabs({
     const [matches, setMatches] = useState<UserMatch[] | null>(null);
     const [matchesFailed, setMatchesFailed] = useState(false);
     const [, startTransition] = useTransition();
+    // A refreshed page (e.g. after a match was saved or a name changed)
+    // brings a new matchesUser, and the loaded matches may be old. Noticed
+    // while rendering, as React recommends for state that follows props.
+    const [shownMatchesUser, setShownMatchesUser] = useState(matchesUser);
+    const [areMatchesOld, setAreMatchesOld] = useState(false);
+    if (matchesUser !== shownMatchesUser) {
+        setShownMatchesUser(matchesUser);
+        setAreMatchesOld(matches !== null);
+    }
 
     function loadAllMatches(user: ProfileMatchesUser) {
         setMatchesFailed(false);
+        setAreMatchesOld(false);
         startTransition(async () => {
             try {
                 setMatches(await loadMatches(user.id));
@@ -60,10 +70,32 @@ export function ProfileTabs({
             return;
         }
         setSelected(key);
-        if (key === "matches" && matchesUser && !matches) {
+        if (key === "matches" && matchesUser && (!matches || areMatchesOld)) {
             loadAllMatches(matchesUser);
         }
     }
+
+    // Old while they're shown: load them again, showing the old ones until
+    // the new ones are there. Otherwise, opening the tab loads them.
+    useEffect(() => {
+        if (!areMatchesOld || selected !== "matches" || !matchesUser) {
+            return;
+        }
+        let isCurrent = true;
+        loadMatches(matchesUser.id).then(
+            (latest) => {
+                if (isCurrent) {
+                    setMatches(latest);
+                    setAreMatchesOld(false);
+                }
+            },
+            // Keep the old ones; opening the tab again tries again
+            () => {},
+        );
+        return () => {
+            isCurrent = false;
+        };
+    }, [areMatchesOld, selected, matchesUser]);
 
     return (
         <Tabs

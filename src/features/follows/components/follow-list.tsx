@@ -6,7 +6,12 @@ import { LoadMore } from "@/components/ui/load-more";
 import { loadMoreFollows } from "@/features/follows/actions/load-more-follows";
 import type { FollowListUser } from "@/features/follows/lib/queries";
 import type { FollowListKind } from "@/features/follows/utils/follow-list";
-import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
+import {
+    appendPage,
+    type FeedPage,
+    mergeLatestPage,
+} from "@/features/posts/utils/feed";
+import { useFeedPage } from "@/features/posts/utils/use-feed-page";
 import {
     UserList,
     UserListFallback,
@@ -25,7 +30,7 @@ export function FollowList({
     firstPage: FeedPage<FollowListUser>;
     emptyMessage: string;
 }) {
-    const [page, setPage] = useState(firstPage);
+    const [page, setPage] = useFeedPage(firstPage, mergeLatestPage);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 

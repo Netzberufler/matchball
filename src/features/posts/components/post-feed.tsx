@@ -11,11 +11,13 @@ import {
     mergeLatestPage,
     type PostCursor,
 } from "@/features/posts/utils/feed";
+import { useFeedPage } from "@/features/posts/utils/use-feed-page";
 import { PostList } from "./post-list";
 
 // A feed that starts with the first page from the server and loads more
 // pages on request. When the server sends a new first page (a refresh, or
-// a new post), its new posts are added at the top.
+// a new post), its new posts are added at the top, and the posts shown take
+// its version of them.
 export function PostFeed({
     feed,
     firstPage,
@@ -25,17 +27,9 @@ export function PostFeed({
     firstPage: FeedPage<FeedPost, PostCursor>;
     emptyMessage: string;
 }) {
-    const [page, setPage] = useState(firstPage);
-    const [shownFirstPage, setShownFirstPage] = useState(firstPage);
+    const [page, setPage] = useFeedPage(firstPage, mergeLatestPage);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
-
-    // A new first page from the server: merge it in while rendering, as
-    // React recommends for state that follows props
-    if (firstPage !== shownFirstPage) {
-        setShownFirstPage(firstPage);
-        setPage(mergeLatestPage(page, firstPage));
-    }
 
     function loadMore() {
         const cursor = page.nextCursor;
