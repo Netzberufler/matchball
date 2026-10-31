@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { cacheLife } from "next/cache";
+import { cacheLife, io } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/features/auth/lib/auth";
@@ -13,7 +13,13 @@ import { auth } from "@/features/auth/lib/auth";
 // because the proxy sends anyone with a session cookie back to /.
 // cache() runs the lookup once per request, however often it's called.
 export const requireSession = cache(async () => {
-    const session = await auth.api.getSession({ headers: await headers() });
+    const requestHeaders = await headers();
+    // getSession() reads the current time to check expiry. The headers are
+    // known while the App Shell is prerendered for prefetching, so stop
+    // there: io() suspends during prerendering and is a no-op at request
+    // time and inside "use cache: private".
+    await io();
+    const session = await auth.api.getSession({ headers: requestHeaders });
     if (!session) {
         redirect("/session-expired");
     }
