@@ -18,7 +18,7 @@ export default function SignUpPage() {
                     Create your account
                 </Card.Title>
                 <Card.Description>
-                    Join myMatchball to find matches, tournaments and courts.
+                    Join Matchball to find matches, tournaments and courts.
                 </Card.Description>
             </Card.Header>
             <Card.Content>
