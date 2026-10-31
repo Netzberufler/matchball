@@ -1,6 +1,7 @@
 generator client {
   provider        = "prisma-client"
-  // For pg_trgm, which indexes User.name for the mention search
+  // For pg_trgm, which indexes User.name, User.username and Post.content
+  // for the searches
   previewFeatures = ["postgresqlExtensions"]
   output          = "./generated"
 }
@@ -55,6 +56,8 @@ model User {
   // (ILIKE). Usernames are searched by prefix through their unique index,
   // which works for LIKE 'abc%' because the database collation is C.
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
+  // The Explore search: usernames that contain the query anywhere (LIKE)
+  @@index([username(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model Session {
@@ -129,6 +132,9 @@ model Post {
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   // Profile feeds, and later the home feed of followed authors
   @@index([authorId, createdAt(sort: Desc), id(sort: Desc)])
+  // The Explore search: case-insensitive matches anywhere in the text
+  // (ILIKE)
+  @@index([content(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 // followerId follows followingId. A user can't follow themselves (checked in

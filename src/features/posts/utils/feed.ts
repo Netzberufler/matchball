@@ -6,8 +6,13 @@
 export const FEED_PAGE_SIZE = 10;
 
 // "home": posts by the authors the viewer follows, and the viewer's own;
-// "user": one author's posts, for their profile page
-export type Feed = { type: "home" } | { type: "user"; authorId: string };
+// "user": one author's posts, for their profile page; "search": posts with
+// every word of a normalized query (see search/utils/search-query.ts), for
+// the Explore page
+export type Feed =
+    | { type: "home" }
+    | { type: "user"; authorId: string }
+    | { type: "search"; query: string };
 
 // Points at the last item of a page; the next page starts after it
 export type FeedCursor = { createdAt: Date; id: string };

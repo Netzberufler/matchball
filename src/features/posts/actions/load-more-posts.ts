@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { getFeedPage } from "@/features/posts/lib/queries";
+import { searchQuerySchema } from "@/features/search/utils/search-query";
 import type { Feed } from "@/features/posts/utils/feed";
 import {
     feedCursorSchema,
@@ -14,6 +15,7 @@ import {
 const feedSchema = z.discriminatedUnion("type", [
     z.object({ type: z.literal("home") }),
     z.object({ type: z.literal("user"), authorId: idSchema }),
+    z.object({ type: z.literal("search"), query: searchQuerySchema }),
 ]) satisfies z.ZodType<Feed>;
 
 // The page after `cursor`. Checks its arguments: actions can be called

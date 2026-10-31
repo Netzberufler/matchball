@@ -6,6 +6,7 @@ import { idSchema } from "@/lib/action-input";
 import { prisma } from "@/prisma/db";
 import { getFollowingIds } from "@/features/follows/lib/queries";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
+import { escapeLike, searchTerms } from "@/features/search/utils/search-query";
 import {
     FEED_PAGE_SIZE,
     type Feed,
@@ -89,6 +90,17 @@ async function feedWhere(
             };
         case "user":
             return { authorId: feed.authorId };
+        // Case-insensitive, anywhere in the text (ILIKE), on the trigram
+        // index on Post.content
+        case "search":
+            return {
+                AND: searchTerms(feed.query).map((term) => ({
+                    content: {
+                        contains: escapeLike(term),
+                        mode: "insensitive" as const,
+                    },
+                })),
+            };
     }
 }
 
