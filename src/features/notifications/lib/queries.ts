@@ -22,6 +22,7 @@ const notificationSelect = {
     id: true,
     type: true,
     createdAt: true,
+    readAt: true,
     userId: true,
     actor: { select: { username: true, name: true, image: true } },
     post: { select: { id: true, content: true, mentions: mentionsSelect } },
@@ -59,6 +60,8 @@ type MatchNotificationType = Extract<
 export type UserNotification = {
     id: string;
     createdAt: Date;
+    // Not seen on /notifications before it was loaded
+    isNew: boolean;
     actor: NotificationRow["actor"];
 } & (
     | { type: "FOLLOW" }
@@ -102,8 +105,10 @@ function toUserNotification({
     post,
     comment,
     match,
-    ...notification
+    readAt,
+    ...rest
 }: NotificationRow): UserNotification {
+    const notification = { ...rest, isNew: readAt === null };
     if (isMatchNotificationType(type)) {
         return {
             ...notification,
@@ -155,4 +160,20 @@ export async function getNotificationsPage(
         take: FEED_PAGE_SIZE + 1,
     });
     return toPage(notifications.map(toUserNotification));
+}
+
+// How many of the user's notifications are new, for the nav. Reads the
+// Notification (userId, readAt) index.
+export function countNewNotifications(userId: string) {
+    return prisma.notification.count({ where: { userId, readAt: null } });
+}
+
+// Marks the user's notifications with these ids as seen now. Only the
+// user's own and only new ones, so the first time seen stays.
+export async function markNotificationsRead(userId: string, ids: string[]) {
+    const { count } = await prisma.notification.updateMany({
+        where: { id: { in: ids }, userId, readAt: null },
+        data: { readAt: new Date() },
+    });
+    return count;
 }

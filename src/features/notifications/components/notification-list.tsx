@@ -14,13 +14,21 @@ import { NotificationItem } from "./notification-item";
 
 // The signed-in user's notifications for one tab, newest first, with more
 // loaded on request. The tabs keep `page`, so it stays when switching tabs.
+// `observeNew` is given the element of each notification that's new in the
+// database, to mark it seen when it scrolls into view (see useMarkSeen).
 export function NotificationList({
     filter,
     page,
+    isShownAsNew,
+    onDismissNew,
+    observeNew,
     onPageChange,
 }: {
     filter: NotificationFilter;
     page: FeedPage<UserNotification>;
+    isShownAsNew: (id: string) => boolean;
+    onDismissNew: (id: string) => void;
+    observeNew: (element: HTMLElement | null) => (() => void) | undefined;
     onPageChange: (
         update: (
             current: FeedPage<UserNotification>,
@@ -61,8 +69,18 @@ export function NotificationList({
             <Card className="gap-0 overflow-hidden p-0">
                 <ul className="divide-y divide-separator">
                     {page.items.map((notification) => (
-                        <li key={notification.id}>
-                            <NotificationItem notification={notification} />
+                        <li
+                            key={notification.id}
+                            ref={notification.isNew ? observeNew : undefined}
+                            data-notification-id={notification.id}
+                        >
+                            <NotificationItem
+                                notification={notification}
+                                isNew={isShownAsNew(notification.id)}
+                                onDismissNew={() =>
+                                    onDismissNew(notification.id)
+                                }
+                            />
                         </li>
                     ))}
                 </ul>

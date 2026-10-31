@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
 import {
     AtSign,
@@ -22,6 +22,7 @@ import {
     NotificationList,
     NotificationListFallback,
 } from "./notification-list";
+import { useMarkSeen } from "./use-mark-seen";
 
 type Page = FeedPage<UserNotification>;
 
@@ -50,7 +51,30 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
     const [failed, setFailed] = useState<
         Partial<Record<NotificationFilter, boolean>>
     >({});
+    // The "New" badges clicked away
+    const [dismissed, setDismissed] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    );
     const [, startTransition] = useTransition();
+    const observeNew = useMarkSeen();
+
+    // What was new when this visit loaded it keeps its badge until the page
+    // is left, also in tabs loaded after it was marked seen
+    const newIds = useMemo(
+        () =>
+            new Set(
+                Object.values(pages).flatMap((page) =>
+                    page.items
+                        .filter((notification) => notification.isNew)
+                        .map((notification) => notification.id),
+                ),
+            ),
+        [pages],
+    );
+
+    function dismiss(id: string) {
+        setDismissed((current) => new Set(current).add(id));
+    }
 
     function loadFirstPage(filter: NotificationFilter) {
         setFailed((current) => ({ ...current, [filter]: false }));
@@ -112,6 +136,11 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
                             <NotificationList
                                 filter={key}
                                 page={page}
+                                isShownAsNew={(id) =>
+                                    newIds.has(id) && !dismissed.has(id)
+                                }
+                                onDismissNew={dismiss}
+                                observeNew={observeNew}
                                 onPageChange={(update) =>
                                     setPages((current) => ({
                                         ...current,

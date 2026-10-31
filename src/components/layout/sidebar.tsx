@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { requireSession } from "@/features/auth/lib/session";
+import { countNewNotifications } from "@/features/notifications/lib/queries";
 import {
     UserMenu,
     UserMenuFallback,
@@ -40,8 +41,18 @@ export function SidebarContent({ expanded = false }: { expanded?: boolean }) {
     );
 }
 
+// Seeing notifications on /notifications refreshes the page, which updates
+// their count here (see markNotificationsSeen)
 async function SessionNavLinks({ expanded }: { expanded: boolean }) {
     const { user } = await requireSession();
-    // username is required in the database; Better Auth types it as optional
-    return <NavLinks username={user.username ?? ""} expanded={expanded} />;
+    const newNotifications = await countNewNotifications(user.id);
+    return (
+        <NavLinks
+            // username is required in the database; Better Auth types it as
+            // optional
+            username={user.username ?? ""}
+            newNotifications={newNotifications}
+            expanded={expanded}
+        />
+    );
 }

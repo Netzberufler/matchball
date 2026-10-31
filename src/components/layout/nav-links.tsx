@@ -13,14 +13,26 @@ const expandedLinkClassName =
 const compactHeadingClassName =
     "sr-only lg:not-sr-only lg:block lg:mb-2 lg:px-4 lg:text-sm lg:font-medium lg:text-muted";
 const expandedHeadingClassName = "mb-2 px-4 text-sm font-medium text-muted";
+// The count of new notifications
+const countClassName =
+    "h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums tracking-normal text-accent-foreground";
+
+const NOTIFICATIONS_PATH = "/notifications";
+
+// Up to two digits, to fit the badge
+function formatCount(count: number) {
+    return count > 99 ? "99+" : String(count);
+}
 
 function NavLinkList({
     pathname,
     username,
+    newNotifications,
     expanded,
 }: {
     pathname: string | null;
     username: string | null;
+    newNotifications: number;
     expanded: boolean;
 }) {
     const linkClassName = expanded
@@ -51,12 +63,29 @@ function NavLinkList({
                         {section.items.map(
                             ({ href, label, shortLabel, icon: Icon }) => {
                                 const isActive = isActivePath(href, pathname);
+                                const count =
+                                    href === NOTIFICATIONS_PATH &&
+                                    newNotifications > 0
+                                        ? formatCount(newNotifications)
+                                        : null;
                                 const content = (
                                     <>
-                                        <Icon
-                                            className="size-5 shrink-0"
-                                            aria-hidden
-                                        />
+                                        <span className="relative shrink-0">
+                                            <Icon
+                                                className="size-5"
+                                                aria-hidden
+                                            />
+                                            {/* On the icon in the compact
+                                                sidebar below lg */}
+                                            {count && !expanded && (
+                                                <span
+                                                    className={`${countClassName} absolute -top-2 -right-3 flex lg:hidden`}
+                                                    aria-hidden
+                                                >
+                                                    {count}
+                                                </span>
+                                            )}
+                                        </span>
                                         {expanded ? (
                                             <span>{label}</span>
                                         ) : (
@@ -68,6 +97,24 @@ function NavLinkList({
                                                     {label}
                                                 </span>
                                             </>
+                                        )}
+                                        {/* At the end of the row */}
+                                        {count && (
+                                            <span
+                                                className={`${countClassName} ml-auto ${
+                                                    expanded
+                                                        ? "flex"
+                                                        : "hidden lg:flex"
+                                                }`}
+                                                aria-hidden
+                                            >
+                                                {count}
+                                            </span>
+                                        )}
+                                        {count && (
+                                            <span className="sr-only">
+                                                , {newNotifications} new
+                                            </span>
                                         )}
                                     </>
                                 );
@@ -107,18 +154,23 @@ function NavLinkList({
 }
 
 // username is the signed-in user's, for the Profile link.
+// newNotifications: how many of their notifications are new, shown by
+// Notifications when there are any.
 // expanded: always show the full labels, e.g. in the mobile menu drawer.
 export function NavLinks({
     username,
+    newNotifications,
     expanded = false,
 }: {
     username: string;
+    newNotifications: number;
     expanded?: boolean;
 }) {
     return (
         <NavLinkList
             pathname={usePathname()}
             username={username}
+            newNotifications={newNotifications}
             expanded={expanded}
         />
     );
@@ -127,5 +179,12 @@ export function NavLinks({
 // Rendered while the pathname and session are unknown during prerendering,
 // without active state or Profile link
 export function NavLinksFallback({ expanded = false }: { expanded?: boolean }) {
-    return <NavLinkList pathname={null} username={null} expanded={expanded} />;
+    return (
+        <NavLinkList
+            pathname={null}
+            username={null}
+            newNotifications={0}
+            expanded={expanded}
+        />
+    );
 }

@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { Chip } from "@heroui/react";
 import { AtSign, Heart, MessageCircle, Swords, UserPlus } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import {
@@ -147,14 +151,44 @@ function notificationHref(notification: UserNotification) {
     }
 }
 
+// Marks a notification the user hadn't seen before this visit. Clicking it
+// fades it out and removes it.
+function NewBadge({ onDismiss }: { onDismiss: () => void }) {
+    const [isFading, setIsFading] = useState(false);
+    return (
+        <button
+            type="button"
+            aria-label="New, dismiss"
+            onClick={() => setIsFading(true)}
+            onTransitionEnd={(event) => {
+                if (event.propertyName === "opacity") {
+                    onDismiss();
+                }
+            }}
+            className={`shrink-0 cursor-pointer self-start rounded-full transition-opacity duration-700 ${
+                isFading ? "opacity-0" : ""
+            }`}
+        >
+            <Chip size="sm" color="accent" variant="primary">
+                New
+            </Chip>
+        </button>
+    );
+}
+
 // One notification: what kind it is, who did it, and the text it's about.
 // Like a post in a feed, all of it leads to the post, or for a follow to
 // the follower's profile and for a match to /matches (see ClickablePost),
 // and its time is the link for keyboards and screen readers.
+// `isNew` shows the "New" badge on the right, which `onDismissNew` hides.
 export function NotificationItem({
     notification,
+    isNew,
+    onDismissNew,
 }: {
     notification: UserNotification;
+    isNew: boolean;
+    onDismissNew: () => void;
 }) {
     const { actor } = notification;
     const { icon: Icon, className: iconClassName } =
@@ -209,6 +243,7 @@ export function NotificationItem({
                 </p>
                 <NotificationText notification={notification} />
             </div>
+            {isNew && <NewBadge onDismiss={onDismissNew} />}
         </ClickablePost>
     );
 }
