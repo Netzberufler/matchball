@@ -1,12 +1,6 @@
 "use client";
 
-import {
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-    useTransition,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
 import {
@@ -23,6 +17,8 @@ import {
 } from "@/features/messages/utils/chat-thread";
 import type { FeedPage } from "@/features/posts/utils/feed";
 import { formatFullPostDate } from "@/features/posts/utils/format-post-date";
+import { useLoadMore } from "@/lib/use-paged-list";
+import { usePolling } from "@/lib/use-polling";
 import { MessageForm } from "./message-form";
 
 // How often an open conversation checks for new messages
@@ -62,8 +58,6 @@ export function ConversationView({
         [...firstPage.items].reverse(),
     );
     const [olderCursor, setOlderCursor] = useState(firstPage.nextCursor);
-    const [olderError, setOlderError] = useState<string | null>(null);
-    const [isLoadingOlder, startLoadingOlder] = useTransition();
     const pendingScroll = useRef<PendingScroll>("bottom");
     // For the checks, which run outside of rendering
     const messagesRef = useRef(messages);
@@ -95,67 +89,36 @@ export function ConversationView({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        let isChecking = false;
-
-        async function check() {
-            if (isChecking || document.visibilityState !== "visible") {
-                return;
+    usePolling(async () => {
+        const latest = messagesRef.current.at(-1);
+        const newMessages = await loadNewMessages(
+            partner.id,
+            latest ? { createdAt: latest.createdAt, id: latest.id } : null,
+        );
+        if (newMessages.length > 0) {
+            // Follow the conversation only if it's read at the bottom
+            if (distanceFromBottom() < NEAR_BOTTOM_PX) {
+                pendingScroll.current = "bottom";
             }
-            isChecking = true;
-            try {
-                const latest = messagesRef.current.at(-1);
-                const newMessages = await loadNewMessages(
-                    partner.id,
-                    latest
-                        ? { createdAt: latest.createdAt, id: latest.id }
-                        : null,
-                );
-                if (newMessages.length > 0) {
-                    // Follow the conversation only if it's read at the bottom
-                    if (distanceFromBottom() < NEAR_BOTTOM_PX) {
-                        pendingScroll.current = "bottom";
-                    }
-                    setMessages((current) =>
-                        mergeMessages(current, newMessages),
-                    );
-                }
-            } catch {
-                // Tried again with the next check
-            } finally {
-                isChecking = false;
-            }
+            setMessages((current) => mergeMessages(current, newMessages));
         }
+    }, POLL_INTERVAL_MS);
 
-        const interval = window.setInterval(check, POLL_INTERVAL_MS);
-        // Coming back to the tab shows what arrived meanwhile
-        document.addEventListener("visibilitychange", check);
-        return () => {
-            window.clearInterval(interval);
-            document.removeEventListener("visibilitychange", check);
-        };
-    }, [partner.id]);
-
-    function loadOlder() {
-        const cursor = olderCursor;
-        if (!cursor) {
-            return;
-        }
-        setOlderError(null);
-        startLoadingOlder(async () => {
-            try {
-                const page = await loadOlderMessages(partner.id, cursor);
-                // Keep the messages in view where they are
-                pendingScroll.current = { fromBottom: distanceFromBottom() };
-                setMessages((current) => mergeMessages(current, page.items));
-                setOlderCursor(page.nextCursor);
-            } catch {
-                setOlderError(
-                    "Couldn't load older messages. Please try again.",
-                );
-            }
-        });
-    }
+    const {
+        loadMore: loadOlder,
+        isPending: isLoadingOlder,
+        error: olderError,
+    } = useLoadMore({
+        cursor: olderCursor,
+        load: (cursor) => loadOlderMessages(partner.id, cursor),
+        onLoaded: (page) => {
+            // Keep the messages in view where they are
+            pendingScroll.current = { fromBottom: distanceFromBottom() };
+            setMessages((current) => mergeMessages(current, page.items));
+            setOlderCursor(page.nextCursor);
+        },
+        errorMessage: "Couldn't load older messages. Please try again.",
+    });
 
     async function send(formData: FormData) {
         const result = await sendMessage(partner.id, formData);

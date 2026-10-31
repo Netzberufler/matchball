@@ -62,13 +62,15 @@ export function replaceItems<Item extends FeedItem>(
     return items.map((item) => freshById.get(item.id) ?? item);
 }
 
-// Adds the next page below the items already shown
+// Adds the next page below the items already shown. Other fields of the
+// page stay as they are.
 export function appendPage<Item extends FeedItem, Cursor>(
     current: FeedPage<Item, Cursor>,
     next: FeedPage<Item, Cursor>,
 ): FeedPage<Item, Cursor> {
     const shownIds = new Set(current.items.map((item) => item.id));
     return {
+        ...current,
         items: [
             ...current.items,
             ...next.items.filter((item) => !shownIds.has(item.id)),

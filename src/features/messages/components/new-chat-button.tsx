@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SquarePen } from "lucide-react";
 import { Button, Modal, SearchField, Spinner } from "@heroui/react";
@@ -11,9 +11,7 @@ import {
 } from "@/features/messages/actions/search-chat-users";
 import type { ChatUser } from "@/features/messages/lib/queries";
 import { conversationPath } from "@/features/messages/utils/messages-path";
-
-// Wait this long after the last keystroke before searching
-const SEARCH_DELAY_MS = 150;
+import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
 // The New chat button on /messages. It opens a popup to search for a user
 // by name or username, which suggests people the user follows until
@@ -52,40 +50,13 @@ function UserPicker({ onChoose }: { onChoose: () => void }) {
     const [value, setValue] = useState("");
     // null until loaded, and if they couldn't be
     const [suggestions, setSuggestions] = useState<ChatUser[] | null>(null);
-    // The latest answer and what it was for. The results stay while the
-    // next search runs, so the list doesn't flicker between keystrokes.
-    const [results, setResults] = useState<{
-        query: string;
-        users: ChatUser[];
-    }>({ query: "", users: [] });
-    // The latest query searched for; older answers are ignored
-    const latestQuery = useRef<string | null>(null);
 
     useEffect(() => {
         loadChatSuggestions().then(setSuggestions, () => setSuggestions([]));
     }, []);
 
     const query = value.trim();
-    useEffect(() => {
-        if (!query) {
-            return;
-        }
-        latestQuery.current = query;
-        const timeout = setTimeout(() => {
-            searchChatUsers(query).then(
-                (users) => {
-                    if (latestQuery.current === query) {
-                        setResults({ query, users });
-                    }
-                },
-                // Keep the last results; the next keystroke tries again
-                () => {},
-            );
-        }, SEARCH_DELAY_MS);
-        return () => clearTimeout(timeout);
-    }, [query]);
-
-    const isSearching = query !== "" && results.query !== query;
+    const { results, isSearching } = useDebouncedSearch(query, searchChatUsers);
 
     return (
         <div className="flex flex-col gap-4">
@@ -116,9 +87,9 @@ function UserPicker({ onChoose }: { onChoose: () => void }) {
             {query ? (
                 <UserChoices
                     label="People"
-                    users={results.users}
+                    users={results}
                     emptyMessage={
-                        isSearching && results.users.length === 0
+                        isSearching && results.length === 0
                             ? "Searching…"
                             : "No people found"
                     }

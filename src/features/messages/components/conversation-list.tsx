@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Card, EmptyState, Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
@@ -8,12 +7,13 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { loadConversations } from "@/features/messages/actions/load-conversations";
 import type { ConversationListItem } from "@/features/messages/lib/queries";
 import { conversationPath } from "@/features/messages/utils/messages-path";
-import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
-import { useFeedPage } from "@/features/posts/utils/use-feed-page";
+import type { FeedPage } from "@/features/posts/utils/feed";
 import {
     formatFullPostDate,
     formatPostDate,
 } from "@/features/posts/utils/format-post-date";
+import { usePagedList } from "@/lib/use-paged-list";
+import { useOnShownAgain } from "@/lib/use-polling";
 
 // The count of unread messages, like the counts in the nav
 const countClassName =
@@ -29,18 +29,14 @@ export function ConversationList({
 }: {
     firstPage: FeedPage<ConversationListItem>;
 }) {
-    const [page, setPage] = useFeedPage(firstPage, startOver);
-    const [error, setError] = useState<string | null>(null);
-    const [isPending, startTransition] = useTransition();
-    // Shown before, so showing it now is coming back to it
-    const wasShown = useRef(false);
+    const { page, setPage, loadMore, isPending, error } = usePagedList({
+        firstPage,
+        merge: startOver,
+        load: loadConversations,
+        errorMessage: "Couldn't load more conversations. Please try again.",
+    });
 
-    // Effects run again when a hidden page is shown again
-    useEffect(() => {
-        if (!wasShown.current) {
-            wasShown.current = true;
-            return;
-        }
+    useOnShownAgain(() => {
         let isCurrent = true;
         loadConversations(null).then(
             (latest) => {
@@ -56,23 +52,7 @@ export function ConversationList({
         return () => {
             isCurrent = false;
         };
-    }, [setPage]);
-
-    function loadMore() {
-        const cursor = page.nextCursor;
-        if (!cursor) {
-            return;
-        }
-        setError(null);
-        startTransition(async () => {
-            try {
-                const nextPage = await loadConversations(cursor);
-                setPage((current) => appendPage(current, nextPage));
-            } catch {
-                setError("Couldn't load more conversations. Please try again.");
-            }
-        });
-    }
+    });
 
     if (page.items.length === 0) {
         return (

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { Card, EmptyState, Skeleton } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
 import { loadNotifications } from "@/features/notifications/actions/load-notifications";
@@ -10,6 +9,7 @@ import {
     type NotificationFilter,
 } from "@/features/notifications/utils/notification-filters";
 import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
+import { useLoadMore } from "@/lib/use-paged-list";
 import { NotificationItem } from "./notification-item";
 
 // The signed-in user's notifications for one tab, newest first, with more
@@ -35,24 +35,13 @@ export function NotificationList({
         ) => FeedPage<UserNotification>,
     ) => void;
 }) {
-    const [error, setError] = useState<string | null>(null);
-    const [isPending, startTransition] = useTransition();
-
-    function loadMore() {
-        const cursor = page.nextCursor;
-        if (!cursor) {
-            return;
-        }
-        setError(null);
-        startTransition(async () => {
-            try {
-                const nextPage = await loadNotifications(filter, cursor);
-                onPageChange((current) => appendPage(current, nextPage));
-            } catch {
-                setError("Couldn't load more notifications. Please try again.");
-            }
-        });
-    }
+    const { loadMore, isPending, error } = useLoadMore({
+        cursor: page.nextCursor,
+        load: (cursor) => loadNotifications(filter, cursor),
+        onLoaded: (nextPage) =>
+            onPageChange((current) => appendPage(current, nextPage)),
+        errorMessage: "Couldn't load more notifications. Please try again.",
+    });
 
     if (page.items.length === 0) {
         return (

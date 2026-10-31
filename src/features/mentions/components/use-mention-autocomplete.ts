@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import {
     type MentionUser,
     searchMentionUsers,
 } from "@/features/mentions/actions/search-mention-users";
 import { findMentionBeforeCaret } from "@/features/mentions/utils/mentions";
-
-// Wait this long after the last keystroke before searching
-const SEARCH_DELAY_MS = 150;
+import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
 type Mention = { start: number; query: string };
 
@@ -26,33 +24,15 @@ export function useMentionAutocomplete({
 }) {
     const listId = useId();
     const [mention, setMention] = useState<Mention | null>(null);
-    // The suggestions shown; they stay while the next search runs, so the
-    // list doesn't flicker between keystrokes
-    const [users, setUsers] = useState<MentionUser[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
-    // The latest query searched for; older answers are ignored
-    const latestQuery = useRef<string | null>(null);
 
     const query = mention?.query ?? "";
-    useEffect(() => {
-        if (!query) {
-            return;
-        }
-        latestQuery.current = query;
-        const timeout = setTimeout(() => {
-            searchMentionUsers(query).then(
-                (found) => {
-                    if (latestQuery.current === query) {
-                        setUsers(found);
-                        setActiveIndex(0);
-                    }
-                },
-                // Keep the last suggestions; the next keystroke tries again
-                () => {},
-            );
-        }, SEARCH_DELAY_MS);
-        return () => clearTimeout(timeout);
-    }, [query]);
+    // New suggestions start with the first one highlighted
+    const { results: users, reset } = useDebouncedSearch<MentionUser>(
+        query,
+        searchMentionUsers,
+        () => setActiveIndex(0),
+    );
 
     const isOpen = mention !== null && query !== "" && users.length > 0;
 
@@ -67,16 +47,14 @@ export function useMentionAutocomplete({
         );
         // A different mention (or none): don't show the old suggestions
         if (next?.start !== mention?.start) {
-            setUsers([]);
-            latestQuery.current = null;
+            reset();
         }
         setMention(next);
     }
 
     function close() {
         setMention(null);
-        setUsers([]);
-        latestQuery.current = null;
+        reset();
     }
 
     // Replaces "@query" with "@username " and puts the caret after it

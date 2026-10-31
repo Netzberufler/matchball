@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ComboBox, FieldError, Input, Label, ListBox } from "@heroui/react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import {
     type Opponent,
     searchOpponents,
 } from "@/features/matches/actions/search-opponents";
-
-// Wait this long after the last keystroke before searching
-const SEARCH_DELAY_MS = 150;
+import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
 // A search field for the opponent, suggesting users by name or username as
 // you type. Submits the chosen user's id as `name`; `onChange` gets them
@@ -25,39 +23,14 @@ export function OpponentComboBox({
 }) {
     const [inputValue, setInputValue] = useState(defaultOpponent?.name ?? "");
     const [selected, setSelected] = useState<Opponent | null>(defaultOpponent);
-    // The latest answer and what it was for. The suggestions stay while the
-    // next search runs, so the list doesn't flicker between keystrokes.
-    const [results, setResults] = useState<{
-        query: string;
-        users: Opponent[];
-    }>({ query: "", users: [] });
-    // The latest query searched for; older answers are ignored
-    const latestQuery = useRef<string | null>(null);
 
     // Choosing a user puts their name in the field, which isn't a search
     const query =
         selected && inputValue === selected.name ? "" : inputValue.trim();
-    useEffect(() => {
-        if (!query) {
-            return;
-        }
-        latestQuery.current = query;
-        const timeout = setTimeout(() => {
-            searchOpponents(query).then(
-                (users) => {
-                    if (latestQuery.current === query) {
-                        setResults({ query, users });
-                    }
-                },
-                // Keep the last suggestions; the next keystroke tries again
-                () => {},
-            );
-        }, SEARCH_DELAY_MS);
-        return () => clearTimeout(timeout);
-    }, [query]);
+    const { results, isSearching } = useDebouncedSearch(query, searchOpponents);
 
     // The chosen user stays an option, so the field keeps showing them
-    const users = query ? results.users : [];
+    const users = query ? results : [];
     const items =
         selected && !users.some((user) => user.id === selected.id)
             ? [selected, ...users]
@@ -95,9 +68,7 @@ export function OpponentComboBox({
                 <ListBox
                     renderEmptyState={() => (
                         <p className="px-3 py-2 text-sm text-muted">
-                            {results.query === query
-                                ? "No players found"
-                                : "Searching…"}
+                            {isSearching ? "Searching…" : "No players found"}
                         </p>
                     )}
                 >

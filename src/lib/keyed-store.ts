@@ -4,7 +4,10 @@ import { useSyncExternalStore } from "react";
 
 // Values the user changed in this tab, by key (e.g. a post id), that win
 // over the server data a page was rendered with. So the same post shows the
-// same like state or comment count on every page, without a reload.
+// same like state or comment count on every page, without a reload, also
+// in pages loaded with "Load more", which a refresh doesn't reach. For
+// state shown in one place, use useOptimistic and revalidateAllPages()
+// instead (see AGENTS.md).
 export function createKeyedStore<T>() {
     const values = new Map<string, T>();
     const listeners = new Set<() => void>();

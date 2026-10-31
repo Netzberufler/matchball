@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getUnreadMessageCount } from "@/features/messages/actions/count-unread-messages";
+import { usePolling } from "@/lib/use-polling";
 
 // How often the nav checks for new messages
 const POLL_INTERVAL_MS = 30_000;
@@ -19,25 +20,10 @@ export function useUnreadMessageCount(fromServer: number) {
         setCount({ fromServer, value: fromServer });
     }
 
-    useEffect(() => {
-        function check() {
-            if (document.visibilityState !== "visible") {
-                return;
-            }
-            getUnreadMessageCount().then(
-                (value) => setCount((current) => ({ ...current, value })),
-                // Tried again with the next check
-                () => {},
-            );
-        }
-        const interval = window.setInterval(check, POLL_INTERVAL_MS);
-        // Coming back to the tab shows what arrived meanwhile
-        document.addEventListener("visibilitychange", check);
-        return () => {
-            window.clearInterval(interval);
-            document.removeEventListener("visibilitychange", check);
-        };
-    }, []);
+    usePolling(async () => {
+        const value = await getUnreadMessageCount();
+        setCount((current) => ({ ...current, value }));
+    }, POLL_INTERVAL_MS);
 
     return count.value;
 }

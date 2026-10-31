@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
 import { Medal, Newspaper, Swords } from "lucide-react";
 import { loadMatches } from "@/features/matches/actions/load-matches";
@@ -14,6 +14,7 @@ import {
 } from "@/features/matches/components/match-stats-cards";
 import { MatchTable } from "@/features/matches/components/match-table";
 import type { UserMatch } from "@/features/matches/lib/queries";
+import { useOnDemand } from "@/lib/use-on-demand";
 
 type ProfileTab = "posts" | "matches" | "achievements";
 
@@ -40,62 +41,27 @@ export function ProfileTabs({
     matchesUser: ProfileMatchesUser | null;
 }) {
     const [selected, setSelected] = useState<ProfileTab>("posts");
-    const [matches, setMatches] = useState<UserMatch[] | null>(null);
-    const [matchesFailed, setMatchesFailed] = useState(false);
-    const [, startTransition] = useTransition();
     // A refreshed page (e.g. after a match was saved or a name changed)
-    // brings a new matchesUser, and the loaded matches may be old. Noticed
-    // while rendering, as React recommends for state that follows props.
-    const [shownMatchesUser, setShownMatchesUser] = useState(matchesUser);
-    const [areMatchesOld, setAreMatchesOld] = useState(false);
-    if (matchesUser !== shownMatchesUser) {
-        setShownMatchesUser(matchesUser);
-        setAreMatchesOld(matches !== null);
-    }
-
-    function loadAllMatches(user: ProfileMatchesUser) {
-        setMatchesFailed(false);
-        setAreMatchesOld(false);
-        startTransition(async () => {
-            try {
-                setMatches(await loadMatches(user.id));
-            } catch {
-                setMatchesFailed(true);
-            }
-        });
-    }
+    // brings a new matchesUser, and the loaded matches are loaded again
+    const onDemand = useOnDemand<"matches", UserMatch[]>({
+        load: () =>
+            matchesUser
+                ? loadMatches(matchesUser.id)
+                : Promise.reject(new Error("No user yet")),
+        shownKey: selected === "matches" ? "matches" : null,
+        refreshKey: matchesUser,
+    });
+    const matches = onDemand.data("matches");
 
     function select(key: unknown) {
         if (key !== "posts" && key !== "matches" && key !== "achievements") {
             return;
         }
         setSelected(key);
-        if (key === "matches" && matchesUser && (!matches || areMatchesOld)) {
-            loadAllMatches(matchesUser);
+        if (key === "matches" && matchesUser) {
+            onDemand.open("matches");
         }
     }
-
-    // Old while they're shown: load them again, showing the old ones until
-    // the new ones are there. Otherwise, opening the tab loads them.
-    useEffect(() => {
-        if (!areMatchesOld || selected !== "matches" || !matchesUser) {
-            return;
-        }
-        let isCurrent = true;
-        loadMatches(matchesUser.id).then(
-            (latest) => {
-                if (isCurrent) {
-                    setMatches(latest);
-                    setAreMatchesOld(false);
-                }
-            },
-            // Keep the old ones; opening the tab again tries again
-            () => {},
-        );
-        return () => {
-            isCurrent = false;
-        };
-    }, [areMatchesOld, selected, matchesUser]);
 
     return (
         <Tabs
@@ -151,13 +117,13 @@ export function ProfileTabs({
                             emptyMessage={matchesUser.emptyMessage}
                         />
                     </div>
-                ) : matchesUser && matchesFailed ? (
+                ) : matchesUser && onDemand.failed("matches") ? (
                     <Card>
                         <EmptyState className="flex flex-col items-center gap-3 text-center">
                             <p role="alert">Couldn&apos;t load the matches.</p>
                             <Button
                                 variant="tertiary"
-                                onPress={() => loadAllMatches(matchesUser)}
+                                onPress={() => onDemand.open("matches")}
                             >
                                 Try again
                             </Button>

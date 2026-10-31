@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState } from "react";
 import { Button, Card, EmptyState, Tabs } from "@heroui/react";
 import {
     AtSign,
@@ -17,7 +17,8 @@ import {
     NOTIFICATION_FILTERS,
     type NotificationFilter,
 } from "@/features/notifications/utils/notification-filters";
-import type { FeedPage } from "@/features/posts/utils/feed";
+import { type FeedPage, mergeLatestPage } from "@/features/posts/utils/feed";
+import { useOnDemand } from "@/lib/use-on-demand";
 import {
     NotificationList,
     NotificationListFallback,
@@ -40,52 +41,42 @@ const FILTER_ICONS = {
 // The notifications, filtered by the selected tab. "All" starts with
 // `firstPage`; the other tabs load their first page when they're first
 // opened, and every tab keeps what it loaded while switching between them.
+// A refreshed page brings a new `firstPage`, merged into "All"; the other
+// tabs load theirs again (see useOnDemand).
 // Without `firstPage` (while the page loads), the tabs are disabled and
 // show placeholders.
 export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
     const [selected, setSelected] = useState<NotificationFilter>("all");
-    const [pages, setPages] = useState<
-        Partial<Record<NotificationFilter, Page>>
-    >(firstPage ? { all: firstPage } : {});
-    // By tab: its first page couldn't be loaded
-    const [failed, setFailed] = useState<
-        Partial<Record<NotificationFilter, boolean>>
-    >({});
+    const pages = useOnDemand<NotificationFilter, Page>({
+        load: (filter) => loadNotifications(filter, null),
+        shownKey: selected,
+        refreshKey: firstPage,
+        initial: firstPage ? { all: firstPage } : {},
+        merge: mergeLatestPage,
+    });
     // The "New" badges clicked away
     const [dismissed, setDismissed] = useState<ReadonlySet<string>>(
         () => new Set(),
     );
-    const [, startTransition] = useTransition();
     const observeNew = useMarkSeen();
 
     // What was new when this visit loaded it keeps its badge until the page
-    // is left, also in tabs loaded after it was marked seen
-    const newIds = useMemo(
-        () =>
-            new Set(
-                Object.values(pages).flatMap((page) =>
-                    page.items
-                        .filter((notification) => notification.isNew)
-                        .map((notification) => notification.id),
-                ),
-            ),
-        [pages],
-    );
+    // is left, also once it was marked seen (which refreshes the page) and
+    // in tabs loaded after that. Added while rendering, as React recommends
+    // for state that follows props.
+    const [newIds, setNewIds] = useState<ReadonlySet<string>>(() => new Set());
+    const loadedNewIds = NOTIFICATION_FILTERS.flatMap(
+        ({ key }) => pages.data(key)?.items ?? [],
+    )
+        .filter((notification) => notification.isNew)
+        .map((notification) => notification.id)
+        .filter((id) => !newIds.has(id));
+    if (loadedNewIds.length > 0) {
+        setNewIds(new Set([...newIds, ...loadedNewIds]));
+    }
 
     function dismiss(id: string) {
         setDismissed((current) => new Set(current).add(id));
-    }
-
-    function loadFirstPage(filter: NotificationFilter) {
-        setFailed((current) => ({ ...current, [filter]: false }));
-        startTransition(async () => {
-            try {
-                const page = await loadNotifications(filter, null);
-                setPages((current) => ({ ...current, [filter]: page }));
-            } catch {
-                setFailed((current) => ({ ...current, [filter]: true }));
-            }
-        });
     }
 
     function select(key: unknown) {
@@ -93,9 +84,7 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
             return;
         }
         setSelected(key);
-        if (!pages[key]) {
-            loadFirstPage(key);
-        }
+        pages.open(key);
     }
 
     return (
@@ -124,7 +113,7 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
                 </Tabs.List>
             </Tabs.ListContainer>
             {NOTIFICATION_FILTERS.map(({ key }) => {
-                const page = pages[key];
+                const page = pages.data(key);
                 return (
                     <Tabs.Panel
                         key={key}
@@ -142,13 +131,10 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
                                 onDismissNew={dismiss}
                                 observeNew={observeNew}
                                 onPageChange={(update) =>
-                                    setPages((current) => ({
-                                        ...current,
-                                        [key]: update(current[key] ?? page),
-                                    }))
+                                    pages.update(key, update)
                                 }
                             />
-                        ) : failed[key] ? (
+                        ) : pages.failed(key) ? (
                             <Card>
                                 <EmptyState className="flex flex-col items-center gap-3 text-center">
                                     <p role="alert">
@@ -156,7 +142,7 @@ export function NotificationTabs({ firstPage }: { firstPage: Page | null }) {
                                     </p>
                                     <Button
                                         variant="tertiary"
-                                        onPress={() => loadFirstPage(key)}
+                                        onPress={() => pages.open(key)}
                                     >
                                         Try again
                                     </Button>

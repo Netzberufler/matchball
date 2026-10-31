@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { Card } from "@heroui/react";
 import { LoadMore } from "@/components/ui/load-more";
 import { loadMoreComments } from "@/features/comments/actions/load-more-comments";
@@ -8,7 +7,7 @@ import { createdComments } from "@/features/comments/lib/created-comments-store"
 import type { CommentPage, PostComment } from "@/features/comments/lib/queries";
 import { mergeLatestComments } from "@/features/comments/utils/comment-page";
 import { appendPage } from "@/features/posts/utils/feed";
-import { useFeedPage } from "@/features/posts/utils/use-feed-page";
+import { usePagedList } from "@/lib/use-paged-list";
 import { CommentForm } from "./comment-form";
 import { CommentThread } from "./comment-thread";
 
@@ -26,9 +25,16 @@ export function PostComments({
     postId: string;
     firstPage: CommentPage;
 }) {
-    const [page, setPage] = useFeedPage(firstPage, mergeLatestComments);
-    const [error, setError] = useState<string | null>(null);
-    const [isPending, startTransition] = useTransition();
+    const { page, loadMore, isPending, error } = usePagedList({
+        firstPage,
+        merge: mergeLatestComments,
+        load: (cursor) => loadMoreComments(postId, cursor),
+        append: (current, next) => ({
+            ...appendPage(current, next),
+            replies: [...current.replies, ...next.replies],
+        }),
+        errorMessage: "Couldn't load more replies. Please try again.",
+    });
 
     // The loaded comments (oldest first), then the new ones from this tab
     // that no loaded page has yet, oldest first too: they're the newest, so
@@ -48,25 +54,6 @@ export function PostComments({
             ...(repliesByRoot.get(rootId) ?? []),
             reply,
         ]);
-    }
-
-    function loadMore() {
-        const cursor = page.nextCursor;
-        if (!cursor) {
-            return;
-        }
-        setError(null);
-        startTransition(async () => {
-            try {
-                const nextPage = await loadMoreComments(postId, cursor);
-                setPage((current) => ({
-                    ...appendPage(current, nextPage),
-                    replies: [...current.replies, ...nextPage.replies],
-                }));
-            } catch {
-                setError("Couldn't load more replies. Please try again.");
-            }
-        });
     }
 
     return (
