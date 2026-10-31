@@ -25,17 +25,17 @@ export function getNavSections(username: string | null) {
             items: [
                 { href: "/", label: "Home", shortLabel: "Home", icon: House },
                 {
+                    href: "/explore",
+                    label: "Explore",
+                    shortLabel: "Explore",
+                    icon: Search,
+                    desktopOnly: true,
+                },
+                {
                     href: "/messages",
                     label: "Messages",
                     shortLabel: "Messages",
                     icon: MessagesSquare,
-                    desktopOnly: true,
-                },
-                {
-                    href: "/search",
-                    label: "Search",
-                    shortLabel: "Search",
-                    icon: Search,
                     desktopOnly: true,
                 },
             ],
