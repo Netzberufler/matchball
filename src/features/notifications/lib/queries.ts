@@ -9,8 +9,8 @@ import {
 import { getSets, type SetScore } from "@/features/matches/utils/match-score";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
 import {
-    getNotificationFilter,
-    type NotificationFilter,
+    type NotificationFilters,
+    notificationTypes,
 } from "@/features/notifications/utils/notification-filters";
 import {
     FEED_PAGE_SIZE,
@@ -202,19 +202,31 @@ function toUserNotification(
     };
 }
 
-// One page of the user's notifications, all or of the filter's types,
-// newest first with id breaking ties. Reads the Notification (userId,
-// createdAt, id) index in order, or (userId, type, createdAt, id) for types.
+// One page of the user's notifications that `filters` show, newest first
+// with id breaking ties. Reads the Notification (userId, createdAt, id)
+// index in order, or (userId, type, createdAt, id) for types.
+// Showing only new ones keeps those seen since `newSince` (the start of
+// the visit), so they stay while the list marks them seen.
 export async function getNotificationsPage(
     userId: string,
-    filter: NotificationFilter,
+    filters: NotificationFilters,
     cursor?: FeedCursor,
+    newSince?: Date,
 ): Promise<FeedPage<UserNotification>> {
-    const { types } = getNotificationFilter(filter);
-    const where = { userId, ...(types && { type: { in: [...types] } }) };
+    const types = notificationTypes(filters);
+    const where: Prisma.NotificationWhereInput = {
+        userId,
+        ...(types && { type: { in: types } }),
+        ...(filters.show === "new" && {
+            OR: [
+                { readAt: null },
+                ...(newSince ? [{ readAt: { gte: newSince } }] : []),
+            ],
+        }),
+    };
     // One extra notification tells whether there is another page
     const notifications = await prisma.notification.findMany({
-        where: cursor ? { ...where, ...olderThan(cursor) } : where,
+        where: cursor ? { AND: [where, olderThan(cursor)] } : where,
         select: notificationSelect,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,

@@ -5,28 +5,30 @@ import { EmptyCard, ListCard } from "@/components/ui/list-card";
 import { LoadMore } from "@/components/ui/load-more";
 import { loadNotifications } from "@/features/notifications/actions/load-notifications";
 import type { UserNotification } from "@/features/notifications/lib/queries";
-import {
-    getNotificationFilter,
-    type NotificationFilter,
-} from "@/features/notifications/utils/notification-filters";
+import type { NotificationFilters } from "@/features/notifications/utils/notification-filters";
 import { appendPage, type FeedPage } from "@/features/posts/utils/feed";
 import { useLoadMore } from "@/lib/use-paged-list";
 import { NotificationItem } from "./notification-item";
 
-// The signed-in user's notifications for one tab, newest first, with more
-// loaded on request. The tabs keep `page`, so it stays when switching tabs.
+// The signed-in user's notifications that `filters` show, newest first, with
+// more loaded on request. The feed keeps `page`, so it stays when switching
+// filters. `newSince` is when the visit started (see NotificationFeed).
 // `observeNew` is given the element of each notification that's new in the
 // database, to mark it seen when it scrolls into view (see useMarkSeen).
 export function NotificationList({
-    filter,
+    filters,
+    newSince,
     page,
+    emptyMessage,
     isShownAsNew,
     onDismissNew,
     observeNew,
     onPageChange,
 }: {
-    filter: NotificationFilter;
+    filters: NotificationFilters;
+    newSince: Date;
     page: FeedPage<UserNotification>;
+    emptyMessage: string;
     isShownAsNew: (id: string) => boolean;
     onDismissNew: (id: string) => void;
     observeNew: (element: HTMLElement | null) => (() => void) | undefined;
@@ -38,16 +40,14 @@ export function NotificationList({
 }) {
     const { loadMore, isPending, error } = useLoadMore({
         cursor: page.nextCursor,
-        load: (cursor) => loadNotifications(filter, cursor),
+        load: (cursor) => loadNotifications(filters, cursor, newSince),
         onLoaded: (nextPage) =>
             onPageChange((current) => appendPage(current, nextPage)),
         errorMessage: "Couldn't load more notifications. Please try again.",
     });
 
     if (page.items.length === 0) {
-        return (
-            <EmptyCard>{getNotificationFilter(filter).emptyMessage}</EmptyCard>
-        );
+        return <EmptyCard>{emptyMessage}</EmptyCard>;
     }
 
     return (

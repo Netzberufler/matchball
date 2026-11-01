@@ -3,23 +3,39 @@
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
 import { getNotificationsPage } from "@/features/notifications/lib/queries";
-import { NOTIFICATION_FILTERS } from "@/features/notifications/utils/notification-filters";
+import {
+    NOTIFICATION_SHOW_KEYS,
+    NOTIFICATION_TYPE_KEYS,
+} from "@/features/notifications/utils/notification-filters";
 import { feedCursorSchema, parseActionInput } from "@/lib/action-input";
 
-// One of the tabs' keys
-const filterSchema = z.enum(NOTIFICATION_FILTERS.map((filter) => filter.key));
+// The filters above the list, rebuilt from their two fields
+const filtersSchema = z.object({
+    types: z
+        .array(z.enum(NOTIFICATION_TYPE_KEYS))
+        .max(NOTIFICATION_TYPE_KEYS.length),
+    show: z.enum(NOTIFICATION_SHOW_KEYS),
+});
 
-// A page of the signed-in user's notifications for a tab: the first one
-// without a cursor (when the tab opens), or the one after `cursor`. Checks
-// its arguments: actions can be called with anything, not just what the
-// list sends.
+// A page of the signed-in user's notifications that `filtersInput` show:
+// the first one without a cursor (when the filters change), or the one
+// after `cursor`, for "Load more". Showing only new ones keeps those seen
+// since `newSinceInput`, when the visit started. Checks its arguments:
+// actions can be called with anything, not just what the list sends.
 export async function loadNotifications(
-    filterInput: unknown,
+    filtersInput: unknown,
     cursorInput: unknown,
+    newSinceInput: unknown,
 ) {
     const { user } = await requireSession();
 
-    const filter = parseActionInput(filterSchema, filterInput);
+    const filters = parseActionInput(filtersSchema, filtersInput);
     const cursor = parseActionInput(feedCursorSchema.nullable(), cursorInput);
-    return getNotificationsPage(user.id, filter, cursor ?? undefined);
+    const newSince = parseActionInput(z.date(), newSinceInput);
+    return getNotificationsPage(
+        user.id,
+        filters,
+        cursor ?? undefined,
+        newSince,
+    );
 }

@@ -1,13 +1,10 @@
-// The tabs on /notifications. Shared by the query, the actions and the tabs.
-// `types` are the notification types a tab shows; null shows them all.
-export const NOTIFICATION_FILTERS = [
-    {
-        key: "all",
-        label: "All",
-        types: null,
-        emptyMessage:
-            "No notifications yet. Follows, replies, likes, mentions, matches and challenges will show up here.",
-    },
+// The filters above the notifications on /notifications. They run in the
+// database query, as the list is paged; this file has no database access,
+// so the list can use it too.
+
+// The options of the Type filter menu. `types` are the notification types
+// each one shows.
+export const NOTIFICATION_TYPE_FILTERS = [
     {
         key: "followers",
         label: "Followers",
@@ -57,14 +54,80 @@ export const NOTIFICATION_FILTERS = [
     },
 ] as const;
 
-export type NotificationFilter = (typeof NOTIFICATION_FILTERS)[number]["key"];
+export type NotificationTypeFilter =
+    (typeof NOTIFICATION_TYPE_FILTERS)[number]["key"];
 
-export function isNotificationFilter(
-    value: unknown,
-): value is NotificationFilter {
-    return NOTIFICATION_FILTERS.some((filter) => filter.key === value);
+export const NOTIFICATION_TYPE_KEYS = NOTIFICATION_TYPE_FILTERS.map(
+    ({ key }) => key,
+);
+
+// The options of the Show filter menu: every notification, or only the new
+// ones
+export const NOTIFICATION_SHOW_FILTERS = [
+    { key: "all", label: "All notifications" },
+    { key: "new", label: "New" },
+] as const;
+
+export type NotificationShowFilter =
+    (typeof NOTIFICATION_SHOW_FILTERS)[number]["key"];
+
+export const NOTIFICATION_SHOW_KEYS = NOTIFICATION_SHOW_FILTERS.map(
+    ({ key }) => key,
+);
+
+export type NotificationFilters = {
+    // Empty shows every type
+    types: NotificationTypeFilter[];
+    show: NotificationShowFilter;
+};
+
+export const NO_NOTIFICATION_FILTERS: NotificationFilters = {
+    types: [],
+    show: "all",
+};
+
+// The notification types the filters show, or null for all of them
+export function notificationTypes(filters: NotificationFilters) {
+    if (filters.types.length === 0) {
+        return null;
+    }
+    return NOTIFICATION_TYPE_FILTERS.filter(({ key }) =>
+        filters.types.includes(key),
+    ).flatMap(({ types }) => types);
 }
 
-export function getNotificationFilter(key: NotificationFilter) {
-    return NOTIFICATION_FILTERS.find((filter) => filter.key === key)!;
+// How many filters are set, for Clear filters: each type counts as one,
+// and showing only new ones too
+export function countActiveNotificationFilters(filters: NotificationFilters) {
+    return filters.types.length + (filters.show === "new" ? 1 : 0);
+}
+
+// The same text for the same filters, whatever order they were ticked in,
+// to keep the loaded pages of each combination apart
+export function notificationFiltersKey(filters: NotificationFilters) {
+    return JSON.stringify({
+        types: [...filters.types].sort(),
+        show: filters.show,
+    });
+}
+
+// What the list says when nothing fits the filters
+export function notificationsEmptyMessage(filters: NotificationFilters) {
+    const [onlyType] = filters.types;
+    const isOneType = filters.types.length === 1;
+    if (filters.show === "new") {
+        if (filters.types.length === 0) {
+            return "No new notifications.";
+        }
+        return isOneType
+            ? "No new notifications of this type."
+            : "No new notifications of these types.";
+    }
+    if (filters.types.length === 0) {
+        return "No notifications yet. Follows, replies, likes, mentions, matches and challenges will show up here.";
+    }
+    return isOneType
+        ? NOTIFICATION_TYPE_FILTERS.find(({ key }) => key === onlyType)!
+              .emptyMessage
+        : "No notifications of these types yet.";
 }
