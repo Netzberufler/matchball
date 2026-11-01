@@ -37,25 +37,37 @@ import {
     UserPicker,
 } from "@/features/search/components/user-picker";
 
-// The Challenge button on /challenges. It opens a popup to pick whom to
-// challenge, like New chat on /messages, then the deadline for their
-// answer. Sending it closes the popup; the action reloads the page's data,
-// which adds the challenge to the table.
-export function NewChallengeButton() {
+// The Challenge button on /challenges and on profiles. It opens a popup to
+// pick whom to challenge, like New chat on /messages, then the deadline for
+// their answer. With `user` (on their profile), it opens with them chosen,
+// though Change still picks someone else. Sending it closes the popup; the
+// action reloads the page's data, which adds the challenge to the table.
+export function NewChallengeButton({
+    user,
+    fullWidth = false,
+}: {
+    user?: PublicUser;
+    fullWidth?: boolean;
+}) {
     const [isOpen, setIsOpen] = useState(false);
-    const [challenged, setChallenged] = useState<PublicUser | null>(null);
+    // Whom the user picked in the popup (`user: null` after Change); null
+    // until then, which leaves `user`
+    const [picked, setPicked] = useState<{ user: PublicUser | null } | null>(
+        null,
+    );
+    const challenged = picked ? picked.user : (user ?? null);
 
     function onOpenChange(open: boolean) {
         setIsOpen(open);
         // Starts over each time it opens
         if (!open) {
-            setChallenged(null);
+            setPicked(null);
         }
     }
 
     return (
         <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button variant="primary">
+            <Button variant="primary" fullWidth={fullWidth}>
                 <Sword className="size-4" aria-hidden />
                 Challenge
             </Button>
@@ -69,8 +81,10 @@ export function NewChallengeButton() {
                         {isOpen &&
                             (challenged ? (
                                 <ChallengeForm
+                                    // Starts over for each user
+                                    key={challenged.id}
                                     challenged={challenged}
-                                    onChange={() => setChallenged(null)}
+                                    onChange={() => setPicked({ user: null })}
                                     onSent={() => onOpenChange(false)}
                                 />
                             ) : (
@@ -81,11 +95,11 @@ export function NewChallengeButton() {
                                             loadChallengeSuggestions
                                         }
                                         suggestionsEmptyMessage="Search for someone to challenge."
-                                        renderChoice={(user, identity) => (
+                                        renderChoice={(choice, identity) => (
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    setChallenged(user)
+                                                    setPicked({ user: choice })
                                                 }
                                                 className={USER_CHOICE_CLASS}
                                             >

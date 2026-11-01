@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { Button, buttonVariants, Skeleton } from "@heroui/react";
-import { MessagesSquare, Sword } from "lucide-react";
+import { buttonVariants, Skeleton } from "@heroui/react";
+import { MessagesSquare } from "lucide-react";
+import { ResetWhenHidden } from "@/components/ui/reset-when-hidden";
 import { ACCOUNT_PROFILE_PATH } from "@/features/account/utils/account-path";
 import { requireSession } from "@/features/auth/lib/session";
+import { NewChallengeButton } from "@/features/challenges/components/new-challenge-button";
 import { FollowButton } from "@/features/follows/components/follow-button";
 import { isFollowing } from "@/features/follows/lib/queries";
 import { conversationPath } from "@/features/messages/utils/messages-path";
@@ -46,11 +48,19 @@ export async function ProfileActions({ username }: { username: string }) {
                 name={profileUser.name}
                 isFollowing={await isFollowing(viewer.id, profileUser.id)}
             />
-            {/* TODO: challenge the user to a match */}
-            <Button variant="primary" fullWidth>
-                <Sword className="size-4" aria-hidden />
-                Challenge
-            </Button>
+            {/* Opens with them chosen. Hiding the page detaches the
+                popup's labels; this starts it over instead. */}
+            <ResetWhenHidden>
+                <NewChallengeButton
+                    user={{
+                        id: profileUser.id,
+                        username: profileUser.username,
+                        name: profileUser.name,
+                        image: profileUser.image,
+                    }}
+                    fullWidth
+                />
+            </ResetWhenHidden>
             {/* The conversation with them, new if they haven't talked yet;
                 a link styled as a HeroUI button */}
             <Link
