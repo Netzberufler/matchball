@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Wordmark } from "./wordmark";
 
 // Tennis ball mark, filled with the theme's accent color. The seams use the
 // page background color, so they read as cut-outs in light and dark mode.
@@ -25,10 +26,11 @@ function BallMark({ className }: { className?: string }) {
     );
 }
 
+// The logo's font size: the wordmark is sized in em of it
 const sizes = {
-    small: { ball: "size-7", name: "text-xl" },
-    default: { ball: "size-8", name: "text-2xl" },
-    large: { ball: "size-11", name: "text-4xl" },
+    small: "text-2xl",
+    default: "text-[2rem]",
+    large: "text-[2.5rem]",
 };
 
 // compact: only the ball below lg, for the narrow tablet sidebar
@@ -43,18 +45,16 @@ export function Logo({
         <Link
             href="/"
             aria-label="Matchball home"
-            className={`flex items-center gap-3 rounded-2xl ${
+            className={`flex items-center rounded-2xl ${sizes[size]} ${
                 compact ? "justify-center lg:justify-start lg:px-2" : ""
             }`}
         >
-            <BallMark className={`${sizes[size].ball} shrink-0`} />
-            <span
-                className={`${sizes[size].name} font-semibold tracking-tight text-foreground ${
-                    compact ? "hidden lg:inline" : ""
+            {compact && <BallMark className="size-8 shrink-0 lg:hidden" />}
+            <Wordmark
+                className={`h-[0.957em] w-auto shrink-0 ${
+                    compact ? "hidden lg:block" : ""
                 }`}
-            >
-                Matchball
-            </span>
+            />
         </Link>
     );
 }
