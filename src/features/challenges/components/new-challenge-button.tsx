@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Sword } from "lucide-react";
 import {
     type CalendarDateTime,
@@ -18,7 +18,10 @@ import {
     Modal,
 } from "@heroui/react";
 import { UserIdentity } from "@/components/ui/user-identity";
-import { createChallenge } from "@/features/challenges/actions/create-challenge";
+import {
+    checkChallenge,
+    createChallenge,
+} from "@/features/challenges/actions/create-challenge";
 import { loadChallengeSuggestions } from "@/features/challenges/actions/load-challenges";
 import {
     DEADLINE_TOO_LATE_MESSAGE,
@@ -101,7 +104,9 @@ export function NewChallengeButton() {
 
 // The chosen user, with a button to choose someone else, and the deadline:
 // a day and a time (24h) in the user's time zone, from two days on. It
-// starts a week from now, at the next full hour.
+// starts a week from now, at the next full hour. Whether the user can be
+// challenged is checked right away: if not, e.g. as they already have a
+// challenge going, it says why instead of asking for the deadline.
 function ChallengeForm({
     challenged,
     onChange,
@@ -131,6 +136,17 @@ function ChallengeForm({
     );
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+    // null while checking, then why they can't be challenged, or null in
+    // `error` if they can
+    const [check, setCheck] = useState<{ error: string | null } | null>(null);
+
+    useEffect(() => {
+        checkChallenge(challenged.id).then(setCheck, () =>
+            // Sending checks again and says what's wrong
+            setCheck({ error: null }),
+        );
+    }, [challenged.id]);
+    const blockedReason = check?.error ?? null;
 
     const isInvalid =
         !deadline ||
@@ -139,8 +155,8 @@ function ChallengeForm({
 
     function onSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        // The field already says what's wrong
-        if (isInvalid) {
+        // The field already says what's wrong, or the check does
+        if (isInvalid || !check || blockedReason) {
             return;
         }
         setError(null);
@@ -174,67 +190,75 @@ function ChallengeForm({
                         Change
                     </Button>
                 </div>
-                <DatePicker
-                    isRequired
-                    value={deadline}
-                    onChange={(value) => {
-                        setError(null);
-                        setDeadline(value);
-                    }}
-                    granularity="minute"
-                    hourCycle={24}
-                    minValue={limits.min}
-                    maxValue={limits.max}
-                    isInvalid={isInvalid}
-                    validationBehavior="aria"
-                >
-                    <Label>Deadline</Label>
-                    <DateField.Group fullWidth variant="secondary">
-                        <DateField.Input>
-                            {(segment) => (
-                                <DateField.Segment segment={segment} />
-                            )}
-                        </DateField.Input>
-                        <DateField.Suffix>
-                            <DatePicker.Trigger>
-                                <DatePicker.TriggerIndicator />
-                            </DatePicker.Trigger>
-                        </DateField.Suffix>
-                    </DateField.Group>
-                    <FieldError>
-                        {!deadline
-                            ? "Choose a deadline"
-                            : deadline.compare(limits.max) > 0
-                              ? DEADLINE_TOO_LATE_MESSAGE
-                              : DEADLINE_TOO_SOON_MESSAGE}
-                    </FieldError>
-                    <DatePicker.Popover>
-                        {/* HeroUI's Calendar sets its own limits unless
+                {blockedReason ? (
+                    <p className="text-sm text-danger" role="alert">
+                        {blockedReason}
+                    </p>
+                ) : (
+                    <DatePicker
+                        isRequired
+                        value={deadline}
+                        onChange={(value) => {
+                            setError(null);
+                            setDeadline(value);
+                        }}
+                        granularity="minute"
+                        hourCycle={24}
+                        minValue={limits.min}
+                        maxValue={limits.max}
+                        isInvalid={isInvalid}
+                        validationBehavior="aria"
+                    >
+                        <Label>Deadline</Label>
+                        <DateField.Group fullWidth variant="secondary">
+                            <DateField.Input>
+                                {(segment) => (
+                                    <DateField.Segment segment={segment} />
+                                )}
+                            </DateField.Input>
+                            <DateField.Suffix>
+                                <DatePicker.Trigger>
+                                    <DatePicker.TriggerIndicator />
+                                </DatePicker.Trigger>
+                            </DateField.Suffix>
+                        </DateField.Group>
+                        <FieldError>
+                            {!deadline
+                                ? "Choose a deadline"
+                                : deadline.compare(limits.max) > 0
+                                  ? DEADLINE_TOO_LATE_MESSAGE
+                                  : DEADLINE_TOO_SOON_MESSAGE}
+                        </FieldError>
+                        <DatePicker.Popover>
+                            {/* HeroUI's Calendar sets its own limits unless
                             given these, so earlier days could be chosen */}
-                        <Calendar
-                            aria-label="Deadline"
-                            minValue={limits.min}
-                            maxValue={limits.max}
-                        >
-                            <Calendar.Header>
-                                <Calendar.NavButton slot="previous" />
-                                <Calendar.NavButton slot="next" />
-                            </Calendar.Header>
-                            <Calendar.Grid>
-                                <Calendar.GridHeader>
-                                    {(day) => (
-                                        <Calendar.HeaderCell>
-                                            {day}
-                                        </Calendar.HeaderCell>
-                                    )}
-                                </Calendar.GridHeader>
-                                <Calendar.GridBody>
-                                    {(date) => <Calendar.Cell date={date} />}
-                                </Calendar.GridBody>
-                            </Calendar.Grid>
-                        </Calendar>
-                    </DatePicker.Popover>
-                </DatePicker>
+                            <Calendar
+                                aria-label="Deadline"
+                                minValue={limits.min}
+                                maxValue={limits.max}
+                            >
+                                <Calendar.Header>
+                                    <Calendar.NavButton slot="previous" />
+                                    <Calendar.NavButton slot="next" />
+                                </Calendar.Header>
+                                <Calendar.Grid>
+                                    <Calendar.GridHeader>
+                                        {(day) => (
+                                            <Calendar.HeaderCell>
+                                                {day}
+                                            </Calendar.HeaderCell>
+                                        )}
+                                    </Calendar.GridHeader>
+                                    <Calendar.GridBody>
+                                        {(date) => (
+                                            <Calendar.Cell date={date} />
+                                        )}
+                                    </Calendar.GridBody>
+                                </Calendar.Grid>
+                            </Calendar>
+                        </DatePicker.Popover>
+                    </DatePicker>
+                )}
                 {error && (
                     <p className="text-sm text-danger" role="alert">
                         {error}
@@ -245,10 +269,18 @@ function ChallengeForm({
                 <Button variant="tertiary" slot="close" isDisabled={isPending}>
                     Cancel
                 </Button>
-                <Button type="submit" variant="primary" isPending={isPending}>
-                    <Sword className="size-4" aria-hidden />
-                    Challenge
-                </Button>
+                {/* Only once it's known they can be challenged */}
+                {!blockedReason && (
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        isPending={isPending}
+                        isDisabled={!check}
+                    >
+                        <Sword className="size-4" aria-hidden />
+                        Challenge
+                    </Button>
+                )}
             </Modal.Footer>
         </form>
     );

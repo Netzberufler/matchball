@@ -35,6 +35,11 @@ export function checkDeadline(deadline: Date, now: Date): string | null {
     return null;
 }
 
+// Why a user can't challenge `name` while they have a challenge going
+export function activeChallengeMessage(name: string) {
+    return `You and ${name} already have a challenge going. Play it first, or wait until it's answered.`;
+}
+
 // Challenges declined after this time still keep their challenger from
 // challenging the same user again
 export function cooldownStart(now: Date) {

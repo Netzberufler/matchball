@@ -2,22 +2,38 @@
 
 import { z } from "zod";
 import { requireSession } from "@/features/auth/lib/session";
+import { checkCanChallenge } from "@/features/challenges/lib/challenge-checks";
 import {
+    activeChallengeMessage,
     challengePair,
     checkDeadline,
-    cooldownEnd,
-    cooldownStart,
-    formatWaitTime,
 } from "@/features/challenges/utils/challenge-rules";
 import { idSchema, parseActionInput } from "@/lib/action-input";
 import { revalidateAllPages } from "@/lib/revalidate";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
 
+// Whether the signed-in user can challenge this user now, checked as soon
+// as they're chosen in the popup, so it can say why not before a deadline
+// is picked. `error` is null if they can.
+export async function checkChallenge(
+    challengedIdInput: unknown,
+): Promise<{ error: string | null }> {
+    const { user } = await requireSession();
+    // Checked here: actions can be called with anything
+    const challengedId = parseActionInput(idSchema, challengedIdInput);
+    const { error } = await checkCanChallenge(
+        user.id,
+        challengedId,
+        new Date(),
+    );
+    return { error };
+}
+
 // The signed-in user challenges another user to a match, to be accepted or
 // declined until `deadline`. Refused while there's an active challenge
 // between the two, whoever made it, and for a few days after the other
-// user declined the signed-in user's last challenge.
+// user declined the signed-in user's last challenge (see checkCanChallenge).
 export async function createChallenge(
     challengedIdInput: unknown,
     deadlineInput: unknown,
@@ -32,36 +48,9 @@ export async function createChallenge(
     if (deadlineError) {
         return { error: deadlineError };
     }
-    if (challengedId === user.id) {
-        return { error: "You can't challenge yourself." };
-    }
-
-    // Both on indexes: the user's primary key, and the Challenge
-    // (challengerId, challengedId, answeredAt) index
-    const [challenged, declined] = await Promise.all([
-        prisma.user.findUnique({
-            where: { id: challengedId },
-            select: { name: true },
-        }),
-        prisma.challenge.findFirst({
-            where: {
-                challengerId: user.id,
-                challengedId,
-                status: "DECLINED",
-                answeredAt: { gt: cooldownStart(now) },
-            },
-            orderBy: { answeredAt: "desc" },
-            select: { answeredAt: true },
-        }),
-    ]);
-    if (!challenged) {
-        return { error: "This player doesn't exist anymore." };
-    }
-    if (declined?.answeredAt) {
-        const wait = formatWaitTime(cooldownEnd(declined.answeredAt), now);
-        return {
-            error: `${challenged.name} declined your last challenge. You can challenge them again ${wait}.`,
-        };
+    const check = await checkCanChallenge(user.id, challengedId, now);
+    if (check.error !== null) {
+        return { error: check.error };
     }
 
     const activePair = challengePair(user.id, challengedId);
@@ -84,15 +73,13 @@ export async function createChallenge(
             }),
         ]);
     } catch (error) {
-        // The unique activePair: there's an open or accepted challenge
-        // between the two already, maybe made by the other one just now
+        // The unique activePair: the other one challenged this user just
+        // now, after the check above
         if (
             error instanceof Prisma.PrismaClientKnownRequestError &&
             error.code === "P2002"
         ) {
-            return {
-                error: `You and ${challenged.name} already have a challenge going. Play it first, or wait until it's answered.`,
-            };
+            return { error: activeChallengeMessage(check.name) };
         }
         throw error;
     }
