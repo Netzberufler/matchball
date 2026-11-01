@@ -151,7 +151,7 @@ function ChallengeRow({
                 <LocalTime date={challenge.createdAt} format={dateFormat} />
             </Table.Cell>
             <Table.Cell>
-                <StatusChip state={challenge.state} />
+                <StatusChip state={challenge.state} won={challenge.won} />
                 {/* Who challenged whom, below the status */}{" "}
                 <span className="mt-1 block whitespace-nowrap text-xs text-muted">
                     {challenge.isChallenger
@@ -191,8 +191,21 @@ const STATUS_CHIPS: Record<
     played: { label: "Played", color: "default" },
 };
 
-function StatusChip({ state }: { state: ChallengeState }) {
-    const { label, color } = STATUS_CHIPS[state];
+// A played challenge shows how its match went for the viewer instead
+const RESULT_CHIPS = {
+    won: { label: "Won", color: "success" },
+    lost: { label: "Lost", color: "danger" },
+} as const;
+
+function StatusChip({
+    state,
+    won,
+}: {
+    state: ChallengeState;
+    won: boolean | null;
+}) {
+    const { label, color } =
+        won === null ? STATUS_CHIPS[state] : RESULT_CHIPS[won ? "won" : "lost"];
     return (
         <Chip size="sm" variant="soft" color={color}>
             {label}
@@ -237,11 +250,12 @@ function ChallengeActions({
     let content: React.ReactNode;
     if (state === "played" && matchId) {
         content = (
+            // A link styled as a HeroUI button
             <Link
                 href={matchPath(matchId)}
-                className="font-medium text-accent hover:underline"
+                className={buttonVariants({ size: "sm", variant: "tertiary" })}
             >
-                Result
+                View match
             </Link>
         );
     } else if (state === "accepted" && matchId) {

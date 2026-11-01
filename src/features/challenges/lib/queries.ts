@@ -32,8 +32,9 @@ const challengeSelect = {
     matchId: true,
     challenger: { select: publicUserSelect },
     challenged: { select: publicUserSelect },
-    // Who logged the match: the other player has to confirm it
-    match: { select: { player1Id: true } },
+    // Who logged the match, as the other player has to confirm it, and who
+    // won it
+    match: { select: { player1Id: true, winnerId: true } },
 } satisfies Prisma.ChallengeSelect;
 
 type ChallengeRow = Prisma.ChallengeGetPayload<{
@@ -56,6 +57,8 @@ export type ChallengeItem = {
     matchId: string | null;
     // Its match is pending and the user has to confirm it
     mustConfirmMatch: boolean;
+    // Once it's played: whether the user won its match
+    won: boolean | null;
 };
 
 // Where the user is on either side
@@ -83,6 +86,10 @@ function toChallengeItem(
             state === "accepted" &&
             challenge.match !== null &&
             challenge.match.player1Id !== userId,
+        won:
+            state === "played" && challenge.match
+                ? challenge.match.winnerId === userId
+                : null,
     };
 }
 
