@@ -1,0 +1,40 @@
+// The square logo: the tennis ball with the "one" box from the wordmark in
+// its top right corner. The seams and a ring around the box use the page
+// background color, so they read as cut-outs. Drawn in a 100-unit square;
+// "one" is a Figtree outline (weight 500). app/icon.svg is the same drawing.
+export function SquareMark({ className }: { className?: string }) {
+    return (
+        <svg
+            viewBox="0 0 100 100"
+            className={className}
+            aria-hidden
+            focusable="false"
+        >
+            <circle className="fill-foreground" cx="43" cy="57" r="41" />
+            <g
+                fill="none"
+                strokeWidth="2.25"
+                strokeLinecap="round"
+                transform="translate(-0.73 13.27) scale(2.7333) rotate(-45 16 16)"
+                className="stroke-background"
+            >
+                <path d="M6.2 4.6a15 15 0 0 1 0 22.8" />
+                <path d="M25.8 4.6a15 15 0 0 0 0 22.8" />
+            </g>
+            <rect
+                className="fill-accent stroke-background"
+                x="39.06"
+                y="2"
+                width="58.94"
+                height="32"
+                rx="9.14"
+                strokeWidth="6"
+                paintOrder="stroke"
+            />
+            <path
+                className="fill-accent-foreground"
+                d="M54.2 25.19Q52.14 25.19 50.58 24.27Q49.01 23.35 48.12 21.73Q47.23 20.11 47.23 18Q47.23 15.89 48.11 14.27Q48.98 12.65 50.55 11.73Q52.11 10.81 54.14 10.81Q56.17 10.81 57.73 11.73Q59.3 12.65 60.18 14.27Q61.05 15.89 61.05 18Q61.05 20.11 60.18 21.73Q59.3 23.35 57.75 24.27Q56.2 25.19 54.2 25.19ZM54.2 22.8Q55.43 22.8 56.39 22.18Q57.35 21.57 57.89 20.5Q58.42 19.43 58.42 18Q58.42 16.57 57.89 15.5Q57.35 14.43 56.36 13.82Q55.38 13.2 54.14 13.2Q52.88 13.2 51.92 13.82Q50.96 14.43 50.41 15.5Q49.86 16.57 49.86 18Q49.86 19.43 50.41 20.5Q50.96 21.57 51.95 22.18Q52.93 22.8 54.2 22.8ZM62.95 24.86V11.14H65.39L65.5 13.15Q66.18 12.02 67.27 11.42Q68.35 10.81 69.75 10.81Q71.37 10.81 72.56 11.47Q73.75 12.13 74.4 13.52Q75.04 14.9 75.04 17.15V24.86H72.44V17.84Q72.44 15.97 72.01 15Q71.59 14.02 70.83 13.64Q70.08 13.25 69.09 13.23Q67.42 13.23 66.48 14.41Q65.55 15.59 65.55 17.73V24.86ZM83.44 25.19Q81.43 25.19 79.9 24.27Q78.36 23.35 77.48 21.73Q76.61 20.11 76.61 18Q76.61 15.89 77.48 14.27Q78.36 12.65 79.91 11.73Q81.46 10.81 83.46 10.81Q85.36 10.81 86.78 11.76Q88.21 12.71 89.02 14.45Q89.83 16.19 89.83 18.55H79.27Q79.4 20.58 80.62 21.72Q81.84 22.85 83.63 22.85Q85 22.85 85.92 22.21Q86.84 21.57 87.36 20.58L89.61 21.62Q89.06 22.69 88.18 23.5Q87.3 24.31 86.11 24.75Q84.92 25.19 83.44 25.19ZM79.43 16.49H87.03Q86.95 15.39 86.44 14.64Q85.93 13.89 85.15 13.47Q84.37 13.06 83.41 13.06Q82.48 13.06 81.6 13.46Q80.72 13.86 80.13 14.63Q79.54 15.39 79.43 16.49Z"
+            />
+        </svg>
+    );
+}
