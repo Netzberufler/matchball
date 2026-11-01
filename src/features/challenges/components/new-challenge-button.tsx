@@ -45,9 +45,12 @@ import {
 export function NewChallengeButton({
     user,
     fullWidth = false,
+    size = "md",
 }: {
     user?: PublicUser;
     fullWidth?: boolean;
+    // "sm" next to the filter buttons above the challenges table
+    size?: "sm" | "md";
 }) {
     const [isOpen, setIsOpen] = useState(false);
     // Whom the user picked in the popup (`user: null` after Change); null
@@ -67,7 +70,7 @@ export function NewChallengeButton({
 
     return (
         <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-            <Button variant="primary" fullWidth={fullWidth}>
+            <Button variant="primary" size={size} fullWidth={fullWidth}>
                 <Sword className="size-4" aria-hidden />
                 Challenge
             </Button>

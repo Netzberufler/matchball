@@ -13,6 +13,7 @@ import {
 import { OpponentFilterMenu } from "@/components/ui/filter-menus";
 import { EmptyCard, RetryCard } from "@/components/ui/list-card";
 import { LoadMore } from "@/components/ui/load-more";
+import { ResetWhenHidden } from "@/components/ui/reset-when-hidden";
 import {
     acceptChallenge,
     declineChallenge,
@@ -43,6 +44,7 @@ import {
 import { useOnDemand } from "@/lib/use-on-demand";
 import { useLoadMore } from "@/lib/use-paged-list";
 import { ChallengeStatusMenu } from "./challenge-status-menu";
+import { NewChallengeButton } from "./new-challenge-button";
 
 type Page = FeedPage<ChallengeItem>;
 
@@ -89,15 +91,18 @@ export function ChallengeTable({
     // Without any challenges there's nothing to filter
     if (opponents.length === 0 && firstPage.items.length === 0) {
         return (
-            <EmptyCard>
-                No challenges yet. Challenge someone to a match.
-            </EmptyCard>
+            <div className="flex flex-col gap-3">
+                <ChallengeToolbar />
+                <EmptyCard>
+                    No challenges yet. Challenge someone to a match.
+                </EmptyCard>
+            </div>
         );
     }
 
     return (
         <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+            <ChallengeToolbar>
                 <ChallengeStatusMenu
                     statuses={filters.statuses}
                     onChange={(statuses) =>
@@ -120,7 +125,7 @@ export function ChallengeTable({
                         Clear filters
                     </Button>
                 )}
-            </div>
+            </ChallengeToolbar>
             {page ? (
                 // Keyed, so "Load more" starts over for other filters
                 <ChallengeList
@@ -197,9 +202,32 @@ function ChallengeList({
     );
 }
 
-// Placeholder rows while the challenges load
+// The buttons above the table: the filters (`children`), and the Challenge
+// button at the right end
+function ChallengeToolbar({ children }: { children?: React.ReactNode }) {
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            {children}
+            <div className="ml-auto">
+                {/* Hiding the page detaches the popup's labels; this starts
+                    it over instead */}
+                <ResetWhenHidden>
+                    <NewChallengeButton size="sm" />
+                </ResetWhenHidden>
+            </div>
+        </div>
+    );
+}
+
+// Placeholder rows while the challenges load, below the Challenge button,
+// which works already
 export function ChallengeTableFallback() {
-    return <ChallengeTableContent challenges={null} onChanged={() => {}} />;
+    return (
+        <div className="flex flex-col gap-3">
+            <ChallengeToolbar />
+            <ChallengeTableContent challenges={null} onChanged={() => {}} />
+        </div>
+    );
 }
 
 function ChallengeTableContent({
