@@ -7,6 +7,7 @@ import {
     Bell,
     Heart,
     MessageCircle,
+    Sword,
     Swords,
     UserPlus,
 } from "lucide-react";
@@ -37,6 +38,8 @@ const FILTER_ICONS = {
     replies: MessageCircle,
     likes: Heart,
     matches: Swords,
+    // The icon of Challenges in the nav
+    challenges: Sword,
 } satisfies Record<NotificationFilter, unknown>;
 
 // The notifications, filtered by the selected tab. "All" starts with

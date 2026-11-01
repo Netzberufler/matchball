@@ -6,7 +6,7 @@ export const NOTIFICATION_FILTERS = [
         label: "All",
         types: null,
         emptyMessage:
-            "No notifications yet. Follows, replies, likes, mentions and matches will show up here.",
+            "No notifications yet. Follows, replies, likes, mentions, matches and challenges will show up here.",
     },
     {
         key: "followers",
@@ -43,6 +43,17 @@ export const NOTIFICATION_FILTERS = [
             "MATCH_UPDATED",
         ],
         emptyMessage: "No match requests or answers yet.",
+    },
+    {
+        key: "challenges",
+        label: "Challenges",
+        types: [
+            "CHALLENGE_REQUEST",
+            "CHALLENGE_ACCEPTED",
+            "CHALLENGE_DECLINED",
+            "CHALLENGE_WITHDRAWN",
+        ],
+        emptyMessage: "No challenges or answers yet.",
     },
 ] as const;
 

@@ -3,15 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Chip } from "@heroui/react";
-import { AtSign, Heart, MessageCircle, Swords, UserPlus } from "lucide-react";
+import {
+    AtSign,
+    Heart,
+    MessageCircle,
+    Sword,
+    Swords,
+    UserPlus,
+} from "lucide-react";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { CHALLENGES_PATH } from "@/features/challenges/utils/challenge-path";
 import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import {
     formatPlayedAt,
     formatSet,
 } from "@/features/matches/utils/match-score";
 import { TextWithMentions } from "@/features/mentions/components/text-with-mentions";
+import type { ChallengeState } from "@/features/challenges/utils/challenge-rules";
 import type { UserNotification } from "@/features/notifications/lib/queries";
 import { ClickablePost } from "@/features/posts/components/clickable-post";
 import { postPath } from "@/features/posts/utils/post-path";
@@ -29,6 +38,11 @@ const TYPE_ICONS = {
     MATCH_DECLINED: { icon: Swords, className: "text-foreground" },
     MATCH_WITHDRAWN: { icon: Swords, className: "text-foreground" },
     MATCH_UPDATED: { icon: Swords, className: "text-foreground" },
+    // The icon of Challenges in the nav
+    CHALLENGE_REQUEST: { icon: Sword, className: "text-foreground" },
+    CHALLENGE_ACCEPTED: { icon: Sword, className: "text-foreground" },
+    CHALLENGE_DECLINED: { icon: Sword, className: "text-foreground" },
+    CHALLENGE_WITHDRAWN: { icon: Sword, className: "text-foreground" },
 };
 
 // How a match the user was asked to confirm was answered, after its score
@@ -38,6 +52,38 @@ const MATCH_STATUS_LABELS = {
     DECLINED: "Declined",
     WITHDRAWN: "Withdrawn",
 };
+
+// What's become of a challenge the user received, after its deadline, like
+// the table's status. Open ones need no label: the deadline says it.
+function challengeStateLabel({
+    state,
+    won,
+}: {
+    state: ChallengeState;
+    won: boolean | null;
+}) {
+    switch (state) {
+        case "open":
+            return null;
+        case "accepted":
+            return "Accepted";
+        case "declined":
+            return "Declined";
+        case "withdrawn":
+            return "Withdrawn";
+        case "expired":
+            return "Passed";
+        case "played":
+            return won ? "Won" : "Lost";
+    }
+}
+
+// E.g. "Nov 8, 2026, 14:00", in the user's time zone
+const deadlineFormat = new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    hourCycle: "h23",
+});
 
 // What the actor did, after their name
 function describeAction(notification: UserNotification) {
@@ -60,6 +106,14 @@ function describeAction(notification: UserNotification) {
             return "withdrew their match against you";
         case "MATCH_UPDATED":
             return "changed the match against you";
+        case "CHALLENGE_REQUEST":
+            return "challenged you to a match";
+        case "CHALLENGE_ACCEPTED":
+            return "accepted your challenge";
+        case "CHALLENGE_DECLINED":
+            return "declined your challenge";
+        case "CHALLENGE_WITHDRAWN":
+            return "withdrew their challenge";
     }
 }
 
@@ -111,6 +165,31 @@ function NotificationText({
                 </p>
             );
         }
+        // The deadline. A request also says what's become of it, as it
+        // stays after it was answered. The server renders the time in its
+        // own time zone, so React doesn't warn when the browser's differs.
+        case "CHALLENGE_REQUEST":
+        case "CHALLENGE_ACCEPTED":
+        case "CHALLENGE_DECLINED":
+        case "CHALLENGE_WITHDRAWN": {
+            const { challenge } = notification;
+            const stateLabel =
+                notification.type === "CHALLENGE_REQUEST"
+                    ? challengeStateLabel(challenge)
+                    : null;
+            return (
+                <p className="mt-1 text-sm text-muted">
+                    Deadline{" "}
+                    <time
+                        suppressHydrationWarning
+                        dateTime={challenge.deadline.toISOString()}
+                    >
+                        {deadlineFormat.format(challenge.deadline)}
+                    </time>
+                    {stateLabel && ` · ${stateLabel}`}
+                </p>
+            );
+        }
         // The liked text is the user's own, so it's muted; replies and
         // mentions are new to them
         default:
@@ -130,7 +209,7 @@ function NotificationText({
 }
 
 // Where a notification leads: the post, the follower's profile, or for a
-// match the matches page
+// match or challenge their page
 function notificationHref(notification: UserNotification) {
     switch (notification.type) {
         case "FOLLOW":
@@ -141,6 +220,11 @@ function notificationHref(notification: UserNotification) {
         case "MATCH_WITHDRAWN":
         case "MATCH_UPDATED":
             return MATCHES_PATH;
+        case "CHALLENGE_REQUEST":
+        case "CHALLENGE_ACCEPTED":
+        case "CHALLENGE_DECLINED":
+        case "CHALLENGE_WITHDRAWN":
+            return CHALLENGES_PATH;
         default:
             return postPath(notification.postId);
     }
@@ -173,7 +257,8 @@ function NewBadge({ onDismiss }: { onDismiss: () => void }) {
 
 // One notification: what kind it is, who did it, and the text it's about.
 // Like a post in a feed, all of it leads to the post, or for a follow to
-// the follower's profile and for a match to /matches (see ClickablePost),
+// the follower's profile and for a match or challenge to their page (see
+// ClickablePost),
 // and its time is the link for keyboards and screen readers.
 // `isNew` shows the "New" badge on the right, which `onDismissNew` hides.
 export function NotificationItem({

@@ -2,6 +2,10 @@ import "server-only";
 
 import type { MatchStatus, Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/db";
+import {
+    type ChallengeState,
+    challengeState,
+} from "@/features/challenges/utils/challenge-rules";
 import { getSets, type SetScore } from "@/features/matches/utils/match-score";
 import { mentionsSelect, toUsernames } from "@/features/mentions/lib/queries";
 import {
@@ -16,8 +20,8 @@ import {
     toPage,
 } from "@/features/posts/utils/feed";
 
-// Only what a notification shows. The actor, post, comment and match each
-// come in one query per page, by primary key.
+// Only what a notification shows. The actor, post, comment, match and
+// challenge each come in one query per page, by primary key.
 const notificationSelect = {
     id: true,
     type: true,
@@ -43,6 +47,13 @@ const notificationSelect = {
             set3IsMatchTiebreak: true,
         },
     },
+    challenge: {
+        select: {
+            deadline: true,
+            status: true,
+            match: { select: { winnerId: true } },
+        },
+    },
 } satisfies Prisma.NotificationSelect;
 
 type NotificationRow = Prisma.NotificationGetPayload<{
@@ -54,9 +65,15 @@ type MatchNotificationType = Extract<
     `MATCH_${string}`
 >;
 
+type ChallengeNotificationType = Extract<
+    NotificationRow["type"],
+    `CHALLENGE_${string}`
+>;
+
 // A follow links to the follower's profile and shows no text; match
-// notifications link to /matches and show the match; the other kinds are
-// about a post or reply
+// notifications link to /matches and show the match; challenge
+// notifications link to /challenges and show the challenge; the other
+// kinds are about a post or reply
 export type UserNotification = {
     id: string;
     createdAt: Date;
@@ -77,9 +94,20 @@ export type UserNotification = {
           } | null;
       }
     | {
+          type: ChallengeNotificationType;
+          // Its deadline and what's become of it since, e.g. that a
+          // challenge the user received was accepted, with `won` once it's
+          // played
+          challenge: {
+              deadline: Date;
+              state: ChallengeState;
+              won: boolean | null;
+          };
+      }
+    | {
           type: Exclude<
               NotificationRow["type"],
-              "FOLLOW" | MatchNotificationType
+              "FOLLOW" | MatchNotificationType | ChallengeNotificationType
           >;
           // The post page it links to
           postId: string;
@@ -99,16 +127,44 @@ function isMatchNotificationType(
     return type.startsWith("MATCH_");
 }
 
-function toUserNotification({
-    userId,
-    type,
-    post,
-    comment,
-    match,
-    readAt,
-    ...rest
-}: NotificationRow): UserNotification {
+function isChallengeNotificationType(
+    type: NotificationRow["type"],
+): type is ChallengeNotificationType {
+    return type.startsWith("CHALLENGE_");
+}
+
+// `now` decides whether an open challenge has expired
+function toUserNotification(
+    {
+        userId,
+        type,
+        post,
+        comment,
+        match,
+        challenge,
+        readAt,
+        ...rest
+    }: NotificationRow,
+    now: Date,
+): UserNotification {
     const notification = { ...rest, isNew: readAt === null };
+    // Challenge notifications are deleted with their challenge, so they
+    // always have one
+    if (isChallengeNotificationType(type) && challenge) {
+        const state = challengeState(challenge.status, challenge.deadline, now);
+        return {
+            ...notification,
+            type,
+            challenge: {
+                deadline: challenge.deadline,
+                state,
+                won:
+                    state === "played" && challenge.match
+                        ? challenge.match.winnerId === userId
+                        : null,
+            },
+        };
+    }
     if (isMatchNotificationType(type)) {
         return {
             ...notification,
@@ -123,8 +179,12 @@ function toUserNotification({
             },
         };
     }
-    // Only follows are about no post
-    if (type === "FOLLOW" || post === null) {
+    // Only follows (and challenges) are about no post
+    if (
+        type === "FOLLOW" ||
+        isChallengeNotificationType(type) ||
+        post === null
+    ) {
         return { ...notification, type: "FOLLOW" };
     }
     const shown = comment ?? post;
@@ -159,7 +219,12 @@ export async function getNotificationsPage(
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: FEED_PAGE_SIZE + 1,
     });
-    return toPage(notifications.map(toUserNotification));
+    const now = new Date();
+    return toPage(
+        notifications.map((notification) =>
+            toUserNotification(notification, now),
+        ),
+    );
 }
 
 // How many of the user's notifications are new, for the nav. Reads the

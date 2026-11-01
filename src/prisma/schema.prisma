@@ -294,6 +294,13 @@ enum NotificationType {
   // The other player changed the date or score of a pending match, which
   // the user now has to accept or decline
   MATCH_UPDATED
+  // Someone challenged the user to a match, to accept or decline
+  CHALLENGE_REQUEST
+  // The user's challenge was accepted, declined, or withdrawn by its
+  // challenger
+  CHALLENGE_ACCEPTED
+  CHALLENGE_DECLINED
+  CHALLENGE_WITHDRAWN
 }
 
 // Something that happened to a user's posts or replies, shown on
@@ -301,32 +308,36 @@ enum NotificationType {
 // mention), in the same transaction, so the list is a single indexed read
 // instead of collecting replies, likes and mentions on every page view.
 model Notification {
-  id        String           @id @default(uuid(7)) @db.Uuid
+  id          String           @id @default(uuid(7)) @db.Uuid
   // Who is notified
-  userId    String           @db.Uuid
-  user      User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String           @db.Uuid
+  user        User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
   // Who replied, liked, mentioned or followed
-  actorId   String           @db.Uuid
-  actor     User             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
-  type      NotificationType
+  actorId     String           @db.Uuid
+  actor       User             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type        NotificationType
   // The post it's about, which it links to. Set on all but FOLLOW, which
   // links to the follower's profile.
-  postId    String?          @db.Uuid
-  post      Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      String?          @db.Uuid
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
   // Set when it's about a reply: the new reply (REPLY), the liked reply
   // (LIKE) or the reply with the mention (MENTION). Null when it's about
   // the post itself.
-  commentId String?          @db.Uuid
-  comment   Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId   String?          @db.Uuid
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
   // The match it's about, set on all MATCH_ types. Declined and withdrawn
   // matches are kept (see MatchStatus), so these still show their date and
   // score.
-  matchId   String?          @db.Uuid
-  match     Match?           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId     String?          @db.Uuid
+  match       Match?           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  // The challenge it's about, set on all CHALLENGE_ types. Answered
+  // challenges are kept, so these still show what happened to it.
+  challengeId String?          @db.Uuid
+  challenge   Challenge?       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
-  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
   // When the user first saw it on /notifications; null while it's new
-  readAt    DateTime?        @db.Timestamptz(3)
+  readAt      DateTime?        @db.Timestamptz(3)
 
   // A user's notifications, newest first, paged by (createdAt, id). Also
   // for deleting them with the user.
@@ -344,6 +355,8 @@ model Notification {
   @@index([actorId, userId])
   // Deleting them with the match
   @@index([matchId])
+  // Deleting them with the challenge
+  @@index([challengeId])
 }
 
 enum MatchStatus {
@@ -496,28 +509,30 @@ enum ChallengeStatus {
 // is, and its unique index refuses a second one, even when both write at
 // once. Every action that ends a challenge clears it in the same statement.
 model Challenge {
-  id           String          @id @default(uuid(7)) @db.Uuid
-  challengerId String          @db.Uuid
-  challenger   User            @relation("ChallengeChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
-  challengedId String          @db.Uuid
-  challenged   User            @relation("ChallengeChallenged", fields: [challengedId], references: [id], onDelete: Cascade)
-  status       ChallengeStatus @default(OPEN)
+  id            String          @id @default(uuid(7)) @db.Uuid
+  challengerId  String          @db.Uuid
+  challenger    User            @relation("ChallengeChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  challengedId  String          @db.Uuid
+  challenged    User            @relation("ChallengeChallenged", fields: [challengedId], references: [id], onDelete: Cascade)
+  status        ChallengeStatus @default(OPEN)
   // Until when it can be accepted or declined
-  deadline     DateTime        @db.Timestamptz(3)
+  deadline      DateTime        @db.Timestamptz(3)
   // "<smaller user id>:<larger user id>" while OPEN or ACCEPTED, null
   // after (see challengePair in src/features/challenges/utils/challenge-rules.ts).
   // Postgres lets any number of rows be null.
-  activePair   String?         @unique @db.VarChar(73)
+  activePair    String?         @unique @db.VarChar(73)
   // When it was accepted or declined
-  answeredAt   DateTime?       @db.Timestamptz(3)
+  answeredAt    DateTime?       @db.Timestamptz(3)
   // The match logged for it. Set while that match is pending too: a
   // declined or withdrawn match unsets it, so the match can be logged
   // again, and a confirmed one makes the challenge PLAYED.
-  matchId      String?         @unique @db.Uuid
-  match        Match?          @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  matchId       String?         @unique @db.Uuid
+  match         Match?          @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  // The request to the challenged user, and the notices of how it went
+  notifications Notification[]
   // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
-  createdAt    DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime        @updatedAt @db.Timestamptz(6)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(6)
 
   // A user's challenges, newest first, from both columns: Postgres
   // combines the two indexes for "challengerId = X OR challengedId = X"

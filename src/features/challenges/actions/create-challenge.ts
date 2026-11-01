@@ -68,6 +68,14 @@ export async function createChallenge(
                     challengedId,
                     deadline,
                     activePair,
+                    // The challenged user's request, written with it
+                    notifications: {
+                        create: {
+                            userId: challengedId,
+                            actorId: user.id,
+                            type: "CHALLENGE_REQUEST",
+                        },
+                    },
                 },
                 select: { id: true },
             }),
@@ -84,7 +92,7 @@ export async function createChallenge(
         throw error;
     }
 
-    // Shows in both users' tables
+    // Shows in both users' tables and the challenged user's notifications
     revalidateAllPages();
     return { error: null };
 }
