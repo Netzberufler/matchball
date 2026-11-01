@@ -56,6 +56,9 @@ model User {
   conversationsAsUser2 Conversation[]   @relation("ConversationUser2")
   sentMessages         Message[]        @relation("MessageSender")
   receivedMessages     Message[]        @relation("MessageRecipient")
+  // Challenges to a match on /challenges, on either side
+  challengesMade       Challenge[]      @relation("ChallengeChallenger")
+  challengesReceived   Challenge[]      @relation("ChallengeChallenged")
 
   // The mention search: case-insensitive matches anywhere in the name
   // (ILIKE). Usernames are searched by prefix through their unique index,
@@ -397,6 +400,8 @@ model Match {
   status              MatchStatus    @default(PENDING)
   // The request to player 2, and the notice of how it was answered
   notifications       Notification[]
+  // The challenge it was logged for, if any
+  challenge           Challenge?
   createdAt           DateTime       @default(now()) @db.Timestamptz(6)
   // Milliseconds, like JavaScript dates: the edit form sends it back as
   // the version it was loaded from, which must still match exactly
@@ -463,4 +468,61 @@ model Message {
   @@index([recipientId, readAt])
   // Deleting them with the sender
   @@index([senderId])
+}
+
+enum ChallengeStatus {
+  // Waiting for the challenged user to accept or decline it, until the
+  // deadline. Past the deadline it's shown as expired and can't be
+  // accepted; it's only set to EXPIRED when the pair needs the slot again
+  // (see src/features/challenges/actions/create-challenge.ts).
+  OPEN
+  // Accepted: either player can log the match, which links it here
+  ACCEPTED
+  // Declined by the challenged user. The challenger can't challenge them
+  // again for a few days (CHALLENGE_COOLDOWN_DAYS in
+  // src/features/challenges/utils/challenge-rules.ts).
+  DECLINED
+  // Withdrawn by the challenger, while open or accepted
+  WITHDRAWN
+  // Not answered before the deadline
+  EXPIRED
+  // Its match was logged and confirmed
+  PLAYED
+}
+
+// A user (challenger) challenging another (challenged) to a match, on
+// /challenges. Only one challenge between two users can be active (OPEN or
+// ACCEPTED) at a time, whoever made it: activePair holds the pair while it
+// is, and its unique index refuses a second one, even when both write at
+// once. Every action that ends a challenge clears it in the same statement.
+model Challenge {
+  id           String          @id @default(uuid(7)) @db.Uuid
+  challengerId String          @db.Uuid
+  challenger   User            @relation("ChallengeChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  challengedId String          @db.Uuid
+  challenged   User            @relation("ChallengeChallenged", fields: [challengedId], references: [id], onDelete: Cascade)
+  status       ChallengeStatus @default(OPEN)
+  // Until when it can be accepted or declined
+  deadline     DateTime        @db.Timestamptz(3)
+  // "<smaller user id>:<larger user id>" while OPEN or ACCEPTED, null
+  // after (see challengePair in src/features/challenges/utils/challenge-rules.ts).
+  // Postgres lets any number of rows be null.
+  activePair   String?         @unique @db.VarChar(73)
+  // When it was accepted or declined
+  answeredAt   DateTime?       @db.Timestamptz(3)
+  // The match logged for it. Set while that match is pending too: a
+  // declined or withdrawn match unsets it, so the match can be logged
+  // again, and a confirmed one makes the challenge PLAYED.
+  matchId      String?         @unique @db.Uuid
+  match        Match?          @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  // Milliseconds, like Post.createdAt, for (createdAt, id) cursors
+  createdAt    DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @db.Timestamptz(6)
+
+  // A user's challenges, newest first, from both columns: Postgres
+  // combines the two indexes for "challengerId = X OR challengedId = X"
+  @@index([challengerId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([challengedId, createdAt(sort: Desc), id(sort: Desc)])
+  // The challenger's latest declined challenge to a user, for the cooldown
+  @@index([challengerId, challengedId, answeredAt(sort: Desc)])
 }

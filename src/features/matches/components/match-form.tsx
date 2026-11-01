@@ -30,6 +30,7 @@ import {
     SET_NUMBERS,
     toMatchFormError,
 } from "@/features/matches/utils/match-form";
+import { CHALLENGES_PATH } from "@/features/challenges/utils/challenge-path";
 import { MATCHES_PATH } from "@/features/matches/utils/match-path";
 import {
     areFirstSetsSplit,
@@ -40,6 +41,9 @@ import {
 } from "@/features/matches/utils/match-score";
 import { OpponentComboBox } from "./opponent-combo-box";
 import type { PublicUser } from "@/features/profile/utils/public-user";
+
+// An accepted challenge whose match is logged with the form
+export type ChallengeToLog = { id: string; opponent: PublicUser };
 
 type ScoreFormError = Extract<MatchFormError, { field: "score" }>;
 
@@ -71,20 +75,25 @@ function enteredWinner(scores: Scores) {
 // and the games of each set from the user's side. With `match`, edits that
 // pending match instead: it starts out filled in, and the opponent can't be
 // changed. A new match can start with `initialOpponent` chosen, who can
-// still be changed. Saving goes to /matches.
+// still be changed. With `challenge`, it's the match of that accepted
+// challenge, whose opponent can't be changed either. Saving goes to
+// /matches, or for a challenge to /challenges.
 export function MatchForm({
     viewer,
     match,
     initialOpponent = null,
+    challenge,
 }: {
     viewer: Viewer;
     match?: EditableMatch;
     initialOpponent?: PublicUser | null;
+    challenge?: ChallengeToLog;
 }) {
     const [pickedOpponent, setOpponent] = useState<PublicUser | null>(
         initialOpponent,
     );
-    const opponent = match?.opponent ?? pickedOpponent;
+    const opponent = match?.opponent ?? challenge?.opponent ?? pickedOpponent;
+    const cancelHref = challenge ? CHALLENGES_PATH : MATCHES_PATH;
     const [isPending, startTransition] = useTransition();
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [scoreError, setScoreError] = useState<ScoreFormError | null>(null);
@@ -132,7 +141,7 @@ export function MatchForm({
             // Redirects to /matches on success, so only errors come back
             const { error } = match
                 ? await updateMatch(match.id, match.version, formData)
-                : await createMatch(formData);
+                : await createMatch(formData, challenge?.id);
             showError(error);
         });
     }
@@ -160,19 +169,31 @@ export function MatchForm({
                         onChange={() => setFormError(null)}
                     />
 
-                    {/* Fixed when editing: the versus line below shows it */}
-                    {!match && (
-                        <OpponentComboBox
+                    {/* Fixed when editing or logging a challenge: the
+                        versus line below shows it. A challenge's opponent
+                        is still sent, like the field would. */}
+                    {challenge ? (
+                        <input
+                            type="hidden"
                             name={OPPONENT_FIELD}
-                            defaultOpponent={initialOpponent}
-                            onChange={setOpponent}
+                            value={challenge.opponent.id}
                         />
+                    ) : (
+                        !match && (
+                            <OpponentComboBox
+                                name={OPPONENT_FIELD}
+                                defaultOpponent={initialOpponent}
+                                onChange={setOpponent}
+                            />
+                        )
                     )}
 
                     {opponent && (
                         <section className="flex flex-col gap-2">
                             {/* Styled like the fields' labels */}
-                            <h2 className="text-sm font-medium">Match</h2>
+                            <h2 className="text-sm font-medium">
+                                {challenge ? "Challenge match" : "Match"}
+                            </h2>
                             <p className="flex min-w-0 items-center gap-2 text-sm">
                                 <MatchPlayer user={viewer} />
                                 <span className="shrink-0 text-muted">
@@ -247,7 +268,7 @@ export function MatchForm({
                         </Button>
                         {/* A link styled as a HeroUI button */}
                         <Link
-                            href={MATCHES_PATH}
+                            href={cancelHref}
                             className={buttonVariants({ variant: "tertiary" })}
                         >
                             Cancel
@@ -316,7 +337,9 @@ function PlayedAtPicker({
             </DateField.Group>
             <FieldError />
             <DatePicker.Popover>
-                <Calendar aria-label="Match date">
+                {/* HeroUI's Calendar sets its own limits unless given
+                    this, so later days could be chosen */}
+                <Calendar aria-label="Match date" maxValue={maxValue}>
                     <Calendar.Header>
                         <Calendar.NavButton slot="previous" />
                         <Calendar.NavButton slot="next" />

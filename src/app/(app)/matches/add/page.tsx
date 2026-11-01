@@ -1,11 +1,18 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Skeleton } from "@heroui/react";
 import { BackButton } from "@/components/ui/back-button";
 import { requireSession } from "@/features/auth/lib/session";
+import { EmptyCard } from "@/components/ui/list-card";
+import { getLoggableChallenge } from "@/features/challenges/lib/queries";
+import { CHALLENGES_PATH } from "@/features/challenges/utils/challenge-path";
 import { AddMatchForm } from "@/features/matches/components/add-match-form";
-import { OPPONENT_PARAM } from "@/features/matches/utils/match-path";
-import { MATCHES_PATH } from "@/features/matches/utils/match-path";
+import {
+    CHALLENGE_PARAM,
+    MATCHES_PATH,
+    OPPONENT_PARAM,
+} from "@/features/matches/utils/match-path";
 import { getProfileUser } from "@/features/profile/lib/queries";
 
 export const metadata: Metadata = {
@@ -32,7 +39,9 @@ export default function AddMatchPage({
 // Rendered at request time, not prerendered: the date picker works from
 // today's date. With ?opponent=<username> (from a profile), the form starts
 // with that user as the opponent, unless there's no such user or it's the
-// viewer, who can't play themselves.
+// viewer, who can't play themselves. With ?challenge=<id> (from
+// /challenges), it's the match of that accepted challenge, whose opponent
+// is fixed.
 async function AddMatch({
     searchParams,
 }: {
@@ -42,6 +51,29 @@ async function AddMatch({
         requireSession(),
         searchParams,
     ]);
+    const viewer = { name: user.name, image: user.image };
+
+    const challengeId = params[CHALLENGE_PARAM];
+    if (typeof challengeId === "string") {
+        const challenge = await getLoggableChallenge(challengeId, user.id);
+        if (!challenge) {
+            return (
+                <EmptyCard>
+                    This challenge&apos;s match was already logged, or the
+                    challenge isn&apos;t accepted. See your{" "}
+                    <Link
+                        href={CHALLENGES_PATH}
+                        className="text-accent hover:underline"
+                    >
+                        challenges
+                    </Link>
+                    .
+                </EmptyCard>
+            );
+        }
+        return <AddMatchForm viewer={viewer} challenge={challenge} />;
+    }
+
     const username = params[OPPONENT_PARAM];
     const found =
         typeof username === "string" ? await getProfileUser(username) : null;
@@ -54,10 +86,5 @@ async function AddMatch({
                   image: found.image,
               }
             : null;
-    return (
-        <AddMatchForm
-            viewer={{ name: user.name, image: user.image }}
-            opponent={opponent}
-        />
-    );
+    return <AddMatchForm viewer={viewer} opponent={opponent} />;
 }

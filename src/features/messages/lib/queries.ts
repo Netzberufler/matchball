@@ -25,8 +25,6 @@ const CONVERSATION_PAGE_SIZE = 20;
 export const MESSAGE_PAGE_SIZE = 30;
 // Messages a poll brings at most; the rest come with the next one
 const NEW_MESSAGES_MAX = 100;
-// People you follow suggested in the New chat popup
-const CHAT_SUGGESTIONS_COUNT = 5;
 
 // The user a conversation page is with, or null if there's no such user.
 // cache() shares the lookup between generateMetadata and the page.
@@ -215,19 +213,4 @@ export async function markMessagesRead(conversationId: string, userId: string) {
         data: { readAt: new Date() },
     });
     return count;
-}
-
-// People the user follows, the latest follows first, to suggest in the
-// New chat popup. Reads the Follow (followerId, createdAt, followingId)
-// index.
-export async function getChatSuggestions(
-    userId: string,
-): Promise<PublicUser[]> {
-    const follows = await prisma.follow.findMany({
-        where: { followerId: userId },
-        select: { following: { select: publicUserSelect } },
-        orderBy: [{ createdAt: "desc" }, { followingId: "desc" }],
-        take: CHAT_SUGGESTIONS_COUNT,
-    });
-    return follows.map(({ following }) => following);
 }

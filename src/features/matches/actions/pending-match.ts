@@ -104,6 +104,21 @@ async function answerMatch(
                     matchId,
                 },
             });
+            // Its challenge, if it was logged for one, on the unique
+            // Challenge.matchId: a confirmed match plays it, which frees the
+            // pair for a new challenge; otherwise its match can be logged
+            // again
+            if (status === "CONFIRMED") {
+                await tx.challenge.updateMany({
+                    where: { matchId, status: "ACCEPTED" },
+                    data: { status: "PLAYED", activePair: null },
+                });
+            } else {
+                await tx.challenge.updateMany({
+                    where: { matchId },
+                    data: { matchId: null },
+                });
+            }
         }
         return match !== undefined;
     });

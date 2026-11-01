@@ -1,7 +1,7 @@
 "use server";
 
 import { requireSession } from "@/features/auth/lib/session";
-import { getChatSuggestions } from "@/features/messages/lib/queries";
+import { getRecentlyFollowed } from "@/features/follows/lib/queries";
 import type { PublicUser } from "@/features/profile/utils/public-user";
 import { findUsersByNameOrUsername } from "@/features/search/lib/find-users";
 
@@ -16,5 +16,5 @@ export async function searchChatUsers(query: unknown): Promise<PublicUser[]> {
 // People the signed-in user follows, suggested when the popup opens
 export async function loadChatSuggestions(): Promise<PublicUser[]> {
     const { user } = await requireSession();
-    return getChatSuggestions(user.id);
+    return getRecentlyFollowed(user.id);
 }

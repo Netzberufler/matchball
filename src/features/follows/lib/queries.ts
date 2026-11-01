@@ -33,6 +33,24 @@ export async function isFollowing(followerId: string, followingId: string) {
     return follow !== null;
 }
 
+// People the user follows suggested in the New chat and Challenge popups
+const RECENTLY_FOLLOWED_COUNT = 5;
+
+// People the user follows, the latest follows first, to suggest when they
+// pick someone to chat with or challenge. Reads the Follow (followerId,
+// createdAt, followingId) index.
+export async function getRecentlyFollowed(
+    userId: string,
+): Promise<PublicUser[]> {
+    const follows = await prisma.follow.findMany({
+        where: { followerId: userId },
+        select: { following: { select: publicUserSelect } },
+        orderBy: [{ createdAt: "desc" }, { followingId: "desc" }],
+        take: RECENTLY_FOLLOWED_COUNT,
+    });
+    return follows.map(({ following }) => following);
+}
+
 // People suggested to the viewer on the Explore page
 const SUGGESTED_USERS_COUNT = 5;
 

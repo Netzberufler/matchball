@@ -22,3 +22,12 @@ export function addMatchPath(opponentUsername?: string) {
         ? `${MATCHES_PATH}/add?${new URLSearchParams({ [OPPONENT_PARAM]: opponentUsername })}`
         : `${MATCHES_PATH}/add`;
 }
+
+// The add match form's query parameter for an accepted challenge's id: the
+// match is logged for it, against its other player, who can't be changed
+export const CHALLENGE_PARAM = "challenge";
+
+// The add match form for the match of an accepted challenge
+export function logChallengeMatchPath(challengeId: string) {
+    return `${MATCHES_PATH}/add?${new URLSearchParams({ [CHALLENGE_PARAM]: challengeId })}`;
+}
