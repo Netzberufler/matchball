@@ -27,7 +27,7 @@ export function Logo({
         >
             {compact && <SquareMark className="size-9 shrink-0 lg:hidden" />}
             <Wordmark
-                className={`h-[0.957em] w-auto shrink-0 ${
+                className={`h-[1.05em] w-auto shrink-0 ${
                     compact ? "hidden lg:block" : ""
                 }`}
             />

@@ -1,4 +1,4 @@
-// The square logo: the tennis ball with the "one" box from the wordmark in
+// The square logo: the tennis ball with a "one" box in
 // its bottom right corner, both in the accent color. The seams and a ring
 // around the box use the page background color, so they read as cut-outs.
 // Drawn in a 100-unit square; "one" is a Figtree outline (weight 500).
@@ -11,6 +11,15 @@ export function SquareMark({ className }: { className?: string }) {
             aria-hidden
             focusable="false"
         >
+            <SquareMarkShapes />
+        </svg>
+    );
+}
+
+// The drawing itself, also used in the wordmark
+export function SquareMarkShapes() {
+    return (
+        <>
             <circle className="fill-accent" cx="42.5" cy="42.5" r="42" />
             <g
                 fill="none"
@@ -36,6 +45,6 @@ export function SquareMark({ className }: { className?: string }) {
                 className="fill-accent-foreground"
                 d="M54.2 89.19Q52.14 89.19 50.58 88.27Q49.01 87.35 48.12 85.73Q47.23 84.11 47.23 82Q47.23 79.89 48.11 78.27Q48.98 76.65 50.55 75.73Q52.11 74.81 54.14 74.81Q56.17 74.81 57.73 75.73Q59.3 76.65 60.18 78.27Q61.05 79.89 61.05 82Q61.05 84.11 60.18 85.73Q59.3 87.35 57.75 88.27Q56.2 89.19 54.2 89.19ZM54.2 86.8Q55.43 86.8 56.39 86.18Q57.35 85.57 57.89 84.5Q58.42 83.43 58.42 82Q58.42 80.57 57.89 79.5Q57.35 78.43 56.36 77.82Q55.38 77.2 54.14 77.2Q52.88 77.2 51.92 77.82Q50.96 78.43 50.41 79.5Q49.86 80.57 49.86 82Q49.86 83.43 50.41 84.5Q50.96 85.57 51.95 86.18Q52.93 86.8 54.2 86.8ZM62.95 88.86V75.14H65.39L65.5 77.15Q66.18 76.02 67.27 75.42Q68.35 74.81 69.75 74.81Q71.37 74.81 72.56 75.47Q73.75 76.13 74.4 77.52Q75.04 78.9 75.04 81.15V88.86H72.44V81.84Q72.44 79.97 72.01 79Q71.59 78.02 70.83 77.64Q70.08 77.25 69.09 77.23Q67.42 77.23 66.48 78.41Q65.55 79.59 65.55 81.73V88.86ZM83.44 89.19Q81.43 89.19 79.9 88.27Q78.36 87.35 77.48 85.73Q76.61 84.11 76.61 82Q76.61 79.89 77.48 78.27Q78.36 76.65 79.91 75.73Q81.46 74.81 83.46 74.81Q85.36 74.81 86.78 75.76Q88.21 76.71 89.02 78.45Q89.83 80.19 89.83 82.55H79.27Q79.4 84.58 80.62 85.72Q81.84 86.85 83.63 86.85Q85 86.85 85.92 86.21Q86.84 85.57 87.36 84.58L89.61 85.62Q89.06 86.69 88.18 87.5Q87.3 88.31 86.11 88.75Q84.92 89.19 83.44 89.19ZM79.43 80.49H87.03Q86.95 79.39 86.44 78.64Q85.93 77.89 85.15 77.47Q84.37 77.06 83.41 77.06Q82.48 77.06 81.6 77.46Q80.72 77.86 80.13 78.63Q79.54 79.39 79.43 80.49Z"
             />
-        </svg>
+        </>
     );
 }
