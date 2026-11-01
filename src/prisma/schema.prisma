@@ -482,7 +482,7 @@ enum ChallengeStatus {
   // again for a few days (CHALLENGE_COOLDOWN_DAYS in
   // src/features/challenges/utils/challenge-rules.ts).
   DECLINED
-  // Withdrawn by the challenger, while open or accepted
+  // Withdrawn by the challenger, only while open
   WITHDRAWN
   // Not answered before the deadline
   EXPIRED

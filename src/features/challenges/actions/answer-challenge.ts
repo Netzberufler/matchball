@@ -54,9 +54,8 @@ export async function declineChallenge(
     );
 }
 
-// Withdraws a challenge the signed-in user made: while it's open, or
-// accepted but its match isn't logged yet, so an accepted challenge that's
-// never played doesn't hold the pair forever
+// Withdraws a challenge the signed-in user made, only while it's open:
+// once accepted, it's on
 export async function withdrawChallenge(
     challengeIdInput: unknown,
 ): Promise<AnswerResult> {
@@ -65,13 +64,7 @@ export async function withdrawChallenge(
     return answerChallenge(
         challengeIdInput,
         user.id,
-        {
-            challengerId: user.id,
-            OR: [
-                { status: "OPEN", deadline: { gt: now } },
-                { status: "ACCEPTED", matchId: null },
-            ],
-        },
+        { challengerId: user.id, status: "OPEN", deadline: { gt: now } },
         { status: "WITHDRAWN", activePair: null },
     );
 }

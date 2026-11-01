@@ -230,9 +230,8 @@ function ChallengeActions({
     }
 
     const canAnswer = state === "open" && !isChallenger;
-    const canWithdraw =
-        isChallenger &&
-        (state === "open" || (state === "accepted" && !matchId));
+    // Only while open: once accepted, it's on
+    const canWithdraw = state === "open" && isChallenger;
     const canLogMatch = state === "accepted" && !matchId;
 
     let content: React.ReactNode;
