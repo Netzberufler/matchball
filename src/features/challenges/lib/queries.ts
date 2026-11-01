@@ -46,8 +46,8 @@ export type ChallengeItem = {
     // When it was made
     createdAt: Date;
     deadline: Date;
-    challenger: PublicUser;
-    challenged: PublicUser;
+    // The other user: whom the user challenged, or who challenged them
+    opponent: PublicUser;
     // The user made it, rather than received it
     isChallenger: boolean;
     state: ChallengeState;
@@ -70,13 +70,13 @@ function toChallengeItem(
     now: Date,
 ): ChallengeItem {
     const state = challengeState(challenge.status, challenge.deadline, now);
+    const isChallenger = challenge.challenger.id === userId;
     return {
         id: challenge.id,
         createdAt: challenge.createdAt,
         deadline: challenge.deadline,
-        challenger: challenge.challenger,
-        challenged: challenge.challenged,
-        isChallenger: challenge.challenger.id === userId,
+        opponent: isChallenger ? challenge.challenged : challenge.challenger,
+        isChallenger,
         state,
         matchId: challenge.matchId,
         mustConfirmMatch:

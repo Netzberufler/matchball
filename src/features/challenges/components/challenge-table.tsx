@@ -31,7 +31,6 @@ import {
     mergeLatestPage,
     replaceItems,
 } from "@/features/posts/utils/feed";
-import type { PublicUser } from "@/features/profile/utils/public-user";
 import { usePagedList } from "@/lib/use-paged-list";
 
 // The signed-in user's challenges, made and received, newest first, with
@@ -102,14 +101,13 @@ function ChallengeTableContent({
             <Table.ScrollContainer>
                 <Table.Content
                     aria-label="Your challenges"
-                    className="min-w-[38rem] text-sm"
+                    className="min-w-[32rem] text-sm"
                 >
                     <Table.Header>
                         <Table.Column>Date</Table.Column>
-                        <Table.Column isRowHeader>Challenger</Table.Column>
-                        <Table.Column>Challenged</Table.Column>
-                        <Table.Column>Deadline</Table.Column>
                         <Table.Column>Status</Table.Column>
+                        <Table.Column isRowHeader>Opponent</Table.Column>
+                        <Table.Column>Deadline</Table.Column>
                         <Table.Column>Actions</Table.Column>
                     </Table.Header>
                     {challenges ? (
@@ -125,7 +123,7 @@ function ChallengeTableContent({
                         <Table.Body items={PLACEHOLDER_ROWS}>
                             {(row) => (
                                 <Table.Row id={row.id}>
-                                    {[0, 1, 2, 3, 4, 5].map((column) => (
+                                    {[0, 1, 2, 3, 4].map((column) => (
                                         <Table.Cell key={column}>
                                             <Skeleton className="h-4 w-20 rounded-lg" />
                                         </Table.Cell>
@@ -153,16 +151,16 @@ function ChallengeRow({
                 <LocalTime date={challenge.createdAt} format={dateFormat} />
             </Table.Cell>
             <Table.Cell>
-                <Player
-                    user={challenge.challenger}
-                    isViewer={challenge.isChallenger}
-                />
+                <StatusChip state={challenge.state} />
+                {/* Who challenged whom, below the status */}{" "}
+                <span className="mt-1 block whitespace-nowrap text-xs text-muted">
+                    {challenge.isChallenger
+                        ? "You challenged"
+                        : "Challenged by"}
+                </span>
             </Table.Cell>
             <Table.Cell>
-                <Player
-                    user={challenge.challenged}
-                    isViewer={!challenge.isChallenger}
-                />
+                <PlayerLink user={challenge.opponent} />
             </Table.Cell>
             <Table.Cell className="whitespace-nowrap text-muted">
                 <LocalTime date={challenge.deadline} format={dateFormat} />
@@ -172,21 +170,9 @@ function ChallengeRow({
                 </span>
             </Table.Cell>
             <Table.Cell>
-                <StatusChip state={challenge.state} />
-            </Table.Cell>
-            <Table.Cell>
                 <ChallengeActions challenge={challenge} onChanged={onChanged} />
             </Table.Cell>
         </Table.Row>
-    );
-}
-
-// The other player links to their profile; the viewer is just "You"
-function Player({ user, isViewer }: { user: PublicUser; isViewer: boolean }) {
-    return isViewer ? (
-        <span className="font-semibold">You</span>
-    ) : (
-        <PlayerLink user={user} />
     );
 }
 
@@ -227,9 +213,7 @@ function ChallengeActions({
     const [isRemoving, startRemove] = useTransition();
     const isBusy = isAccepting || isRemoving;
     const { state, isChallenger, matchId } = challenge;
-    const opponentName = isChallenger
-        ? challenge.challenged.name
-        : challenge.challenger.name;
+    const opponentName = challenge.opponent.name;
 
     function run(
         start: React.TransitionStartFunction,
