@@ -91,9 +91,9 @@ describe("countActiveFilters", () => {
 describe("getOpponents", () => {
     it("lists each opponent once, most played first, then by name", () => {
         expect(getOpponents(matches)).toEqual([
-            { user: anna, matchCount: 2 },
-            { user: ben, matchCount: 1 },
-            { user: carla, matchCount: 1 },
+            { user: anna, count: 2 },
+            { user: ben, count: 1 },
+            { user: carla, count: 1 },
         ]);
     });
 });

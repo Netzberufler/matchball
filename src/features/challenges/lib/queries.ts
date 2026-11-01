@@ -1,5 +1,9 @@
 import "server-only";
 
+import type {
+    ChallengeFilters,
+    ChallengeStatusFilter,
+} from "@/features/challenges/utils/challenge-filters";
 import {
     type ChallengeState,
     challengeState,
@@ -93,16 +97,82 @@ function toChallengeItem(
     };
 }
 
-// One page of the user's challenges, made and received, newest first, with
-// id breaking ties. Reads the two Challenge (user, createdAt, id) indexes.
+// The challenges of `userId` a status filter shows, as of `now`. An open
+// challenge past its deadline counts as passed, as its status is only set
+// to EXPIRED later (see createChallenge).
+function statusWhere(
+    status: ChallengeStatusFilter,
+    userId: string,
+    now: Date,
+): Prisma.ChallengeWhereInput {
+    switch (status) {
+        case "open":
+            return { status: "OPEN", deadline: { gt: now } };
+        case "expired":
+            return {
+                OR: [
+                    { status: "EXPIRED" },
+                    { status: "OPEN", deadline: { lte: now } },
+                ],
+            };
+        case "accepted":
+            return { status: "ACCEPTED" };
+        case "declined":
+            return { status: "DECLINED" };
+        case "withdrawn":
+            return { status: "WITHDRAWN" };
+        case "won":
+            return { status: "PLAYED", match: { winnerId: userId } };
+        case "lost":
+            return { status: "PLAYED", match: { winnerId: { not: userId } } };
+    }
+}
+
+// The user's challenges the filters show; with none set, all of them
+function filtersWhere(
+    filters: ChallengeFilters,
+    userId: string,
+    now: Date,
+): Prisma.ChallengeWhereInput[] {
+    const where: Prisma.ChallengeWhereInput[] = [];
+    if (filters.statuses.length > 0) {
+        where.push({
+            OR: filters.statuses.map((status) =>
+                statusWhere(status, userId, now),
+            ),
+        });
+    }
+    if (filters.opponentIds.length > 0) {
+        where.push({
+            OR: [
+                {
+                    challengerId: userId,
+                    challengedId: { in: filters.opponentIds },
+                },
+                {
+                    challengedId: userId,
+                    challengerId: { in: filters.opponentIds },
+                },
+            ],
+        });
+    }
+    return where;
+}
+
+// One page of the user's challenges, made and received, that `filters`
+// show, newest first, with id breaking ties. Reads the two Challenge (user,
+// createdAt, id) indexes.
 export async function getChallengesPage(
     userId: string,
+    filters: ChallengeFilters,
     cursor?: FeedCursor,
 ): Promise<FeedPage<ChallengeItem>> {
+    const now = new Date();
     const challenges = await prisma.challenge.findMany({
         where: {
             AND: [
                 userChallengesWhere(userId),
+                ...filtersWhere(filters, userId, now),
                 ...(cursor ? [olderThan(cursor)] : []),
             ],
         },
@@ -110,11 +180,51 @@ export async function getChallengesPage(
         take: CHALLENGE_PAGE_SIZE + 1,
         select: challengeSelect,
     });
-    const now = new Date();
     return toPage(
         challenges.map((challenge) => toChallengeItem(challenge, userId, now)),
         CHALLENGE_PAGE_SIZE,
     );
+}
+
+// Everyone the user has challenged or was challenged by, for the opponent
+// filter, with how many challenges they share, most first. Counted in the
+// database, from the Challenge indexes by user, so it doesn't depend on how
+// many pages of the table are loaded.
+export async function getChallengeOpponents(
+    userId: string,
+): Promise<{ user: PublicUser; count: number }[]> {
+    const [challenged, challengers] = await Promise.all([
+        prisma.challenge.groupBy({
+            by: ["challengedId"],
+            where: { challengerId: userId },
+            _count: { _all: true },
+        }),
+        prisma.challenge.groupBy({
+            by: ["challengerId"],
+            where: { challengedId: userId },
+            _count: { _all: true },
+        }),
+    ]);
+    const counts = new Map<string, number>();
+    for (const { challengedId, _count } of challenged) {
+        counts.set(challengedId, _count._all);
+    }
+    for (const { challengerId, _count } of challengers) {
+        counts.set(challengerId, (counts.get(challengerId) ?? 0) + _count._all);
+    }
+    if (counts.size === 0) {
+        return [];
+    }
+    const users = await prisma.user.findMany({
+        where: { id: { in: [...counts.keys()] } },
+        select: publicUserSelect,
+    });
+    return users
+        .map((user) => ({ user, count: counts.get(user.id) ?? 0 }))
+        .sort(
+            (a, b) =>
+                b.count - a.count || a.user.name.localeCompare(b.user.name),
+        );
 }
 
 // One of the user's challenges as it is now, e.g. after they answered it,

@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDownUp, Check, Crown, Plus, Users } from "lucide-react";
+import { ArrowDownUp, Crown, Plus } from "lucide-react";
 import { Button, buttonVariants, Chip, Dropdown, Label } from "@heroui/react";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { OpponentFilterMenu } from "@/components/ui/filter-menus";
 import type { UserMatch } from "@/features/matches/lib/queries";
 import {
     countActiveFilters,
@@ -64,7 +64,7 @@ export function FilterableMatchTable({
                                     setFilters({ ...filters, dateRange })
                                 }
                             />
-                            <OpponentMenu
+                            <OpponentFilterMenu
                                 opponentIds={filters.opponentIds}
                                 onChange={(opponentIds) =>
                                     setFilters({ ...filters, opponentIds })
@@ -133,93 +133,6 @@ export function MatchesHeading({ count }: { count?: number | string }) {
                 </Chip>
             )}
         </h2>
-    );
-}
-
-// Any number of opponents, in a menu that stays open while ticking them.
-// The button shows how many are ticked.
-function OpponentMenu({
-    opponentIds,
-    onChange,
-    opponents,
-}: {
-    opponentIds: string[];
-    onChange: (opponentIds: string[]) => void;
-    opponents: ReturnType<typeof getOpponents<UserMatch["opponent"]>>;
-}) {
-    return (
-        <Dropdown>
-            <Button variant="tertiary" size="sm">
-                <Users className="size-4" aria-hidden />
-                Opponents
-                {opponentIds.length > 0 && (
-                    <Chip size="sm" color="accent" variant="primary">
-                        {opponentIds.length}
-                    </Chip>
-                )}
-            </Button>
-            <Dropdown.Popover placement="bottom start" className="min-w-56">
-                <Dropdown.Menu
-                    aria-label="Filter by opponent"
-                    selectionMode="multiple"
-                    selectedKeys={opponentIds}
-                    onSelectionChange={(keys) =>
-                        onChange(
-                            // The menu never selects "all" by itself
-                            keys === "all"
-                                ? opponents.map(({ user }) => user.id)
-                                : [...keys].map(String),
-                        )
-                    }
-                    shouldCloseOnSelect={false}
-                    className="max-h-96 overflow-y-auto"
-                >
-                    {opponents.map(({ user, matchCount }) => (
-                        <Dropdown.Item
-                            key={user.id}
-                            id={user.id}
-                            textValue={user.name}
-                        >
-                            {/* A checkbox look, so opponents read as
-                                something to tick, not one choice */}
-                            <Dropdown.ItemIndicator>
-                                {({ isSelected }) => (
-                                    <span
-                                        className={`flex size-4 items-center justify-center rounded border ${
-                                            isSelected
-                                                ? "border-accent bg-accent text-accent-foreground"
-                                                : "border-border bg-field"
-                                        }`}
-                                    >
-                                        {isSelected && (
-                                            <Check
-                                                className="size-3"
-                                                strokeWidth={3}
-                                                aria-hidden
-                                            />
-                                        )}
-                                    </span>
-                                )}
-                            </Dropdown.ItemIndicator>
-                            <UserAvatar
-                                name={user.name}
-                                image={user.image}
-                                size="sm"
-                            />
-                            <span className="flex min-w-0 flex-1 flex-col">
-                                <Label className="truncate">{user.name}</Label>
-                                <span className="truncate text-xs text-muted">
-                                    @{user.username}
-                                </span>
-                            </span>
-                            <span className="text-xs text-muted tabular-nums">
-                                {matchCount}
-                            </span>
-                        </Dropdown.Item>
-                    ))}
-                </Dropdown.Menu>
-            </Dropdown.Popover>
-        </Dropdown>
     );
 }
 

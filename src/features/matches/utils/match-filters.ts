@@ -88,19 +88,17 @@ export function filterAndSortMatches<T extends FilterableMatch>(
 // played first and then by name
 export function getOpponents<U extends { id: string; name: string }>(
     matches: { opponent: U }[],
-): { user: U; matchCount: number }[] {
-    const opponents = new Map<string, { user: U; matchCount: number }>();
+): { user: U; count: number }[] {
+    const opponents = new Map<string, { user: U; count: number }>();
     for (const { opponent } of matches) {
         const entry = opponents.get(opponent.id);
         if (entry) {
-            entry.matchCount++;
+            entry.count++;
         } else {
-            opponents.set(opponent.id, { user: opponent, matchCount: 1 });
+            opponents.set(opponent.id, { user: opponent, count: 1 });
         }
     }
     return [...opponents.values()].sort(
-        (a, b) =>
-            b.matchCount - a.matchCount ||
-            a.user.name.localeCompare(b.user.name),
+        (a, b) => b.count - a.count || a.user.name.localeCompare(b.user.name),
     );
 }

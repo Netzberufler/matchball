@@ -10,15 +10,22 @@ import {
     Skeleton,
     Table,
 } from "@heroui/react";
-import { EmptyCard } from "@/components/ui/list-card";
+import { OpponentFilterMenu } from "@/components/ui/filter-menus";
+import { EmptyCard, RetryCard } from "@/components/ui/list-card";
 import { LoadMore } from "@/components/ui/load-more";
 import {
     acceptChallenge,
     declineChallenge,
     withdrawChallenge,
 } from "@/features/challenges/actions/answer-challenge";
-import { loadMoreChallenges } from "@/features/challenges/actions/load-challenges";
+import { loadChallenges } from "@/features/challenges/actions/load-challenges";
 import type { ChallengeItem } from "@/features/challenges/lib/queries";
+import {
+    type ChallengeFilters,
+    challengeFiltersKey,
+    countActiveChallengeFilters,
+    NO_CHALLENGE_FILTERS,
+} from "@/features/challenges/utils/challenge-filters";
 import type { ChallengeState } from "@/features/challenges/utils/challenge-rules";
 import { PlayerLink } from "@/features/matches/components/match-table";
 import {
@@ -26,44 +33,150 @@ import {
     MATCHES_PATH,
     matchPath,
 } from "@/features/matches/utils/match-path";
+import type { PublicUser } from "@/features/profile/utils/public-user";
 import {
+    appendPage,
     type FeedPage,
     mergeLatestPage,
     replaceItems,
 } from "@/features/posts/utils/feed";
-import { usePagedList } from "@/lib/use-paged-list";
+import { useOnDemand } from "@/lib/use-on-demand";
+import { useLoadMore } from "@/lib/use-paged-list";
+import { ChallengeStatusMenu } from "./challenge-status-menu";
+
+type Page = FeedPage<ChallengeItem>;
+
+// What the server sends with the page
+const NO_FILTERS_KEY = challengeFiltersKey(NO_CHALLENGE_FILTERS);
 
 // The signed-in user's challenges, made and received, newest first, with
-// more loaded on request. Each row shows what the user can do with it now:
-// accept or decline one they received, withdraw one they made, log the
-// match of an accepted one, or see the result once it's played.
+// buttons to filter them by status and opponent, and more loaded on
+// request. Each row shows what the user can do with it now: accept or
+// decline one they received, withdraw one they made, log the match of an
+// accepted one, or see the result once it's played.
+// The filters run in the database: the unfiltered list starts with
+// `firstPage`, and each combination of filters loads its first page when
+// it's first set, and keeps what it loaded while switching back and forth.
+// A refreshed page brings a new `firstPage`, merged into the unfiltered
+// list; the others load theirs again (see useOnDemand).
+// `opponents` is everyone the user shares a challenge with.
 export function ChallengeTable({
     firstPage,
+    opponents,
 }: {
-    firstPage: FeedPage<ChallengeItem>;
+    firstPage: Page;
+    opponents: { user: PublicUser; count: number }[];
 }) {
-    const { page, setPage, loadMore, isPending, error } = usePagedList({
-        firstPage,
+    const [filters, setFilters] =
+        useState<ChallengeFilters>(NO_CHALLENGE_FILTERS);
+    const shownKey = challengeFiltersKey(filters);
+    const pages = useOnDemand<string, Page>({
+        // A key is the filters as JSON (see challengeFiltersKey)
+        load: (key) => loadChallenges(JSON.parse(key), null),
+        shownKey,
+        refreshKey: firstPage,
+        initial: { [NO_FILTERS_KEY]: firstPage },
         merge: mergeLatestPage,
-        load: loadMoreChallenges,
+    });
+    const page = pages.data(shownKey);
+    const isFiltered = countActiveChallengeFilters(filters) > 0;
+
+    function changeFilters(next: ChallengeFilters) {
+        setFilters(next);
+        pages.open(challengeFiltersKey(next));
+    }
+
+    // Without any challenges there's nothing to filter
+    if (opponents.length === 0 && firstPage.items.length === 0) {
+        return (
+            <EmptyCard>
+                No challenges yet. Challenge someone to a match.
+            </EmptyCard>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+                <ChallengeStatusMenu
+                    statuses={filters.statuses}
+                    onChange={(statuses) =>
+                        changeFilters({ ...filters, statuses })
+                    }
+                />
+                <OpponentFilterMenu
+                    opponentIds={filters.opponentIds}
+                    onChange={(opponentIds) =>
+                        changeFilters({ ...filters, opponentIds })
+                    }
+                    opponents={opponents}
+                />
+                {isFiltered && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onPress={() => changeFilters(NO_CHALLENGE_FILTERS)}
+                    >
+                        Clear filters
+                    </Button>
+                )}
+            </div>
+            {page ? (
+                // Keyed, so "Load more" starts over for other filters
+                <ChallengeList
+                    key={shownKey}
+                    filters={filters}
+                    page={page}
+                    emptyMessage={
+                        isFiltered
+                            ? "No challenges fit these filters."
+                            : "No challenges yet. Challenge someone to a match."
+                    }
+                    onPageChange={(change) => pages.update(shownKey, change)}
+                />
+            ) : pages.failed(shownKey) ? (
+                <RetryCard
+                    message="Couldn't load these challenges."
+                    onRetry={() => pages.open(shownKey)}
+                />
+            ) : (
+                <ChallengeTableContent challenges={null} onChanged={() => {}} />
+            )}
+        </div>
+    );
+}
+
+// The challenges `filters` show, with "Load more" below
+function ChallengeList({
+    filters,
+    page,
+    emptyMessage,
+    onPageChange,
+}: {
+    filters: ChallengeFilters;
+    page: Page;
+    emptyMessage: string;
+    onPageChange: (change: (page: Page) => Page) => void;
+}) {
+    const { loadMore, isPending, error } = useLoadMore({
+        cursor: page.nextCursor,
+        load: (cursor) => loadChallenges(filters, cursor),
+        onLoaded: (next) =>
+            onPageChange((current) => appendPage(current, next)),
         errorMessage: "Couldn't load more challenges. Please try again.",
     });
 
     // After an answer: the row as it is now, also on pages further down,
     // which the refresh doesn't reach
     function onChanged(challenge: ChallengeItem) {
-        setPage((current) => ({
+        onPageChange((current) => ({
             ...current,
             items: replaceItems(current.items, [challenge]),
         }));
     }
 
     if (page.items.length === 0) {
-        return (
-            <EmptyCard>
-                No challenges yet. Challenge someone to a match.
-            </EmptyCard>
-        );
+        return <EmptyCard>{emptyMessage}</EmptyCard>;
     }
 
     return (
