@@ -6,9 +6,11 @@ import { UserIdentity } from "@/components/ui/user-identity";
 import type { PublicUser } from "@/features/profile/utils/public-user";
 import { useDebouncedSearch } from "@/lib/use-debounced-search";
 
-// The classes of each choice, e.g. a link or a button
+// The classes of each choice, e.g. a link or a button: the name in the
+// text color rather than the popup's muted one, and a pointer on buttons
+// too
 export const USER_CHOICE_CLASS =
-    "flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-default";
+    "flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left text-foreground transition-colors hover:bg-default";
 
 // Picks a user in a popup, e.g. to chat with or to challenge: a search by
 // name or username, which suggests people the user follows until something

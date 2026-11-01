@@ -159,22 +159,21 @@ function ChallengeForm({
 
     return (
         <form onSubmit={onSubmit} className="contents">
-            <Modal.Body className="flex flex-col gap-6">
-                <section className="flex flex-col gap-2">
-                    {/* Styled like the fields' labels */}
-                    <h3 className="text-sm font-medium">Challenge</h3>
-                    <div className="flex items-center gap-3">
-                        <UserIdentity user={challenged} className="flex-1" />
-                        <Button
-                            size="sm"
-                            variant="tertiary"
-                            isDisabled={isPending}
-                            onPress={onChange}
-                        >
-                            Change
-                        </Button>
-                    </div>
-                </section>
+            {/* Some room between the heading and the chosen user */}
+            <Modal.Body className="mt-4 flex flex-col gap-6">
+                {/* The name in the text color, as wherever users are
+                    shown, rather than the popup's muted one */}
+                <div className="flex items-center gap-3 text-foreground">
+                    <UserIdentity user={challenged} className="flex-1" />
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        isDisabled={isPending}
+                        onPress={onChange}
+                    >
+                        Change
+                    </Button>
+                </div>
                 <DatePicker
                     isRequired
                     value={deadline}
@@ -247,7 +246,8 @@ function ChallengeForm({
                     Cancel
                 </Button>
                 <Button type="submit" variant="primary" isPending={isPending}>
-                    Send challenge
+                    <Sword className="size-4" aria-hidden />
+                    Challenge
                 </Button>
             </Modal.Footer>
         </form>
